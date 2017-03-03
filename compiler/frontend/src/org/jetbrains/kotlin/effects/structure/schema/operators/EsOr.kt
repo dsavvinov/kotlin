@@ -20,15 +20,15 @@ import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.lift
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
+import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 
-
-data class Not(override val arg: EsNode) : UnaryOperator {
+data class EsOr(override val left: EsNode, override val right: EsNode) : BinaryOperator {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
-    override fun newInstance(arg: EsNode): UnaryOperator = Not(arg)
+    override fun newInstance(left: EsNode, right: EsNode): BinaryOperator = EsOr(left, right)
 
     override fun reduce(): EsNode {
-        if (arg is EsConstant) {
-            return (arg == false.lift()).lift()
+        if (left is EsConstant && right is EsConstant) {
+            return (left.value == right.value).lift()
         }
 
         return this

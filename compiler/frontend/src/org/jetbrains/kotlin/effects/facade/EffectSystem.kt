@@ -34,7 +34,22 @@ import org.jetbrains.kotlin.effects.visitors.helpers.print
  * Entry-point of EffectSystem. Provides simple interface for compiler.
  */
 object EffectSystem {
-    fun printES(call: CtCall): String = "ES of ${call.function}: \n" + (call.generateEffectSchema().flatten().evaluate() as EffectSchema).print()
+    fun printES(call: CtCall): String {
+        val baseES = call.generateEffectSchema()
+
+        val flatES = baseES.flatten() as EffectSchema
+
+        val evES = flatES.evaluate() as EffectSchema
+
+        return "Base es of ${call.function}: \n" +
+            baseES.print() +
+            "\n" +
+            "Flat es of ${call.function}: \n" +
+            flatES.print() +
+            "\n" +
+            "ES of ${call.function}: \n" +
+            evES.print()
+    }
 
     fun getInfo(call: CtCall, outcome: Outcome): EsInfoHolder? {
         val basicEffectSchema = call.generateEffectSchema()
@@ -51,7 +66,7 @@ object EffectSystem {
         var feasible = false
         for (clause in clauses) {
             val clauseOutcome = clause.getOutcome()
-            if (outcome.followsFrom(clauseOutcome)) {
+            if (clauseOutcome == null || outcome.followsFrom(clauseOutcome)) {
                 feasible = true
                 clause.left.collect(varValues, varTypes)
             }

@@ -20,12 +20,13 @@ import org.jetbrains.kotlin.effects.structure.general.EsFunction
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
+import org.jetbrains.kotlin.effects.visitors.helpers.toNodeSequence
 
 class EffectSchemaBuilder {
     val clauses: MutableList<Imply> = mutableListOf()
 
     infix fun (EsNode).to(other: EsNode): Unit {
-        clauses += Imply(this, other)
+        clauses += Imply(this, other.toNodeSequence())
     }
 
     fun build(): EffectSchema {

@@ -18,12 +18,14 @@ package org.jetbrains.kotlin.effects.visitors.helpers
 
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.effects.Outcome
-import org.jetbrains.kotlin.effects.structure.effects.Returns
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
+import org.jetbrains.kotlin.effects.structure.schema.Cons
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
+import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
@@ -49,9 +51,9 @@ class Searcher(val predicate: (EsNode) -> Boolean) : SchemaVisitor<Unit> {
 
     override fun visit(constant: EsConstant) = tryAdd(constant)
 
-    override fun visit(returns: Returns) {
-        returns.value.accept(this)
-        tryAdd(returns)
+    override fun visit(esReturns: EsReturns) {
+        esReturns.value.accept(this)
+        tryAdd(esReturns)
     }
 
     override fun visit(binaryOperator: BinaryOperator) {
@@ -62,8 +64,16 @@ class Searcher(val predicate: (EsNode) -> Boolean) : SchemaVisitor<Unit> {
 
     override fun visit(unaryOperator: UnaryOperator) {
         unaryOperator.arg.accept(this)
-        tryAdd(unaryOperator.arg)
+        tryAdd(unaryOperator)
     }
+
+    override fun visit(cons: Cons) {
+        cons.head.accept(this)
+        cons.tail.accept(this)
+        tryAdd(cons)
+    }
+
+    override fun visit(nil: Nil) = tryAdd(nil)
 }
 
 fun (EsNode).findAll(predicate: (EsNode) -> Boolean): List<EsNode> =
@@ -72,7 +82,7 @@ fun (EsNode).findAll(predicate: (EsNode) -> Boolean): List<EsNode> =
 fun (EsNode).firstOrNull(predicate: (EsNode) -> Boolean): EsNode? =
         findAll(predicate).firstOrNull()
 
-fun (EsNode).getOutcome() : Outcome = firstOrNull { it is Returns || it is EsThrows } as Outcome
+fun (EsNode).getOutcome() : Outcome? = firstOrNull { it is EsReturns || it is EsThrows } as Outcome?
 
 fun (EsNode).contains(predicate: (EsNode) -> Boolean) =
         findAll(predicate).isNotEmpty()

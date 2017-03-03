@@ -16,17 +16,15 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
+import org.jetbrains.kotlin.effects.facade.EffectSchemasResolver
 import org.jetbrains.kotlin.effects.structure.call.*
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.effects.structure.intrinsicFunctions
-import org.jetbrains.kotlin.effects.structure.kludgeFunctions
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
-import org.jetbrains.kotlin.effects.structure.schema.operators.Equal
-import org.jetbrains.kotlin.effects.structure.schema.operators.Is
-import org.jetbrains.kotlin.effects.structure.schema.operators.Not
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsEqual
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsIs
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsNot
 
 /**
  * Generates tree of effect schemas given a call-tree
@@ -34,18 +32,16 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.Not
 class EffectSchemaGenerator : CallTreeVisitor<EsNode> {
     override fun visit(call: CtCall): EsNode {
         val substitutedArgs = call.childs.map { it.accept(this) }
-        val basicSchema = call.function.schema
-                          ?: kludgeFunctions[call.function]?.invoke(substitutedArgs) as? EffectSchema
-                          ?: throw IllegalArgumentException("Effect schema for function ${call.function} is not defined")
+        val basicSchema = EffectSchemasResolver.getEffectSchema(call.function)
 
         return basicSchema.bind(call.function, substitutedArgs)
     }
 
-    override fun visit(ctIs: CtIs): EsNode = Is(ctIs.left.accept(this), ctIs.type)
+    override fun visit(ctIs: CtIs): EsNode = EsIs(ctIs.left.accept(this), ctIs.type)
 
-    override fun visit(ctEqual: CtEqual): EsNode = Equal(ctEqual.left.accept(this), ctEqual.right.accept(this))
+    override fun visit(ctEqual: CtEqual): EsNode = EsEqual(ctEqual.left.accept(this), ctEqual.right.accept(this))
 
-    override fun visit(ctNot: CtNot): EsNode = Not(ctNot.arg.accept(this))
+    override fun visit(ctNot: CtNot): EsNode = EsNot(ctNot.arg.accept(this))
 
     override fun visit(variable: EsVariable): EsNode = variable
 

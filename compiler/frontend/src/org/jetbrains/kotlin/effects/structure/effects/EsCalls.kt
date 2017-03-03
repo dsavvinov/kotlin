@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effects.structure.schema.operators
+package org.jetbrains.kotlin.effects.structure.effects
 
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.general.EsFunction
+import org.jetbrains.kotlin.effects.structure.schema.Effect
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
-import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 
-data class Or(override val left: EsNode, override val right: EsNode) : BinaryOperator {
+data class EsCalls(val callCounts: MutableMap<EsFunction, Int>) : Effect {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
-    override fun newInstance(left: EsNode, right: EsNode): BinaryOperator = Or(left, right)
 
-    override fun reduce(): EsNode {
-        if (left is EsConstant && right is EsConstant) {
-            return (left.value == right.value).lift()
+    override fun merge(other: Effect): EsCalls {
+        val resultCalls = mutableMapOf<EsFunction, Int>()
+        resultCalls.putAll(callCounts)
+        for ((function, calls) in (other as EsCalls).callCounts) {
+            resultCalls.merge(function, calls, Int::plus)
         }
 
-        return this
+        return EsCalls(resultCalls)
     }
 }
-

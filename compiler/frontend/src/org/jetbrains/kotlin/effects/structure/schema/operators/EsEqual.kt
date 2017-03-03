@@ -14,24 +14,22 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effects.structure.effects
+package org.jetbrains.kotlin.effects.structure.schema.operators
 
-import org.jetbrains.kotlin.effects.structure.general.EsFunction
-import org.jetbrains.kotlin.effects.structure.schema.Effect
+import org.jetbrains.kotlin.effects.structure.general.EsConstant
+import org.jetbrains.kotlin.effects.structure.general.EsNode
+import org.jetbrains.kotlin.effects.structure.lift
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 
-data class Calls(val callCounts: MutableMap<EsFunction, Int>) : SimpleEffect {
+data class EsEqual(override val left: EsNode, override val right: EsNode) : BinaryOperator {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
-
-    override fun isCombinable(effect: Effect): Boolean = effect is Calls
-
-    override fun merge(right: SimpleEffect): Calls {
-        val resultCalls = mutableMapOf<EsFunction, Int>()
-        resultCalls.putAll(callCounts)
-        for ((function, calls) in (right as Calls).callCounts) {
-            resultCalls.merge(function, calls, Int::plus)
+    override fun newInstance(left: EsNode, right: EsNode): BinaryOperator = EsEqual(left, right)
+    override fun reduce(): EsNode {
+        if (left is EsConstant && right is EsConstant) {
+            return (left.value == right.value).lift()
         }
 
-        return Calls(resultCalls)
+        return this
     }
 }
+

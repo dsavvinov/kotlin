@@ -22,26 +22,29 @@ import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.Effect
+import org.jetbrains.kotlin.effects.structure.schema.Operator
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 
 
-data class Returns(val value: EsNode, val type: EsType?) : Outcome {
+data class EsReturns(val value: EsNode) : Outcome {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
 
-    override fun merge(left: List<Effect>, right: List<Effect>, flags: EffectsPipelineFlags, operator: BinaryOperator): List<Effect> {
-        val rightOutcome = right.find { it is Outcome }
+    override fun isSuccessfull(): Boolean = true
 
-        return when(rightOutcome) {
-            is EsThrows -> listOf(rightOutcome)
-            is Returns -> listOf(Returns(operator.newInstance(this.value, rightOutcome.value), type))
-            // TODO: mb sealed class here?
-            else -> throw IllegalStateException("Unexpected Outcome-type: $rightOutcome")
+    override fun merge(other: Outcome?, binaryOperator: BinaryOperator): Outcome {
+        other ?: return this
+
+        if (other !is EsReturns) {
+            return other
         }
+
+        return EsReturns(binaryOperator.newInstance(value, other.value))
     }
 
+
     override fun followsFrom(other: Outcome): Boolean {
-        if (other !is Returns) return false
+        if (other !is EsReturns) return false
 
         // Returns(Unknown) conforms to any kind of Returns
         if (value == Unknown) return true

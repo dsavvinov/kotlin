@@ -21,12 +21,14 @@ import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.lift
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 
-data class Equal(override val left: EsNode, override val right: EsNode) : BinaryOperator {
+
+data class EsNot(override val arg: EsNode) : UnaryOperator {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
-    override fun newInstance(left: EsNode, right: EsNode): BinaryOperator = Equal(left, right)
+    override fun newInstance(arg: EsNode): UnaryOperator = EsNot(arg)
+
     override fun reduce(): EsNode {
-        if (left is EsConstant && right is EsConstant) {
-            return (left.value == right.value).lift()
+        if (arg is EsConstant) {
+            return (arg == false.lift()).lift()
         }
 
         return this

@@ -19,11 +19,12 @@ package org.jetbrains.kotlin.effects.structure.general
 import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 import org.jetbrains.kotlin.effects.structure.call.CallTreeVisitor
 import org.jetbrains.kotlin.effects.structure.call.CtNode
-import org.jetbrains.kotlin.effects.structure.effects.Returns
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.lift
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.Term
+import org.jetbrains.kotlin.effects.visitors.helpers.toNodeSequence
 import org.jetbrains.kotlin.types.KotlinType
 
 interface EsNode {
@@ -34,7 +35,7 @@ data class EsVariable(val reference: String, val type: EsType) : EsNode, CtNode,
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 
-    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), Returns(this, type))))
+    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), EsReturns(this).toNodeSequence())))
 }
 
 data class EsConstant(val value: Any?, val type: EsType) : EsNode, CtNode, Term {
@@ -45,7 +46,7 @@ data class EsConstant(val value: Any?, val type: EsType) : EsNode, CtNode, Term 
         return value.toString()
     }
 
-    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), Returns(this, type))))
+    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), EsReturns(this).toNodeSequence())))
 }
 
 // TODO: composition or inheritance? Depends on the real KtType, I think

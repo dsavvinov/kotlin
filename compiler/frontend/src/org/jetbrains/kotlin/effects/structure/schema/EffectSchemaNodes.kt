@@ -16,29 +16,25 @@
 
 package org.jetbrains.kotlin.effects.structure.schema
 
-import org.jetbrains.kotlin.effects.structure.effects.EffectsPipelineFlags
-import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
+import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 
 /**
  * General type of any side-effects that any computation may have.
  */
-interface Effect : EsNode {
+interface Effect : EsNode, Term {
     /**
      * Returns result of combination of `this`-effect with `right`-Effects.
-     *
-     * `this` guaranteed to be present in `left`.
-     *
-     * This is most general signature of `merge()`-function. See `SimpleEffect`
-     * for more convenient and special case.
      */
-    fun merge(left: List<Effect>, right: List<Effect>, flags: EffectsPipelineFlags, operator: BinaryOperator) : List<Effect>
+    fun merge(other: Effect): Effect?
+
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
+    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), Cons(this, Nil))))
 }
 
 /**
- * General type of an operation that knows how to flatten if one of its arguemnts is EffectSchema
+ * General type of an operation that knows how to flatten if one of its arguments is EffectSchema
  */
 interface Operator : EsNode {
     /**
@@ -56,7 +52,8 @@ interface Operator : EsNode {
 }
 
 /**
- * Term is an irreducible EsNode. All terms should be equivalent to some form of EffectSchema
+ * Term is an abstraction of something that may have side-effects.
+ * Any term should be equivalent to some Effect Schema
  */
 interface Term : EsNode {
     fun castToSchema(): EffectSchema
@@ -67,3 +64,18 @@ data class EffectSchema(val clauses: List<Imply>) : Term {
     override fun castToSchema(): EffectSchema = this
 }
 
+/**
+ * Classes for representing consequent collection of nodes in form of tree.
+ */
+interface NodeSequence : EsNode, Term {
+    override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
+    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), this)))
+}
+
+object Nil : NodeSequence {
+    override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
+}
+
+class Cons(val head: EsNode, val tail: NodeSequence) : NodeSequence {
+    override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
+}

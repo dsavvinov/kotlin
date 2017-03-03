@@ -16,18 +16,15 @@
 
 package org.jetbrains.kotlin.effects.structure.effects
 
-import org.jetbrains.kotlin.effects.structure.schema.Effect
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 
 data class EsThrows(val exception: Any?) : Outcome {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
 
-    override fun merge(left: List<Effect>, right: List<Effect>, flags: EffectsPipelineFlags, operator: BinaryOperator): List<Effect> {
-        // Shutdown pipeline, and override result with left-effects.
-        flags.veto()
-        return left
-    }
+    override fun isSuccessfull(): Boolean = false
+
+    override fun merge(other: Outcome?, binaryOperator: BinaryOperator): Outcome = this
 
     override fun followsFrom(other: Outcome): Boolean {
         if (other !is EsThrows) return false

@@ -17,22 +17,23 @@
 package org.jetbrains.kotlin.effects.visitors.helpers
 
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
-import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
+import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
 
-class Linearizer : SchemaVisitor<List<EsNode>> {
-    override fun visit(node: EsNode): List<EsNode> = listOf(node)
+class Linearizer : SchemaVisitor<Unit> {
+    private val buffer: MutableList<EsNode> = mutableListOf()
 
-    override fun visit(schema: EffectSchema): List<EsNode>
-            = schema.clauses.flatMap { it.accept(this) } + listOf(schema)
+    override fun visit(cons: Cons) {
+        if (cons.head is NodeSequence) cons.head.accept(this) else buffer += cons.head
+        cons.tail.accept(this)
+    }
 
-    override fun visit(binaryOperator: BinaryOperator): List<EsNode>
-            = binaryOperator.left.accept(this) + binaryOperator.right.accept(this) + listOf(binaryOperator)
+    override fun visit(nil: Nil) {}
 
-    override fun visit(unaryOperator: UnaryOperator): List<EsNode> =
-            unaryOperator.arg.accept(this) + listOf(unaryOperator)
+    fun toList(): List<EsNode> = buffer
 }
 
-fun (EsNode?).toList() : List<EsNode> = Linearizer().let { this?.accept(it) } ?: listOf()
+fun (NodeSequence).toList(): List<EsNode> = Linearizer().also { this.accept(it) }.toList()
+fun (List<EsNode>).toNodeSequence(): NodeSequence = foldRight(Nil, ::Cons)
+fun (EsNode).toNodeSequence(): NodeSequence = Cons(this, Nil)

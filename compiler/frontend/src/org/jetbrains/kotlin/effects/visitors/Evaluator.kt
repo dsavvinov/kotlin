@@ -17,14 +17,13 @@
 package org.jetbrains.kotlin.effects.visitors
 
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.effects.Returns
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.lift
-import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
-import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
+import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
@@ -58,7 +57,15 @@ class Evaluator : SchemaVisitor<EsNode> {
 
     override fun visit(throws: EsThrows): EsNode = throws
 
-    override fun visit(returns: Returns): EsNode = returns
+    override fun visit(esReturns: EsReturns): EsNode = esReturns
+
+    override fun visit(cons: Cons): EsNode {
+        val evaluatedHead = cons.head.accept(this)
+        val evaluatedTail = cons.tail.accept(this) as NodeSequence
+        return Cons(evaluatedHead, evaluatedTail)
+    }
+
+    override fun visit(nil: Nil): EsNode = nil
 }
 
 fun (EsNode).evaluate() : EsNode = Evaluator().let { this.accept(it) }

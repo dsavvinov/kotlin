@@ -16,9 +16,9 @@
 
 package org.jetbrains.kotlin.effects.visitors.helpers
 
-import org.jetbrains.kotlin.effects.structure.effects.Calls
+import org.jetbrains.kotlin.effects.structure.effects.EsCalls
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.effects.Returns
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsType
@@ -72,20 +72,18 @@ class Filterer(val predicate: (EsNode) -> Boolean) : SchemaVisitor<EsNode?> {
         return throws
     }
 
-    override fun visit(returns: Returns): EsNode? {
-        if (!predicate(returns)) return null
+    override fun visit(esReturns: EsReturns): EsNode? {
+        if (!predicate(esReturns)) return null
 
 //        val filteredArg = returns.value.accept(this) ?: return null
 
-        return returns
+        return esReturns
     }
 
-    override fun visit(calls: Calls): EsNode? {
-        if (!predicate(calls)) return null
-        return calls
+    override fun visit(esCalls: EsCalls): EsNode? {
+        if (!predicate(esCalls)) return null
+        return esCalls
     }
 }
 
 fun (EsNode).filter(predicate: (EsNode) -> Boolean): EsNode? = Filterer(predicate).let { accept(it) }
-
-fun (Imply).removeReturns(): Imply = Imply(left, right.filter { it !is Returns } ?: true.lift())

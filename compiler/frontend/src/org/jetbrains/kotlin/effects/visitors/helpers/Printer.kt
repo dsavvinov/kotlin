@@ -17,18 +17,20 @@
 package org.jetbrains.kotlin.effects.visitors.helpers
 
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.schema.operators.Is
-import org.jetbrains.kotlin.effects.structure.schema.operators.Not
-import org.jetbrains.kotlin.effects.structure.schema.operators.Or
-import org.jetbrains.kotlin.effects.structure.effects.Returns
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsIs
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsNot
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsOr
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.schema.Cons
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
+import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
-import org.jetbrains.kotlin.effects.structure.schema.operators.And
-import org.jetbrains.kotlin.effects.structure.schema.operators.Equal
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsAnd
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsEqual
 
 class EffectSchemaPrinter : SchemaVisitor<Unit> {
     override fun toString(): String {
@@ -74,19 +76,19 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
         imply.right.accept(this)
     }
 
-    override fun visit(isOperator: Is): Unit {
-        isOperator.arg.accept(this)
-        sb.append(" is ${isOperator.type}")
+    override fun visit(esIsOperator: EsIs): Unit {
+        esIsOperator.arg.accept(this)
+        sb.append(" is ${esIsOperator.type}")
     }
 
-    override fun visit(equalOperator: Equal): Unit {
+    override fun visit(esEqualOperator: EsEqual): Unit {
         inBrackets {
-            equalOperator.left.accept(this)
+            esEqualOperator.left.accept(this)
 
             // Write "x" instead of something like "x == true"
-            if ((equalOperator.right is EsConstant && equalOperator.right == true.lift()).not()) {
+            if ((esEqualOperator.right is EsConstant && esEqualOperator.right == true.lift()).not()) {
                 sb.append(" == ")
-                equalOperator.right.accept(this)
+                esEqualOperator.right.accept(this)
             }
         }
     }
@@ -95,37 +97,45 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
         sb.append("Throws ${throws.exception}")
     }
 
-    override fun visit(or: Or): Unit {
-        inBrackets { or.left.accept(this) }
+    override fun visit(esOr: EsOr): Unit {
+        inBrackets { esOr.left.accept(this) }
         sb.append(" OR ")
-        inBrackets { or.right.accept(this) }
+        inBrackets { esOr.right.accept(this) }
     }
 
-    override fun visit(and: And): Unit {
+    override fun visit(and: EsAnd): Unit {
         inBrackets { and.left.accept(this) }
         sb.append(" AND ")
         inBrackets { and.right.accept(this) }
     }
 
-    override fun visit(not: Not): Unit {
+    override fun visit(esNot: EsNot): Unit {
         sb.append("NOT")
-        inBrackets { not.arg.accept(this) }
-    }
-
-    override fun visit(type: EsType): Unit {
-        sb.append(type.ktType.toString())
+        inBrackets { esNot.arg.accept(this) }
     }
 
     override fun visit(variable: EsVariable): Unit {
-        sb.append(variable.reference.toString())
+        sb.append(variable.reference)
     }
 
     override fun visit(constant: EsConstant): Unit {
         sb.append("${constant.value}")
     }
 
-    override fun visit(returns: Returns) {
-        sb.append("returns ${returns.value}: ${returns.type ?: "???"}")
+    override fun visit(esReturns: EsReturns) {
+        sb.append("returns ${esReturns.value}")
+    }
+
+    override fun visit(cons: Cons) {
+        cons.head.accept(this)
+        if (cons.tail !is Nil) {
+            sb.append(" :: ")
+            cons.tail.accept(this)
+        }
+    }
+
+    override fun visit(nil: Nil) {
+        super.visit(nil)
     }
 }
 

@@ -16,8 +16,7 @@
 
 package org.jetbrains.kotlin.effects.structure.schema.operators
 
-import org.jetbrains.kotlin.effects.structure.effects.EffectsPipelineFlags
-import org.jetbrains.kotlin.effects.structure.effects.Returns
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.Operator
@@ -41,7 +40,7 @@ interface UnaryOperator : Operator {
 
         val schema = arg as EffectSchema
         val newClauses = schema.clauses.map {
-            it.transformReturn { Returns(newInstance(it.value), it.type) }
+            it.transformReturn { EsReturns(newInstance(it.value)) }
         }
 
         return EffectSchema(newClauses)
@@ -70,12 +69,20 @@ interface BinaryOperator : Operator {
 private fun (EffectSchema).flattenWith(rightSchema: EffectSchema, operator: BinaryOperator): EffectSchema {
     val newClauses = rightSchema.clauses.flatMap { rightClause ->
         this.clauses.map { leftClause ->
-            val flags = EffectsPipelineFlags()
-            val left = leftClause.left.and(rightClause.left)
-            val right = leftClause.effectsAsList().flatMap {
-                it.merge(leftClause.effectsAsList(), rightClause.effectsAsList(), flags, operator)
+            val leftOutcome = leftClause.outcome
+            val rightOutcome = rightClause.outcome
+            val leftEffects = leftClause.effects
+            val rightEffects = rightClause.effects
+
+            val shouldExecuteRhs = leftOutcome?.isSuccessfull() ?: false
+            if (!shouldExecuteRhs) {
+                return@map leftClause
             }
-            org.jetbrains.kotlin.effects.structure.schema.operators.Imply(left, right)
+
+            val resultingPremise = leftClause.left.and(rightClause.left)
+            val resultingOutcome = leftOutcome!!.merge(rightOutcome, operator)
+            val resultingEffects = leftEffects.flatMap { leftEffect -> rightEffects.map { leftEffect.merge(it) }.filterNotNull() }
+            return@map Imply(resultingPremise, resultingEffects, resultingOutcome)
         }
     }
     return EffectSchema(newClauses)

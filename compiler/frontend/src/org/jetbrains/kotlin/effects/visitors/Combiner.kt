@@ -16,15 +16,14 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
-import org.jetbrains.kotlin.effects.structure.effects.Calls
+import org.jetbrains.kotlin.effects.structure.effects.EsCalls
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.effects.Returns
+import org.jetbrains.kotlin.effects.structure.effects.Outcome
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
-import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
+import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
 
@@ -66,12 +65,20 @@ class Combiner : SchemaVisitor<EsNode> {
 
     override fun visit(throws: EsThrows) = throws
 
-    override fun visit(returns: Returns): EsNode {
-        val arg = returns.value.accept(this)
-        return Returns(arg, returns.type)
+    override fun visit(esReturns: EsReturns): EsNode {
+        val arg = esReturns.value.accept(this)
+        return EsReturns(arg)
     }
 
-    override fun visit(calls: Calls): EsNode = calls
+    override fun visit(esCalls: EsCalls): EsNode = esCalls
+
+    override fun visit(cons: Cons): EsNode {
+        val flatHead = cons.head.accept(this)
+        val flatTail = cons.tail.accept(this) as NodeSequence
+        return Cons(flatHead, flatTail)
+    }
+
+    override fun visit(nil: Nil): EsNode = nil
 }
 
 fun (EsNode).flatten() : EsNode = Combiner().let { accept(it) }

@@ -16,20 +16,20 @@
 
 package org.jetbrains.kotlin.effects.structure.schema.operators
 
-import org.jetbrains.kotlin.effects.structure.EsBoolean
-import org.jetbrains.kotlin.effects.structure.effects.Returns
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.lift
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
+import org.jetbrains.kotlin.effects.structure.schema.NodeSequence
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.Term
 import org.jetbrains.kotlin.effects.visitors.helpers.transform
 
-data class Is(override val arg: EsNode, val type: EsType) : UnaryOperator {
+data class EsIs(override val arg: EsNode, val type: EsType) : UnaryOperator {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
-    override fun newInstance(arg: EsNode): UnaryOperator = Is(arg, type)
+    override fun newInstance(arg: EsNode): UnaryOperator = EsIs(arg, type)
 
     override fun reduce(): EsNode {
         if (arg is EsConstant) {
@@ -48,13 +48,13 @@ data class Is(override val arg: EsNode, val type: EsType) : UnaryOperator {
 
         for ((lhs, rhs) in leftSchema.clauses) {
             val rewritedRhs = rhs.transform {
-                if (it !is Returns) {
+                if (it !is EsReturns) {
                     return@transform it
                 }
 
-                // Otherwise evaluate Is-operator and update Returns-clause accordingly
-                return@transform Returns(Is(it.value, type), EsBoolean)
-            }
+                // Otherwise evaluate EsIs-operator and update Returns-clause accordingly
+                return@transform EsReturns(EsIs(it.value, type))
+            } as NodeSequence
 
             combinedClauses += Imply(lhs, rewritedRhs)
         }

@@ -16,55 +16,27 @@
 
 package org.jetbrains.kotlin.effects.structure.effects
 
-import org.jetbrains.kotlin.effects.structure.schema.Effect
+import org.jetbrains.kotlin.effects.structure.general.EsNode
+import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
+import org.jetbrains.kotlin.effects.structure.schema.Term
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
+import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
+import org.jetbrains.kotlin.effects.visitors.helpers.toNodeSequence
 
 /**
  * Special subclass of effects, that represents particular outcome of
  * the corresponding code block.
  */
-interface Outcome : Effect {
+interface Outcome : EsNode, Term {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
+    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), this.toNodeSequence())))
+
     fun followsFrom(other: Outcome): Boolean
-}
 
-/**
- * Simple Effect is a subclass of effects that doesn't influence other effects
- * on combining. Therefore, Simple Effects have more simple signature of `merge()`
- */
-interface SimpleEffect : Effect {
-    /**
-     * Template method.
-     * Should return `true` iff `effect` can be combined with `this`.
-     * In most cases, for class X : SimpleEffect this should be implemented
-     * as `fun isCombinable(effect: Effect) = effect is X`
-     */
-    fun isCombinable(effect: Effect) : Boolean
+    fun isSuccessfull(): Boolean
 
-    fun merge(right: SimpleEffect) : SimpleEffect
+    fun merge(other: Outcome?, binaryOperator: BinaryOperator): Outcome
 
-    override fun merge(left: List<Effect>, right: List<Effect>, flags: EffectsPipelineFlags, operator: BinaryOperator): List<Effect> {
-        if (flags.isVetoed()) {
-            return listOf()
-        }
-
-        val leftCombinable = left.filter { isCombinable(it) }
-        val rightCombinable = right.filter { isCombinable(it) }
-
-        // Part of SimpleEffect-Contract
-        assert(leftCombinable.size == 1)
-        assert(rightCombinable.size == 1)
-
-        return listOf(
-                (leftCombinable[0] as SimpleEffect).merge(rightCombinable[0] as SimpleEffect)
-        )
-    }
-
-    override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
-}
-
-fun (List<Effect>).merge(right: List<Effect>, operator: BinaryOperator) : List<Effect> {
-    val flags = EffectsPipelineFlags()
-    return flatMap { it.merge(this, right, flags, operator) }
 }

@@ -16,7 +16,7 @@
 
 package org.jetbrains.kotlin.effects.visitors.helpers
 
-import org.jetbrains.kotlin.effects.structure.effects.Returns
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
@@ -40,10 +40,10 @@ class Transformer(val transform: (EsNode) -> EsNode) : SchemaVisitor<EsNode> {
                     .newInstance(unaryOperator.arg.accept(this))
                     .let(transform)
 
-    override fun visit(returns: Returns): EsNode = Returns(returns.value.accept(this), returns.type).let(transform)
+    override fun visit(esReturns: EsReturns): EsNode = EsReturns(esReturns.value.accept(this)).let(transform)
 }
 
 fun (EsNode).transform(transform: (EsNode) -> EsNode) = Transformer(transform).let { accept(it) }
 
-fun (org.jetbrains.kotlin.effects.structure.schema.operators.Imply).transformReturn(transform: (Returns) -> EsNode) : org.jetbrains.kotlin.effects.structure.schema.operators.Imply =
-        transform { if (it is Returns) transform(it) else it } as org.jetbrains.kotlin.effects.structure.schema.operators.Imply
+fun (org.jetbrains.kotlin.effects.structure.schema.operators.Imply).transformReturn(transform: (EsReturns) -> EsNode) : org.jetbrains.kotlin.effects.structure.schema.operators.Imply =
+        transform { if (it is EsReturns) transform(it) else it } as org.jetbrains.kotlin.effects.structure.schema.operators.Imply

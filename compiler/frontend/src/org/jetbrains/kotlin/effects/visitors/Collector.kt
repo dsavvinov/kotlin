@@ -16,15 +16,17 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
-import org.jetbrains.kotlin.effects.structure.schema.operators.Is
-import org.jetbrains.kotlin.effects.structure.schema.operators.Not
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsIs
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsNot
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
+import org.jetbrains.kotlin.effects.structure.schema.Cons
+import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
-import org.jetbrains.kotlin.effects.structure.schema.operators.Equal
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsEqual
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
 
 /**
@@ -53,26 +55,34 @@ data class Collector(
         unaryOperator.arg.accept(this)
     }
 
-    override fun visit(isOperator: Is) {
-        if (isOperator.arg is EsVariable) {
-            varsTypes[isOperator.arg] = isOperator.type
+    override fun visit(esIsOperator: EsIs) {
+        if (esIsOperator.arg is EsVariable) {
+            varsTypes[esIsOperator.arg] = esIsOperator.type
         }
     }
 
-    override fun visit(equalOperator: Equal) {
-        if (equalOperator.left is EsVariable && equalOperator.right is EsConstant) {
-            varsValues[equalOperator.left] = equalOperator.right
-            varsTypes[equalOperator.left] = equalOperator.right.type
+    override fun visit(esEqualOperator: EsEqual) {
+        if (esEqualOperator.left is EsVariable && esEqualOperator.right is EsConstant) {
+            varsValues[esEqualOperator.left] = esEqualOperator.right
+            varsTypes[esEqualOperator.left] = esEqualOperator.right.type
             return
         }
 
-        equalOperator.left.accept(this)
-        equalOperator.right.accept(this)
+        esEqualOperator.left.accept(this)
+        esEqualOperator.right.accept(this)
     }
 
-    override fun visit(not: Not) {
-        inverted { not.arg.accept(this) }
+    override fun visit(esNot: EsNot) {
+        inverted { esNot.arg.accept(this) }
     }
+
+    override fun visit(cons: Cons) {
+        cons.head.accept(this)
+        cons.tail.accept(this)
+    }
+
+    override fun visit(nil: Nil) = Unit
+
 }
 
 fun (EsNode).collect(varsValues: MutableMap<EsVariable, EsConstant>,
