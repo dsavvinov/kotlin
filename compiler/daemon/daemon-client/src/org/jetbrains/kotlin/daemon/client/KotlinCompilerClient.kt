@@ -398,7 +398,7 @@ object KotlinCompilerClient {
                                 .forEachLine {
                                     if (it == COMPILE_DAEMON_IS_READY_MESSAGE) {
                                         isEchoRead.release()
-                                        return@forEachLine
+//                                        return@forEachLine
                                     }
                                     reportingTargets.report(DaemonReportCategory.DEBUG, it, "daemon")
                                 }
