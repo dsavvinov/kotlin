@@ -54,8 +54,8 @@ data class Collector(
     }
 
     override fun visit(isOperator: Is) {
-        if (isOperator.left is EsVariable) {
-            varsTypes[isOperator.left] = isOperator.right
+        if (isOperator.arg is EsVariable) {
+            varsTypes[isOperator.arg] = isOperator.type
         }
     }
 

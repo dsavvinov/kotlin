@@ -27,22 +27,22 @@ import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.Term
 import org.jetbrains.kotlin.effects.visitors.helpers.transform
 
-data class Is(override val left: EsNode, override val right: EsType) : BinaryOperator {
+data class Is(override val arg: EsNode, val type: EsType) : UnaryOperator {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
-    override fun newInstance(left: EsNode, right: EsNode): BinaryOperator = Is(left, right as EsType)
+    override fun newInstance(arg: EsNode): UnaryOperator = Is(arg, type)
 
     override fun reduce(): EsNode {
-        if (left is EsConstant) {
-            return (left.type == right).lift()
+        if (arg is EsConstant) {
+            return (arg.type == type).lift()
         }
 
         return this
     }
 
     override fun flatten(): EsNode {
-        if (left !is Term) return this
+        if (arg !is Term) return this
 
-        val leftSchema: EffectSchema = left.castToSchema()
+        val leftSchema: EffectSchema = arg.castToSchema()
 
         val combinedClauses = mutableListOf<Imply>()
 
@@ -53,7 +53,7 @@ data class Is(override val left: EsNode, override val right: EsType) : BinaryOpe
                 }
 
                 // Otherwise evaluate Is-operator and update Returns-clause accordingly
-                return@transform Returns(Is(it.value, right), EsBoolean)
+                return@transform Returns(Is(it.value, type), EsBoolean)
             }
 
             combinedClauses += Imply(lhs, rewritedRhs)
