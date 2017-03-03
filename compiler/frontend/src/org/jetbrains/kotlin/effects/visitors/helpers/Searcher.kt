@@ -72,7 +72,7 @@ fun (EsNode).findAll(predicate: (EsNode) -> Boolean): List<EsNode> =
 fun (EsNode).firstOrNull(predicate: (EsNode) -> Boolean): EsNode? =
         findAll(predicate).firstOrNull()
 
-fun (EsNode).getOutcome() : Outcome = firstOrNull { it is Returns || it is EsThrows } as Outcome
+fun (EsNode).getOutcome() : Outcome? = firstOrNull { it is Returns || it is EsThrows } as Outcome?
 
 fun (EsNode).contains(predicate: (EsNode) -> Boolean) =
         findAll(predicate).isNotEmpty()

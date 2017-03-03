@@ -20,15 +20,13 @@ import org.jetbrains.kotlin.effects.structure.general.EsFunction
 import org.jetbrains.kotlin.effects.structure.schema.Effect
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 
-data class Calls(val callCounts: MutableMap<EsFunction, Int>) : SimpleEffect {
+data class Calls(val callCounts: MutableMap<EsFunction, Int>) : Effect {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
 
-    override fun isCombinable(effect: Effect): Boolean = effect is Calls
-
-    override fun merge(right: SimpleEffect): Calls {
+    override fun merge(other: Effect): Calls {
         val resultCalls = mutableMapOf<EsFunction, Int>()
         resultCalls.putAll(callCounts)
-        for ((function, calls) in (right as Calls).callCounts) {
+        for ((function, calls) in (other as Calls).callCounts) {
             resultCalls.merge(function, calls, Int::plus)
         }
 

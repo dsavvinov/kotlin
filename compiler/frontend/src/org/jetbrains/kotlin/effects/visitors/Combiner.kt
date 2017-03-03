@@ -18,10 +18,10 @@ package org.jetbrains.kotlin.effects.visitors
 
 import org.jetbrains.kotlin.effects.structure.effects.Calls
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
+import org.jetbrains.kotlin.effects.structure.effects.Outcome
 import org.jetbrains.kotlin.effects.structure.effects.Returns
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
@@ -68,10 +68,12 @@ class Combiner : SchemaVisitor<EsNode> {
 
     override fun visit(returns: Returns): EsNode {
         val arg = returns.value.accept(this)
-        return Returns(arg, returns.type)
+        return Returns(arg)
     }
 
     override fun visit(calls: Calls): EsNode = calls
+
+
 }
 
 fun (EsNode).flatten() : EsNode = Combiner().let { accept(it) }

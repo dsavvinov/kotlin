@@ -53,7 +53,7 @@ data class Is(override val arg: EsNode, val type: EsType) : UnaryOperator {
                 }
 
                 // Otherwise evaluate Is-operator and update Returns-clause accordingly
-                return@transform Returns(Is(it.value, type), EsBoolean)
+                return@transform Returns(Is(it.value, type))
             }
 
             combinedClauses += Imply(lhs, rewritedRhs)

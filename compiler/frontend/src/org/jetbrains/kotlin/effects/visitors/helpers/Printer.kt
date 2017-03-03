@@ -112,12 +112,8 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
         inBrackets { not.arg.accept(this) }
     }
 
-    override fun visit(type: EsType): Unit {
-        sb.append(type.ktType.toString())
-    }
-
     override fun visit(variable: EsVariable): Unit {
-        sb.append(variable.reference.toString())
+        sb.append(variable.reference)
     }
 
     override fun visit(constant: EsConstant): Unit {
@@ -125,7 +121,7 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
     }
 
     override fun visit(returns: Returns) {
-        sb.append("returns ${returns.value}: ${returns.type ?: "???"}")
+        sb.append("returns ${returns.value}")
     }
 }
 

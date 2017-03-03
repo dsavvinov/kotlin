@@ -34,7 +34,7 @@ data class EsVariable(val reference: String, val type: EsType) : EsNode, CtNode,
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 
-    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), Returns(this, type))))
+    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), Returns(this))))
 }
 
 data class EsConstant(val value: Any?, val type: EsType) : EsNode, CtNode, Term {
@@ -45,7 +45,7 @@ data class EsConstant(val value: Any?, val type: EsType) : EsNode, CtNode, Term 
         return value.toString()
     }
 
-    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), Returns(this, type))))
+    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), Returns(this))))
 }
 
 // TODO: composition or inheritance? Depends on the real KtType, I think

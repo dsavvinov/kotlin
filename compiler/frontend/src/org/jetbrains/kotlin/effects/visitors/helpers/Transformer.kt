@@ -40,7 +40,7 @@ class Transformer(val transform: (EsNode) -> EsNode) : SchemaVisitor<EsNode> {
                     .newInstance(unaryOperator.arg.accept(this))
                     .let(transform)
 
-    override fun visit(returns: Returns): EsNode = Returns(returns.value.accept(this), returns.type).let(transform)
+    override fun visit(returns: Returns): EsNode = Returns(returns.value.accept(this)).let(transform)
 }
 
 fun (EsNode).transform(transform: (EsNode) -> EsNode) = Transformer(transform).let { accept(it) }
