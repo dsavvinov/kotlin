@@ -411,6 +411,8 @@ class CompilerDaemonTest : KotlinIntegrationTestBase() {
         val outStreams = Array(PARALLEL_THREADS_TO_START, { ByteArrayOutputStream() })
         val logFiles = arrayOfNulls<File>(PARALLEL_THREADS_TO_START)
 
+        System.setProperty(COMPILE_DAEMON_VERBOSE_REPORT_PROPERTY, "true")
+
         fun connectThread(threadNo: Int) = thread(name = "daemonConnect$threadNo") {
             try {
                 withFlagFile(getTestName(true), ".alive") { flagFile ->
