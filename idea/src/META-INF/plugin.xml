@@ -93,6 +93,11 @@
       <add-to-group group-id="KotlinToolsGroup"/>
     </action>
 
+    <action id="ShowKotlinEffects" class="org.jetbrains.kotlin.idea.actions.ShowKotlinEffectsAction"
+            text="Show Kotlin Effects">
+      <add-to-group group-id="KotlinToolsGroup"/>
+    </action>
+
     <action id="DecompileKotlinToJava" class="org.jetbrains.kotlin.idea.actions.DecompileKotlinToJavaAction"
             text="Decompile Kotlin To Java">
       <add-to-group group-id="KotlinToolsGroup"/>
