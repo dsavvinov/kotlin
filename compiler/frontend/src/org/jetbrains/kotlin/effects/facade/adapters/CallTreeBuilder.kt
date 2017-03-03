@@ -17,8 +17,7 @@
 package org.jetbrains.kotlin.effects.facade.adapters
 
 import org.jetbrains.kotlin.effects.structure.*
-import org.jetbrains.kotlin.effects.structure.call.CtCall
-import org.jetbrains.kotlin.effects.structure.call.CtNode
+import org.jetbrains.kotlin.effects.structure.call.*
 import org.jetbrains.kotlin.effects.structure.general.*
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
@@ -51,7 +50,7 @@ class CallTreeBuilder(val context: BindingContext) : KtVisitor<CtNode, Nothing?>
     override fun visitUnaryExpression(expression: KtUnaryExpression, data: Nothing?): CtNode? {
         val argNode = expression.baseExpression?.accept(this, data) ?: return null
         if (expression.operationToken == KtTokens.EXCL) {
-            return CtCall(NotFunction, listOf(argNode))
+            return CtNot(argNode)
         } else {
             // TODO: other unary and throw?
             return null
@@ -61,13 +60,11 @@ class CallTreeBuilder(val context: BindingContext) : KtVisitor<CtNode, Nothing?>
     override fun visitBinaryExpression(expression: KtBinaryExpression, data: Nothing?): CtNode? {
         val leftNode = expression.left?.accept(this, data) ?: return null
         val rightNode = expression.right?.accept(this, data) ?: return null
-        val operatorFunction =
-                when (expression.operationToken) {
-                    KtTokens.EQEQ -> eqFunction
-                    KtTokens.EXCLEQ -> neqFunction
-                    else -> return null // TODO: other binary and throw?
-                }
-        return CtCall(operatorFunction, listOf(leftNode, rightNode))
+        return when (expression.operationToken) {
+            KtTokens.EQEQ -> CtEqual(leftNode, rightNode)
+            KtTokens.EXCLEQ -> CtNot(CtEqual(leftNode, rightNode))
+            else -> return null // TODO: other binary and throw?
+        }
     }
 
     override fun visitCallExpression(expression: KtCallExpression, data: Nothing?): CtNode? {
@@ -91,9 +88,7 @@ class CallTreeBuilder(val context: BindingContext) : KtVisitor<CtNode, Nothing?>
     override fun visitIsExpression(expression: KtIsExpression, data: Nothing?): CtNode? {
         val leftNode: CtNode = expression.leftHandSide.accept(this, data)
         val rightType: EsType = context.get(BindingContext.TYPE, expression.typeReference)?.lift() ?: return null
-        val function = if (expression.isNegated) notIsFunction else isFunction
-
-        return CtCall(function, listOf(leftNode, rightType))
+        return if (expression.isNegated) CtNot(CtIs(leftNode, rightType)) else CtIs(leftNode, rightType)
     }
 
     override fun visitStringTemplateExpression(expression: KtStringTemplateExpression, data: Nothing?): CtNode {

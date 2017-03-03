@@ -43,8 +43,6 @@ class Evaluator : SchemaVisitor<EsNode> {
 
     override fun visit(constant: EsConstant): EsNode = constant
 
-    override fun visit(type: EsType): EsNode = type
-
     override fun visit(binaryOperator: BinaryOperator): EsNode {
         val evaluatedLhs = binaryOperator.left.accept(this)
         val evaluatedRhs = binaryOperator.right.accept(this)

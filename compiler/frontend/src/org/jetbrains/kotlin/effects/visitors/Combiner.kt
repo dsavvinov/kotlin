@@ -51,8 +51,6 @@ class Combiner : SchemaVisitor<EsNode> {
 
     override fun visit(constant: EsConstant): EsNode = constant
 
-    override fun visit(type: EsType): EsNode = type
-
     override fun visit(binaryOperator: BinaryOperator): EsNode {
         val lhs = binaryOperator.left.accept(this)
         val rhs = binaryOperator.right.accept(this)

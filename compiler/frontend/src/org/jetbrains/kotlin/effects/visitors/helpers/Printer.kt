@@ -76,8 +76,7 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
 
     override fun visit(isOperator: Is): Unit {
         isOperator.arg.accept(this)
-        sb.append(" is ")
-        isOperator.type.accept(this)
+        sb.append(" is ${isOperator.type}")
     }
 
     override fun visit(equalOperator: Equal): Unit {

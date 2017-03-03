@@ -49,11 +49,6 @@ class Filterer(val predicate: (EsNode) -> Boolean) : SchemaVisitor<EsNode?> {
         return constant
     }
 
-    override fun visit(type: EsType): EsNode? {
-        if (!predicate(type)) return null
-        return type
-    }
-
     override fun visit(binaryOperator: BinaryOperator): EsNode? {
         if (!predicate(binaryOperator)) return null
 
