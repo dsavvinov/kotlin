@@ -24,6 +24,9 @@ import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.intrinsicFunctions
 import org.jetbrains.kotlin.effects.structure.kludgeFunctions
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
+import org.jetbrains.kotlin.effects.structure.schema.operators.Equal
+import org.jetbrains.kotlin.effects.structure.schema.operators.Is
+import org.jetbrains.kotlin.effects.structure.schema.operators.Not
 
 /**
  * Generates tree of effect schemas given a call-tree
@@ -33,11 +36,16 @@ class EffectSchemaGenerator : CallTreeVisitor<EsNode> {
         val substitutedArgs = call.childs.map { it.accept(this) }
         val basicSchema = call.function.schema
                           ?: kludgeFunctions[call.function]?.invoke(substitutedArgs) as? EffectSchema
-                          ?: return intrinsicFunctions[call.function]?.invoke(substitutedArgs)
                           ?: throw IllegalArgumentException("Effect schema for function ${call.function} is not defined")
 
         return basicSchema.bind(call.function, substitutedArgs)
     }
+
+    override fun visit(ctIs: CtIs): EsNode = Is(ctIs.left.accept(this), ctIs.type)
+
+    override fun visit(ctEqual: CtEqual): EsNode = Equal(ctEqual.left.accept(this), ctEqual.right.accept(this))
+
+    override fun visit(ctNot: CtNot): EsNode = Not(ctNot.arg.accept(this))
 
     override fun visit(variable: EsVariable): EsNode = variable
 
