@@ -51,10 +51,7 @@ data class EsConstant(val value: Any?, val type: EsType) : EsNode, CtNode, Term 
 // TODO: composition or inheritance? Depends on the real KtType, I think
 // Inheritance pros:
 //   - Get all kt-types functionality (like, upper-bounds, lower-bounds, lca, subtyping, etc)
-data class EsType(val ktType: KotlinType) : EsNode, CtNode {
-    override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
-    override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
-
+data class EsType(val ktType: KotlinType) {
     override fun toString(): String {
         return ktType.toString()
     }

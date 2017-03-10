@@ -16,8 +16,7 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
-import org.jetbrains.kotlin.effects.structure.call.CallTreeVisitor
-import org.jetbrains.kotlin.effects.structure.call.CtCall
+import org.jetbrains.kotlin.effects.structure.call.*
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsType
@@ -43,8 +42,6 @@ class EffectSchemaGenerator : CallTreeVisitor<EsNode> {
     override fun visit(variable: EsVariable): EsNode = variable
 
     override fun visit(constant: EsConstant): EsNode = constant
-
-    override fun visit(type: EsType): EsNode = type
 }
 
 fun (CtCall).generateEffectSchema() : EffectSchema {

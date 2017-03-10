@@ -30,5 +30,4 @@ interface CallTreeVisitor<out T> {
 
     fun visit(constant: EsConstant): T = visit(constant as CtNode)
 
-    fun visit(type: EsType): T = visit(type as CtNode)
 }

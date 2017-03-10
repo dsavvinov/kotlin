@@ -49,8 +49,6 @@ class Searcher(val predicate: (EsNode) -> Boolean) : SchemaVisitor<Unit> {
 
     override fun visit(constant: EsConstant) = tryAdd(constant)
 
-    override fun visit(type: EsType) = tryAdd(type)
-
     override fun visit(returns: Returns) {
         returns.value.accept(this)
         tryAdd(returns)
