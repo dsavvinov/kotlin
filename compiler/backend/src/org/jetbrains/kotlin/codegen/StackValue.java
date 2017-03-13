@@ -48,6 +48,7 @@ import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterSignature
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue;
 import org.jetbrains.kotlin.types.KotlinType;
 import org.jetbrains.org.objectweb.asm.Label;
+import org.jetbrains.org.objectweb.asm.Opcodes;
 import org.jetbrains.org.objectweb.asm.Type;
 import org.jetbrains.org.objectweb.asm.commons.InstructionAdapter;
 
@@ -301,31 +302,9 @@ public abstract class StackValue {
         coerce(boxedType, toType,  v);
     }
 
-    private static void unbox(Type type, InstructionAdapter v) {
-        if (type == Type.INT_TYPE) {
-            v.invokevirtual("java/lang/Number", "intValue", "()I", false);
-        }
-        else if (type == Type.BOOLEAN_TYPE) {
-            v.invokevirtual("java/lang/Boolean", "booleanValue", "()Z", false);
-        }
-        else if (type == Type.CHAR_TYPE) {
-            v.invokevirtual("java/lang/Character", "charValue", "()C", false);
-        }
-        else if (type == Type.SHORT_TYPE) {
-            v.invokevirtual("java/lang/Number", "shortValue", "()S", false);
-        }
-        else if (type == Type.LONG_TYPE) {
-            v.invokevirtual("java/lang/Number", "longValue", "()J", false);
-        }
-        else if (type == Type.BYTE_TYPE) {
-            v.invokevirtual("java/lang/Number", "byteValue", "()B", false);
-        }
-        else if (type == Type.FLOAT_TYPE) {
-            v.invokevirtual("java/lang/Number", "floatValue", "()F", false);
-        }
-        else if (type == Type.DOUBLE_TYPE) {
-            v.invokevirtual("java/lang/Number", "doubleValue", "()D", false);
-        }
+    private static void unbox(Type methodOwner, Type type, InstructionAdapter v) {
+        assert isPrimitive(type) : "Unboxing should be performed to primitive type, but " + type.getClassName();
+        v.invokevirtual(methodOwner.getInternalName(), type.getClassName() + "Value", "()" + type.getDescriptor(), false);
     }
 
     protected void coerceTo(@NotNull Type toType, @NotNull InstructionAdapter v) {
@@ -376,20 +355,29 @@ public abstract class StackValue {
             }
         }
         else if (fromType.getSort() == Type.OBJECT) {
+            //toType is primitive here
             Type unboxedType = unboxPrimitiveTypeOrNull(fromType);
             if (unboxedType != null) {
-                unbox(unboxedType, v);
+                unbox(fromType, unboxedType, v);
                 coerce(unboxedType, toType, v);
             }
-            else {
-                Type numberType = getType(Number.class);
-                if (toType.getSort() == Type.BOOLEAN || (toType.getSort() == Type.CHAR && !numberType.equals(fromType))) {
-                    coerce(fromType, boxType(toType), v);
+            else if (toType.getSort() == Type.BOOLEAN) {
+                coerce(fromType, BOOLEAN_WRAPPER_TYPE, v);
+                unbox(BOOLEAN_WRAPPER_TYPE, Type.BOOLEAN_TYPE, v);
+            }
+            else if (toType.getSort() == Type.CHAR) {
+                if (fromType.equals(NUMBER_TYPE)) {
+                    unbox(NUMBER_TYPE, Type.INT_TYPE, v);
+                    v.visitInsn(Opcodes.I2C);
                 }
                 else {
-                    coerce(fromType, numberType, v);
+                    coerce(fromType, CHARACTER_WRAPPER_TYPE, v);
+                    unbox(CHARACTER_WRAPPER_TYPE, Type.CHAR_TYPE, v);
                 }
-                unbox(toType, v);
+            }
+            else {
+                coerce(fromType, NUMBER_TYPE, v);
+                unbox(NUMBER_TYPE, toType, v);
             }
         }
         else {

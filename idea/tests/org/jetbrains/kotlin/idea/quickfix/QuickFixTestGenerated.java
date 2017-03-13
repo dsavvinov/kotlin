@@ -824,6 +824,12 @@ public class QuickFixTestGenerated extends AbstractQuickFixTest {
             doTest(fileName);
         }
 
+        @TestMetadata("notExcludedFromImportWhenInternalUse.kt")
+        public void testNotExcludedFromImportWhenInternalUse() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/autoImports/notExcludedFromImportWhenInternalUse.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("notForThisLabel.kt")
         public void testNotForThisLabel() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/autoImports/notForThisLabel.kt");
@@ -8130,6 +8136,57 @@ public class QuickFixTestGenerated extends AbstractQuickFixTest {
         @TestMetadata("somethingAndNotNull.kt")
         public void testSomethingAndNotNull() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/simplifyComparison/somethingAndNotNull.kt");
+            doTest(fileName);
+        }
+    }
+
+    @TestMetadata("idea/testData/quickfix/specifyOverrideExplicitly")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class SpecifyOverrideExplicitly extends AbstractQuickFixTest {
+        public void testAllFilesPresentInSpecifyOverrideExplicitly() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/quickfix/specifyOverrideExplicitly"), Pattern.compile("^([\\w\\-_]+)\\.kt$"), TargetBackend.ANY, true);
+        }
+
+        @TestMetadata("base.kt")
+        public void testBase() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/specifyOverrideExplicitly/base.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("global.kt")
+        public void testGlobal() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/specifyOverrideExplicitly/global.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("lists.kt")
+        public void testLists() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/specifyOverrideExplicitly/lists.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("lists2.kt")
+        public void testLists2() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/specifyOverrideExplicitly/lists2.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("notPossible.kt")
+        public void testNotPossible() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/specifyOverrideExplicitly/notPossible.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("outer.kt")
+        public void testOuter() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/specifyOverrideExplicitly/outer.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("property.kt")
+        public void testProperty() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/specifyOverrideExplicitly/property.kt");
             doTest(fileName);
         }
     }

@@ -722,6 +722,36 @@ public class KotlinSteppingTestGenerated extends AbstractKotlinSteppingTest {
             doStepOverTest(fileName);
         }
 
+        @TestMetadata("stopInExtensionInlineCall.kt")
+        public void testStopInExtensionInlineCall() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOver/stopInExtensionInlineCall.kt");
+            doStepOverTest(fileName);
+        }
+
+        @TestMetadata("stopInInlineCallInField.kt")
+        public void testStopInInlineCallInField() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOver/stopInInlineCallInField.kt");
+            doStepOverTest(fileName);
+        }
+
+        @TestMetadata("stopInInlineCallInFieldInClassWithNonDefaultPrimary.kt")
+        public void testStopInInlineCallInFieldInClassWithNonDefaultPrimary() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOver/stopInInlineCallInFieldInClassWithNonDefaultPrimary.kt");
+            doStepOverTest(fileName);
+        }
+
+        @TestMetadata("stopInInlineCallInFieldInDelegate.kt")
+        public void testStopInInlineCallInFieldInDelegate() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOver/stopInInlineCallInFieldInDelegate.kt");
+            doStepOverTest(fileName);
+        }
+
+        @TestMetadata("stopInInlineCallInFieldInLocalClass.kt")
+        public void testStopInInlineCallInFieldInLocalClass() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOver/stopInInlineCallInFieldInLocalClass.kt");
+            doStepOverTest(fileName);
+        }
+
         @TestMetadata("stopInInlineCallLocalFunLambda.kt")
         public void testStopInInlineCallLocalFunLambda() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOver/stopInInlineCallLocalFunLambda.kt");
@@ -743,6 +773,18 @@ public class KotlinSteppingTestGenerated extends AbstractKotlinSteppingTest {
         @TestMetadata("stopInInlineInOtherFileWithLambdaArgumentDex.kt")
         public void testStopInInlineInOtherFileWithLambdaArgumentDex() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOver/stopInInlineInOtherFileWithLambdaArgumentDex.kt");
+            doStepOverTest(fileName);
+        }
+
+        @TestMetadata("stopInInlineUnderOtherCall.kt")
+        public void testStopInInlineUnderOtherCall() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOver/stopInInlineUnderOtherCall.kt");
+            doStepOverTest(fileName);
+        }
+
+        @TestMetadata("stopInInlineUnderSamConversion.kt")
+        public void testStopInInlineUnderSamConversion() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOver/stopInInlineUnderSamConversion.kt");
             doStepOverTest(fileName);
         }
 
@@ -1052,6 +1094,12 @@ public class KotlinSteppingTestGenerated extends AbstractKotlinSteppingTest {
             doCustomTest(fileName);
         }
 
+        @TestMetadata("smartStepIntoComponentFunction.kt")
+        public void testSmartStepIntoComponentFunction() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/smartStepIntoComponentFunction.kt");
+            doCustomTest(fileName);
+        }
+
         @TestMetadata("smartStepIntoConstructor.kt")
         public void testSmartStepIntoConstructor() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/smartStepIntoConstructor.kt");
@@ -1103,6 +1151,18 @@ public class KotlinSteppingTestGenerated extends AbstractKotlinSteppingTest {
         @TestMetadata("smartStepIntoSubClass.kt")
         public void testSmartStepIntoSubClass() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/smartStepIntoSubClass.kt");
+            doCustomTest(fileName);
+        }
+
+        @TestMetadata("smartStepIntoWithDelegates.kt")
+        public void testSmartStepIntoWithDelegates() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/smartStepIntoWithDelegates.kt");
+            doCustomTest(fileName);
+        }
+
+        @TestMetadata("smartStepIntoWithOverrides.kt")
+        public void testSmartStepIntoWithOverrides() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/smartStepIntoWithOverrides.kt");
             doCustomTest(fileName);
         }
 

@@ -4448,6 +4448,8 @@ public header inline fun <K, V, M : MutableMap<in K, MutableList<V>>> CharArray.
 /**
  * Creates a [Grouping] source from an array to be used later with one of group-and-fold operations
  * using the specified [keySelector] function to extract a key from each element.
+ * 
+ * @sample samples.collections.Collections.Transformations.groupingByEachCount
  */
 @SinceKotlin("1.1")
 public header inline fun <T, K> Array<out T>.groupingBy(crossinline keySelector: (T) -> K): Grouping<T, K>
@@ -7141,46 +7143,64 @@ public header fun CharArray.asIterable(): Iterable<Char>
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public header fun <T> Array<out T>.asSequence(): Sequence<T>
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public header fun ByteArray.asSequence(): Sequence<Byte>
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public header fun ShortArray.asSequence(): Sequence<Short>
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public header fun IntArray.asSequence(): Sequence<Int>
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public header fun LongArray.asSequence(): Sequence<Long>
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public header fun FloatArray.asSequence(): Sequence<Float>
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public header fun DoubleArray.asSequence(): Sequence<Double>
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public header fun BooleanArray.asSequence(): Sequence<Boolean>
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public header fun CharArray.asSequence(): Sequence<Char>
 

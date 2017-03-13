@@ -105,8 +105,8 @@ class CallGenerator(statementGenerator: StatementGenerator): StatementGeneratorE
                 IrGetValueImpl(startOffset, endOffset, descriptor, origin)
 
     fun generateDelegatingConstructorCall(startOffset: Int, endOffset: Int, call: CallBuilder) : IrExpression {
-        val descriptor = call.descriptor
-        if (descriptor !is ClassConstructorDescriptor) throw AssertionError("Class constructor expected: $descriptor")
+        val descriptor = call.descriptor as? ClassConstructorDescriptor
+                         ?: throw AssertionError("Class constructor expected: ${call.descriptor}")
 
         return call.callReceiver.call { dispatchReceiver, extensionReceiver ->
             val irCall = IrDelegatingConstructorCallImpl(startOffset, endOffset, descriptor, getTypeArguments(call.original))
@@ -209,7 +209,7 @@ class CallGenerator(statementGenerator: StatementGenerator): StatementGeneratorE
             irArgumentValues[valueParameter] = irArgumentValue
         }
 
-        resolvedCall.valueArgumentsByIndex!!.forEachIndexed { index, valueArgument ->
+        resolvedCall.valueArgumentsByIndex!!.forEachIndexed { index, _ ->
             val valueParameter = valueParameters[index]
             irCall.putValueArgument(index, irArgumentValues[valueParameter]?.load())
         }

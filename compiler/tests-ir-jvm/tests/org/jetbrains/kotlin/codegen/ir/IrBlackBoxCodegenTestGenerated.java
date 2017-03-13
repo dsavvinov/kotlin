@@ -4456,6 +4456,18 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
                 doTest(fileName);
             }
 
+            @TestMetadata("kt16713.kt")
+            public void testKt16713() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/controlStructures/breakContinueInExpressions/kt16713.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("kt16713_2.kt")
+            public void testKt16713_2() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/controlStructures/breakContinueInExpressions/kt16713_2.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("kt9022And.kt")
             public void testKt9022And() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/controlStructures/breakContinueInExpressions/kt9022And.kt");
@@ -4883,6 +4895,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
         @TestMetadata("lastUnitExpression.kt")
         public void testLastUnitExpression() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/coroutines/lastUnitExpression.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("localCallableRef.kt")
+        public void testLocalCallableRef() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/coroutines/localCallableRef.kt");
             doTest(fileName);
         }
 
@@ -10769,6 +10787,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
             doTest(fileName);
         }
 
+        @TestMetadata("kt16077.kt")
+        public void testKt16077() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/kt16077.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("multifileClassPartsInitialization.kt")
         public void testMultifileClassPartsInitialization() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/multifileClassPartsInitialization.kt");
@@ -11684,6 +11708,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
         @TestMetadata("kt1634.kt")
         public void testKt1634() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/primitiveTypes/kt1634.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("kt16732.kt")
+        public void testKt16732() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/primitiveTypes/kt16732.kt");
             doTest(fileName);
         }
 
@@ -17660,6 +17690,18 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
         @TestMetadata("innerClassTypeAliasConstructorInSupertypes.kt")
         public void testInnerClassTypeAliasConstructorInSupertypes() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/typealias/innerClassTypeAliasConstructorInSupertypes.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("kt15109.kt")
+        public void testKt15109() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/typealias/kt15109.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("objectLiteralConstructor.kt")
+        public void testObjectLiteralConstructor() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/typealias/objectLiteralConstructor.kt");
             doTest(fileName);
         }
 

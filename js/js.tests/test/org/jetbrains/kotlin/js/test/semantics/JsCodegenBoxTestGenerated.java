@@ -662,7 +662,13 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
         @TestMetadata("kt2997.kt")
         public void testKt2997() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/arrays/kt2997.kt");
-            doTest(fileName);
+            try {
+                doTest(fileName);
+            }
+            catch (Throwable ignore) {
+                return;
+            }
+            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
         }
 
         @TestMetadata("kt33.kt")
@@ -734,13 +740,7 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
         @TestMetadata("kt7288.kt")
         public void testKt7288() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/arrays/kt7288.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
+            doTest(fileName);
         }
 
         @TestMetadata("kt7338.kt")
@@ -3239,13 +3239,7 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             @TestMetadata("primitives.kt")
             public void testPrimitives() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/classLiteral/bound/primitives.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
+                doTest(fileName);
             }
 
             @TestMetadata("sideEffect.kt")
@@ -3263,13 +3257,7 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             @TestMetadata("simple.kt")
             public void testSimple() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/classLiteral/bound/simple.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
+                doTest(fileName);
             }
 
             @TestMetadata("smartCast.kt")
@@ -5165,6 +5153,18 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("kt16713.kt")
+            public void testKt16713() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/controlStructures/breakContinueInExpressions/kt16713.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("kt16713_2.kt")
+            public void testKt16713_2() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/controlStructures/breakContinueInExpressions/kt16713_2.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("kt9022And.kt")
             public void testKt9022And() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/controlStructures/breakContinueInExpressions/kt9022And.kt");
@@ -5601,6 +5601,12 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             doTest(fileName);
         }
 
+        @TestMetadata("localCallableRef.kt")
+        public void testLocalCallableRef() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/coroutines/localCallableRef.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("localDelegate.kt")
         public void testLocalDelegate() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/coroutines/localDelegate.kt");
@@ -5861,13 +5867,7 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             @TestMetadata("destructuringInLambdas.kt")
             public void testDestructuringInLambdas() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/coroutines/featureIntersection/destructuringInLambdas.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
+                doTest(fileName);
             }
 
             @TestMetadata("safeCallOnTwoReceivers.kt")
@@ -5885,13 +5885,7 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             @TestMetadata("suspendDestructuringInLambdas.kt")
             public void testSuspendDestructuringInLambdas() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/coroutines/featureIntersection/suspendDestructuringInLambdas.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
+                doTest(fileName);
             }
 
             @TestMetadata("tailrec.kt")
@@ -12324,126 +12318,6 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/codegen/box/multifileClasses"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.JS, true);
         }
 
-        @TestMetadata("callMultifileClassMemberFromOtherPackage.kt")
-        public void testCallMultifileClassMemberFromOtherPackage() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/callMultifileClassMemberFromOtherPackage.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
-        @TestMetadata("callsToMultifileClassFromOtherPackage.kt")
-        public void testCallsToMultifileClassFromOtherPackage() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/callsToMultifileClassFromOtherPackage.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
-        @TestMetadata("constPropertyReferenceFromMultifileClass.kt")
-        public void testConstPropertyReferenceFromMultifileClass() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/constPropertyReferenceFromMultifileClass.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
-        @TestMetadata("inlineMultifileClassMemberFromOtherPackage.kt")
-        public void testInlineMultifileClassMemberFromOtherPackage() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/inlineMultifileClassMemberFromOtherPackage.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
-        @TestMetadata("multifileClassPartsInitialization.kt")
-        public void testMultifileClassPartsInitialization() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/multifileClassPartsInitialization.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
-        @TestMetadata("multifileClassWith2Files.kt")
-        public void testMultifileClassWith2Files() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/multifileClassWith2Files.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
-        @TestMetadata("multifileClassWithCrossCall.kt")
-        public void testMultifileClassWithCrossCall() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/multifileClassWithCrossCall.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
-        @TestMetadata("multifileClassWithPrivate.kt")
-        public void testMultifileClassWithPrivate() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/multifileClassWithPrivate.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
-        @TestMetadata("privateConstVal.kt")
-        public void testPrivateConstVal() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/privateConstVal.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
-        @TestMetadata("samePartNameDifferentFacades.kt")
-        public void testSamePartNameDifferentFacades() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/samePartNameDifferentFacades.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-        }
-
         @TestMetadata("compiler/testData/codegen/box/multifileClasses/optimized")
         @TestDataPath("$PROJECT_ROOT")
         @RunWith(JUnit3RunnerWithInners.class)
@@ -12452,173 +12326,6 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/codegen/box/multifileClasses/optimized"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.JS, true);
             }
 
-            @TestMetadata("callableRefToFun.kt")
-            public void testCallableRefToFun() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/callableRefToFun.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("callableRefToInternalValInline.kt")
-            public void testCallableRefToInternalValInline() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/callableRefToInternalValInline.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("callableRefToPrivateVal.kt")
-            public void testCallableRefToPrivateVal() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/callableRefToPrivateVal.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("callableRefToVal.kt")
-            public void testCallableRefToVal() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/callableRefToVal.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("calls.kt")
-            public void testCalls() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/calls.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("deferredStaticInitialization.kt")
-            public void testDeferredStaticInitialization() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/deferredStaticInitialization.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("delegatedVal.kt")
-            public void testDelegatedVal() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/delegatedVal.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("initializePrivateVal.kt")
-            public void testInitializePrivateVal() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/initializePrivateVal.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("initializePublicVal.kt")
-            public void testInitializePublicVal() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/initializePublicVal.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("overlappingFuns.kt")
-            public void testOverlappingFuns() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/overlappingFuns.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("overlappingVals.kt")
-            public void testOverlappingVals() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/overlappingVals.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("valAccessFromInlineFunCalledFromJava.kt")
-            public void testValAccessFromInlineFunCalledFromJava() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/valAccessFromInlineFunCalledFromJava.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("valAccessFromInlinedToDifferentPackage.kt")
-            public void testValAccessFromInlinedToDifferentPackage() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/valAccessFromInlinedToDifferentPackage.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
-
-            @TestMetadata("valWithAccessor.kt")
-            public void testValWithAccessor() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/multifileClasses/optimized/valWithAccessor.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
-            }
         }
     }
 
@@ -13473,6 +13180,12 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
         @TestMetadata("kt1634.kt")
         public void testKt1634() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/primitiveTypes/kt1634.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("kt16732.kt")
+        public void testKt16732() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/primitiveTypes/kt16732.kt");
             doTest(fileName);
         }
 
@@ -15119,13 +14832,7 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             @TestMetadata("kt13241_Array.kt")
             public void testKt13241_Array() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/ranges/forInIndices/kt13241_Array.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
+                doTest(fileName);
             }
 
             @TestMetadata("kt13241_CharSequence.kt")
@@ -18182,13 +17889,7 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
             @TestMetadata("simpleClassLiterals.kt")
             public void testSimpleClassLiterals() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/reflection/noReflectAtRuntime/simpleClassLiterals.kt");
-                try {
-                    doTest(fileName);
-                }
-                catch (Throwable ignore) {
-                    return;
-                }
-                throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
+                doTest(fileName);
             }
 
             @TestMetadata("compiler/testData/codegen/box/reflection/noReflectAtRuntime/methodsFromAny")
@@ -21201,13 +20902,7 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
         @TestMetadata("kt2592.kt")
         public void testKt2592() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/strings/kt2592.kt");
-            try {
-                doTest(fileName);
-            }
-            catch (Throwable ignore) {
-                return;
-            }
-            throw new AssertionError("Looks like this test can be unmuted. Remove IGNORE_BACKEND directive for that.");
+            doTest(fileName);
         }
 
         @TestMetadata("kt3571.kt")
@@ -22200,6 +21895,18 @@ public class JsCodegenBoxTestGenerated extends AbstractJsCodegenBoxTest {
         @TestMetadata("innerClassTypeAliasConstructorInSupertypes.kt")
         public void testInnerClassTypeAliasConstructorInSupertypes() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/typealias/innerClassTypeAliasConstructorInSupertypes.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("kt15109.kt")
+        public void testKt15109() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/typealias/kt15109.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("objectLiteralConstructor.kt")
+        public void testObjectLiteralConstructor() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/codegen/box/typealias/objectLiteralConstructor.kt");
             doTest(fileName);
         }
 

@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.idea.configuration
 
 import com.intellij.codeInsight.CodeInsightUtilCore
 import com.intellij.ide.actions.OpenFileAction
+import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
 import com.intellij.openapi.project.Project
@@ -302,8 +303,15 @@ abstract class KotlinWithGradleConfigurator : KotlinProjectConfigurator {
         private fun changeVersion(gradleFile: GroovyFile, version: String, forTests: Boolean, versionParameter: String): PsiElement? {
             val snippet = "$versionParameter = \"$version\""
             val kotlinBlock = getBlockOrCreate(gradleFile, if (forTests) "compileTestKotlin" else "compileKotlin")
-            val experimentalBlock = getBlockOrCreate(kotlinBlock, "kotlinOptions")
-            addOrReplaceExpression(experimentalBlock, snippet) { stmt ->
+
+            for (stmt in kotlinBlock.statements) {
+                if ((stmt as? GrAssignmentExpression)?.lValue?.text == "kotlinOptions." + versionParameter) {
+                    return stmt.replaceWithStatementFromText("kotlinOptions." + snippet)
+                }
+            }
+
+            val kotlinOptionsBlock = getBlockOrCreate(kotlinBlock, "kotlinOptions")
+            addOrReplaceExpression(kotlinOptionsBlock, snippet) { stmt ->
                 (stmt as? GrAssignmentExpression)?.lValue?.text == versionParameter
             }
             return kotlinBlock.parent
@@ -322,12 +330,16 @@ abstract class KotlinWithGradleConfigurator : KotlinProjectConfigurator {
 
         private fun addOrReplaceExpression(block: GrClosableBlock, snippet: String, predicate: (GrStatement) -> Boolean) {
             block.statements.firstOrNull(predicate)?.let { stmt ->
-                val newStatement = GroovyPsiElementFactory.getInstance(block.project).createExpressionFromText(snippet)
-                CodeStyleManager.getInstance(block.project).reformat(newStatement)
-                stmt.replaceWithStatement(newStatement)
+                stmt.replaceWithStatementFromText(snippet)
                 return
             }
             addLastExpressionInBlockIfNeeded(snippet, block)
+        }
+
+        private fun GrStatement.replaceWithStatementFromText(snippet: String): GrStatement {
+            val newStatement = GroovyPsiElementFactory.getInstance(project).createExpressionFromText(snippet)
+            CodeStyleManager.getInstance(project).reformat(newStatement)
+            return replaceWithStatement(newStatement)
         }
 
         fun getKotlinStdlibVersion(module: Module): String? {
@@ -404,6 +416,15 @@ abstract class KotlinWithGradleConfigurator : KotlinProjectConfigurator {
                     return buildGradleFile.path
                 }
             }
+
+            val externalProjectPath = ExternalSystemApiUtil.getExternalProjectPath(module)
+            if (externalProjectPath != null) {
+                buildGradleFile = File(externalProjectPath + "/" + GradleConstants.DEFAULT_SCRIPT_NAME)
+                if (buildGradleFile.exists()) {
+                    return buildGradleFile.path
+                }
+            }
+
             return null
         }
 

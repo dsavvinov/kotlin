@@ -25,6 +25,7 @@ import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.roots.DependencyScope
 import com.intellij.openapi.util.Key
 import org.gradle.tooling.model.idea.IdeaModule
+import org.jetbrains.kotlin.gradle.CompilerArgumentsBySourceSet
 import org.jetbrains.kotlin.gradle.KotlinGradleModel
 import org.jetbrains.kotlin.gradle.KotlinGradleModelBuilder
 import org.jetbrains.kotlin.psi.UserDataProperty
@@ -33,9 +34,14 @@ import org.jetbrains.plugins.gradle.model.data.GradleSourceSetData
 import org.jetbrains.plugins.gradle.service.project.AbstractProjectResolverExtension
 import org.jetbrains.plugins.gradle.service.project.GradleProjectResolverUtil.getModuleId
 
-var DataNode<ModuleData>.currentCompilerArguments by UserDataProperty(Key.create<List<String>>("CURRENT_COMPILER_ARGUMENTS"))
-var DataNode<ModuleData>.defaultCompilerArguments by UserDataProperty(Key.create<List<String>>("DEFAULT_COMPILER_ARGUMENTS"))
-var DataNode<ModuleData>.coroutines by UserDataProperty(Key.create<String>("KOTLIN_COROUTINES"))
+var DataNode<ModuleData>.currentCompilerArgumentsBySourceSet
+        by UserDataProperty(Key.create<CompilerArgumentsBySourceSet>("CURRENT_COMPILER_ARGUMENTS"))
+var DataNode<ModuleData>.defaultCompilerArgumentsBySourceSet
+        by UserDataProperty(Key.create<CompilerArgumentsBySourceSet>("DEFAULT_COMPILER_ARGUMENTS"))
+var DataNode<ModuleData>.coroutines
+        by UserDataProperty(Key.create<String>("KOTLIN_COROUTINES"))
+var DataNode<ModuleData>.platformPluginId
+        by UserDataProperty(Key.create<String>("PLATFORM_PLUGIN_ID"))
 
 class KotlinGradleProjectResolverExtension : AbstractProjectResolverExtension() {
     override fun getToolingExtensionsClasses(): Set<Class<out Any>> {
@@ -61,9 +67,10 @@ class KotlinGradleProjectResolverExtension : AbstractProjectResolverExtension() 
             }
         }
 
-        ideModule.currentCompilerArguments = gradleModel.currentCompilerArguments
-        ideModule.defaultCompilerArguments = gradleModel.defaultCompilerArguments
+        ideModule.currentCompilerArgumentsBySourceSet = gradleModel.currentCompilerArgumentsBySourceSet
+        ideModule.defaultCompilerArgumentsBySourceSet = gradleModel.defaultCompilerArgumentsBySourceSet
         ideModule.coroutines = gradleModel.coroutines
+        ideModule.platformPluginId = gradleModel.platformPluginId
 
         super.populateModuleDependencies(gradleModule, ideModule, ideProject)
     }

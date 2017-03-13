@@ -46,15 +46,16 @@ import org.jetbrains.kotlin.idea.debugger.evaluate.KotlinDebuggerCaches.Computed
 import org.jetbrains.kotlin.idea.search.usagesSearch.isImportUsage
 import org.jetbrains.kotlin.idea.util.ProjectRootsUtil
 import org.jetbrains.kotlin.idea.util.application.runReadAction
+import org.jetbrains.kotlin.idea.util.getResolutionScope
 import org.jetbrains.kotlin.load.java.JvmAbi
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorToSourceUtils
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.inline.InlineUtil
+import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind
 import org.jetbrains.kotlin.resolve.source.getPsi
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
 
@@ -191,32 +192,35 @@ class DebuggerClassNameProvider(val myDebugProcess: DebugProcess, val scopes: Li
         val context = typeMapper.bindingContext
 
         val inlineCall = runReadAction {
-            element.parents.map {
-                val ktCallExpression: KtCallExpression = when(it) {
-                    is KtFunctionLiteral -> {
-                        val lambdaExpression = it.parent as? KtLambdaExpression
-                        // call(param, { <it> })
-                        lambdaExpression?.typedParent<KtValueArgument>()?.typedParent<KtValueArgumentList>()?.typedParent<KtCallExpression>() ?:
+            val parentCallsWithLambdas = element.parents.map {
+                val ktCallExpression: KtCallExpression =
+                        when (it) {
+                            is KtFunctionLiteral -> {
+                                val lambdaExpression = it.parent as? KtLambdaExpression
+                                // call(param, { <it> })
+                                lambdaExpression?.typedParent<KtValueArgument>()?.typedParent<KtValueArgumentList>()?.typedParent<KtCallExpression>() ?:
 
-                        // call { <it> }
-                        lambdaExpression?.typedParent<KtLambdaArgument>()?.typedParent<KtCallExpression>()
-                    }
+                                // call { <it> }
+                                lambdaExpression?.typedParent<KtLambdaArgument>()?.typedParent<KtCallExpression>()
+                            }
 
-                    is KtNamedFunction -> {
-                        // call(fun () {})
-                        it.typedParent<KtValueArgument>()?.typedParent<KtValueArgumentList>()?.typedParent<KtCallExpression>()
-                    }
+                            is KtNamedFunction -> {
+                                // call(fun () {})
+                                it.typedParent<KtValueArgument>()?.typedParent<KtValueArgumentList>()?.typedParent<KtCallExpression>()
+                            }
 
-                    else -> null
-                } ?: return@map null
+                            else -> null
+                        } ?: return@map null
 
                 ktCallExpression to (it as KtElement)
-            }.lastOrNull {
+            }.toList()
+
+            parentCallsWithLambdas.lastOrNull {
                 it != null && isInlineCall(context, it.component1())
             }?.first
         } ?: return emptyList()
 
-        val lexicalScope = context[BindingContext.LEXICAL_SCOPE, inlineCall] ?: return emptyList()
+        val lexicalScope = runReadAction { inlineCall.getResolutionScope(context) } ?: return emptyList()
         val baseClassName = classNamesForPosition(inlineCall, false).firstOrNull() ?: return emptyList()
 
         val resolvedCall = runReadAction { inlineCall.getResolvedCall(context) } ?: return emptyList()
@@ -229,6 +233,10 @@ class DebuggerClassNameProvider(val myDebugProcess: DebugProcess, val scopes: Li
                 if (isFunctionWithSuspendStateMachine(ownerDescriptor, typeMapper.bindingContext) ||
                     (ownerDescriptor is CallableDescriptor && ownerDeclaration is KtElement && CoroutineCodegen.shouldCreateByLambda(ownerDescriptor, ownerDeclaration))) {
                     Name.identifier(DO_RESUME_METHOD_NAME)
+                }
+                else if (ownerDescriptor is PropertyDescriptor && lexicalScope.kind == LexicalScopeKind.PROPERTY_INITIALIZER_OR_DELEGATE &&
+                         ownerDescriptor.containingDeclaration is ClassDescriptor) {
+                    (ownerDescriptor.containingDeclaration as ClassDescriptor).constructors.first().name
                 }
                 else {
                     ownerDescriptor.name
@@ -411,7 +419,7 @@ private fun isInlineCall(context: BindingContext, expr: KtCallExpression): Boole
     return InlineUtil.isInline(resolvedCall.resultingDescriptor)
 }
 
-private inline fun <reified T : PsiElement> PsiElement.typedParent(): T? = getStrictParentOfType()
+private inline fun <reified T : PsiElement> PsiElement.typedParent(): T? = parent as? T
 
 private fun String.substringIndex(): String {
     if (lastIndexOf("$") < 0) return this

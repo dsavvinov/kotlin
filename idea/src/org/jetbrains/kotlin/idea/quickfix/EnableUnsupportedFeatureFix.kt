@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.idea.quickfix
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.module.Module
@@ -28,6 +29,7 @@ import com.intellij.openapi.roots.libraries.Library
 import com.intellij.openapi.ui.Messages
 import com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.config.ApiVersion
+import org.jetbrains.kotlin.config.KotlinFacetSettingsProvider
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersion
 import org.jetbrains.kotlin.diagnostics.Diagnostic
@@ -63,8 +65,8 @@ sealed class EnableUnsupportedFeatureFix(
                runtimeVersion < feature.sinceApiVersion
             } ?: false
 
-            val facetSettings = KotlinFacet.get(module)?.configuration?.settings ?: return
-            val targetApiLevel = facetSettings.versionInfo.apiLevel?.let { apiLevel ->
+            val facetSettings = KotlinFacetSettingsProvider.getInstance(project).getSettings(module)
+            val targetApiLevel = facetSettings.apiLevel?.let { apiLevel ->
                 if (ApiVersion.createByLanguageVersion(apiLevel) < feature.sinceApiVersion)
                     feature.sinceApiVersion.versionString
                 else
@@ -96,7 +98,7 @@ sealed class EnableUnsupportedFeatureFix(
             }
 
             ModuleRootModificationUtil.updateModel(module) {
-                with(facetSettings.versionInfo) {
+                with(facetSettings) {
                     if (!apiVersionOnly) {
                         languageLevel = targetVersion
                     }
@@ -157,23 +159,27 @@ sealed class EnableUnsupportedFeatureFix(
 
 fun checkUpdateRuntime(project: Project, requiredVersion: ApiVersion): Boolean {
     val modulesWithOutdatedRuntime = project.allModules().filter { module ->
-        val parsedModuleRuntimeVersion = getRuntimeLibraryVersion(module)?.let { ApiVersion.parse(it) }
+        val parsedModuleRuntimeVersion = getRuntimeLibraryVersion(module)?.let { version ->
+            ApiVersion.parse(version.substringBefore("-"))
+        }
         parsedModuleRuntimeVersion != null && parsedModuleRuntimeVersion < requiredVersion
     }
     if (modulesWithOutdatedRuntime.isNotEmpty()) {
-        if (askUpdateRuntime(project, requiredVersion,
-                             modulesWithOutdatedRuntime.mapNotNull(::findKotlinRuntimeLibrary))) return false
+        if (!askUpdateRuntime(project, requiredVersion,
+                              modulesWithOutdatedRuntime.mapNotNull(::findKotlinRuntimeLibrary))) return false
     }
     return true
 }
 
 fun askUpdateRuntime(project: Project, requiredVersion: ApiVersion, librariesToUpdate: List<Library>): Boolean {
-    val rc = Messages.showOkCancelDialog(project,
-                                         "This language feature requires version $requiredVersion or later of the Kotlin runtime library. " +
-                                         "Would you like to update the runtime library in your project?",
-                                         "Update Runtime Library",
-                                         Messages.getQuestionIcon())
-    if (rc != Messages.OK) return false
+    if (!ApplicationManager.getApplication().isUnitTestMode) {
+        val rc = Messages.showOkCancelDialog(project,
+                                             "This language feature requires version $requiredVersion or later of the Kotlin runtime library. " +
+                                             "Would you like to update the runtime library in your project?",
+                                             "Update Runtime Library",
+                                             Messages.getQuestionIcon())
+        if (rc != Messages.OK) return false
+    }
 
     updateLibraries(project, librariesToUpdate)
     return true

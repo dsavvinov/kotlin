@@ -14332,6 +14332,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("kt6014.kt")
+            public void testKt6014() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/override/kt6014.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("kt880.kt")
             public void testKt880() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/override/kt880.kt");
@@ -14722,6 +14728,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("rawOverrides.kt")
             public void testRawOverrides() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/platformTypes/rawOverrides.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("rawSamOverrides.kt")
+            public void testRawSamOverrides() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/platformTypes/rawSamOverrides.kt");
                 doTest(fileName);
             }
 
@@ -15258,6 +15270,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("genericInnerClass.kt")
                 public void testGenericInnerClass() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/platformTypes/rawTypes/genericInnerClass.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("interClassesRecursion.kt")
+                public void testInterClassesRecursion() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/platformTypes/rawTypes/interClassesRecursion.kt");
                     doTest(fileName);
                 }
 
@@ -21774,6 +21792,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("withMethodOfAnyOverridenInInterface.kt")
                 public void testWithMethodOfAnyOverridenInInterface() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/thisAndSuper/unqualifiedSuper/withMethodOfAnyOverridenInInterface.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("withMethodOverriddenInAnotherSupertype.kt")
+                public void testWithMethodOverriddenInAnotherSupertype() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/thisAndSuper/unqualifiedSuper/withMethodOverriddenInAnotherSupertype.kt");
                     doTest(fileName);
                 }
 

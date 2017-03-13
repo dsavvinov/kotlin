@@ -7635,6 +7635,8 @@ public inline fun <K, V, M : MutableMap<in K, MutableList<V>>> CharArray.groupBy
 /**
  * Creates a [Grouping] source from an array to be used later with one of group-and-fold operations
  * using the specified [keySelector] function to extract a key from each element.
+ * 
+ * @sample samples.collections.Collections.Transformations.groupingByEachCount
  */
 @SinceKotlin("1.1")
 public inline fun <T, K> Array<out T>.groupingBy(crossinline keySelector: (T) -> K): Grouping<T, K> {
@@ -12516,6 +12518,8 @@ public fun CharArray.asIterable(): Iterable<Char> {
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public fun <T> Array<out T>.asSequence(): Sequence<T> {
     if (isEmpty()) return emptySequence()
@@ -12524,6 +12528,8 @@ public fun <T> Array<out T>.asSequence(): Sequence<T> {
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public fun ByteArray.asSequence(): Sequence<Byte> {
     if (isEmpty()) return emptySequence()
@@ -12532,6 +12538,8 @@ public fun ByteArray.asSequence(): Sequence<Byte> {
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public fun ShortArray.asSequence(): Sequence<Short> {
     if (isEmpty()) return emptySequence()
@@ -12540,6 +12548,8 @@ public fun ShortArray.asSequence(): Sequence<Short> {
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public fun IntArray.asSequence(): Sequence<Int> {
     if (isEmpty()) return emptySequence()
@@ -12548,6 +12558,8 @@ public fun IntArray.asSequence(): Sequence<Int> {
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public fun LongArray.asSequence(): Sequence<Long> {
     if (isEmpty()) return emptySequence()
@@ -12556,6 +12568,8 @@ public fun LongArray.asSequence(): Sequence<Long> {
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public fun FloatArray.asSequence(): Sequence<Float> {
     if (isEmpty()) return emptySequence()
@@ -12564,6 +12578,8 @@ public fun FloatArray.asSequence(): Sequence<Float> {
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public fun DoubleArray.asSequence(): Sequence<Double> {
     if (isEmpty()) return emptySequence()
@@ -12572,6 +12588,8 @@ public fun DoubleArray.asSequence(): Sequence<Double> {
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public fun BooleanArray.asSequence(): Sequence<Boolean> {
     if (isEmpty()) return emptySequence()
@@ -12580,6 +12598,8 @@ public fun BooleanArray.asSequence(): Sequence<Boolean> {
 
 /**
  * Creates a [Sequence] instance that wraps the original array returning its elements when being iterated.
+ * 
+ * @sample samples.collections.Sequences.Building.sequenceFromArray
  */
 public fun CharArray.asSequence(): Sequence<Char> {
     if (isEmpty()) return emptySequence()

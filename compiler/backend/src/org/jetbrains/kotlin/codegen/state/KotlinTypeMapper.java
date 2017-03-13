@@ -192,6 +192,10 @@ public class KotlinTypeMapper {
             return asmTypeForAnonymousClass(bindingContext, (FunctionDescriptor) descriptor);
         }
 
+        if (descriptor instanceof ConstructorDescriptor) {
+            return mapClass(((ConstructorDescriptor) descriptor).getConstructedClass());
+        }
+
         DeclarationDescriptor container = descriptor.getContainingDeclaration();
         if (container instanceof PackageFragmentDescriptor) {
             String packageMemberOwner = internalNameForPackageMemberOwner((CallableMemberDescriptor) descriptor, publicFacade);
@@ -702,15 +706,14 @@ public class KotlinTypeMapper {
 
     @NotNull
     public CallableMethod mapToCallableMethod(@NotNull FunctionDescriptor descriptor, boolean superCall) {
-        if (descriptor instanceof TypeAliasConstructorDescriptor) {
-            return mapToCallableMethod(((TypeAliasConstructorDescriptor) descriptor).getUnderlyingConstructorDescriptor(), superCall);
-        }
-
-        if (descriptor instanceof ClassConstructorDescriptor) {
-            JvmMethodSignature method = mapSignatureSkipGeneric(descriptor);
-            Type owner = mapClass(((ClassConstructorDescriptor) descriptor).getContainingDeclaration());
-            String defaultImplDesc = mapDefaultMethod(descriptor, OwnerKind.IMPLEMENTATION).getDescriptor();
-            return new CallableMethod(owner, owner, defaultImplDesc, method, INVOKESPECIAL, null, null, null, false);
+        if (descriptor instanceof ConstructorDescriptor) {
+            JvmMethodSignature method = mapSignatureSkipGeneric(descriptor.getOriginal());
+            Type owner = mapOwner(descriptor);
+            String defaultImplDesc = mapDefaultMethod(descriptor.getOriginal(), OwnerKind.IMPLEMENTATION).getDescriptor();
+            return new CallableMethod(
+                    owner, owner, defaultImplDesc, method, INVOKESPECIAL,
+                    null, null, null, false
+            );
         }
 
         if (descriptor instanceof LocalVariableAccessorDescriptor) {
@@ -1027,31 +1030,28 @@ public class KotlinTypeMapper {
             }
         }
 
+        if (f instanceof TypeAliasConstructorDescriptor) {
+            return mapSignature(((TypeAliasConstructorDescriptor) f).getUnderlyingConstructorDescriptor(), kind, skipGenericSignature);
+        }
+
+        if (f instanceof FunctionImportedFromObject) {
+            return mapSignature(((FunctionImportedFromObject) f).getCallableFromObject(), kind, skipGenericSignature);
+        }
+
         if (CoroutineCodegenUtilKt.isSuspendFunctionNotSuspensionView(f)) {
             return mapSignature(CoroutineCodegenUtilKt.getOrCreateJvmSuspendFunctionView(f), kind, skipGenericSignature);
         }
 
-        if (f instanceof ConstructorDescriptor) {
-            return mapSignature(f, kind, f.getOriginal().getValueParameters(), skipGenericSignature);
-        }
-
-        return mapSignature(f, kind, f.getValueParameters(), skipGenericSignature);
+        return mapSignatureWithCustomParameters(f, kind, f.getValueParameters(), skipGenericSignature);
     }
 
     @NotNull
-    public JvmMethodGenericSignature mapSignature(
+    public JvmMethodGenericSignature mapSignatureWithCustomParameters(
             @NotNull FunctionDescriptor f,
             @NotNull OwnerKind kind,
             @NotNull List<ValueParameterDescriptor> valueParameters,
             boolean skipGenericSignature
     ) {
-        if (f instanceof FunctionImportedFromObject) {
-            return mapSignature(((FunctionImportedFromObject) f).getCallableFromObject(), kind, skipGenericSignature);
-        }
-        else if (f instanceof TypeAliasConstructorDescriptor) {
-            return mapSignature(((TypeAliasConstructorDescriptor) f).getUnderlyingConstructorDescriptor(), kind, valueParameters, skipGenericSignature);
-        }
-
         checkOwnerCompatibility(f);
 
         JvmSignatureWriter sw = skipGenericSignature || f instanceof AccessorForCallableDescriptor
@@ -1422,7 +1422,7 @@ public class KotlinTypeMapper {
         List<ResolvedValueArgument> valueArguments = superCall.getValueArgumentsByIndex();
         assert valueArguments != null : "Failed to arrange value arguments by index: " + superDescriptor;
 
-        List<JvmMethodParameterSignature> parameters = mapSignatureSkipGeneric(superDescriptor).getValueParameters();
+        List<JvmMethodParameterSignature> parameters = mapSignatureSkipGeneric(superDescriptor.getOriginal()).getValueParameters();
 
         int params = parameters.size();
         int args = valueArguments.size();

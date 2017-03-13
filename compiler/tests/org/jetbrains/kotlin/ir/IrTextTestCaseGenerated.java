@@ -74,6 +74,12 @@ public class IrTextTestCaseGenerated extends AbstractIrTextTestCase {
             doTest(fileName);
         }
 
+        @TestMetadata("dataClassesGeneric.kt")
+        public void testDataClassesGeneric() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/classes/dataClassesGeneric.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("delegatedImplementation.kt")
         public void testDelegatedImplementation() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/classes/delegatedImplementation.kt");
@@ -83,6 +89,12 @@ public class IrTextTestCaseGenerated extends AbstractIrTextTestCase {
         @TestMetadata("delegatedImplementationWithExplicitOverride.kt")
         public void testDelegatedImplementationWithExplicitOverride() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/classes/delegatedImplementationWithExplicitOverride.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("delegatingConstructorCallToTypeAliasConstructor.kt")
+        public void testDelegatingConstructorCallToTypeAliasConstructor() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/classes/delegatingConstructorCallToTypeAliasConstructor.kt");
             doTest(fileName);
         }
 
@@ -404,6 +416,12 @@ public class IrTextTestCaseGenerated extends AbstractIrTextTestCase {
             doTest(fileName);
         }
 
+        @TestMetadata("booleanConstsInAndAndOrOr.kt")
+        public void testBooleanConstsInAndAndOrOr() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/expressions/booleanConstsInAndAndOrOr.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("booleanOperators.kt")
         public void testBooleanOperators() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/expressions/booleanOperators.kt");
@@ -587,6 +605,12 @@ public class IrTextTestCaseGenerated extends AbstractIrTextTestCase {
         @TestMetadata("literals.kt")
         public void testLiterals() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/expressions/literals.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("membersImportedFromObject.kt")
+        public void testMembersImportedFromObject() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/expressions/membersImportedFromObject.kt");
             doTest(fileName);
         }
 
