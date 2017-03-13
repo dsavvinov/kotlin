@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effects.structure.general
 
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 import org.jetbrains.kotlin.effects.structure.call.CallTreeVisitor
 import org.jetbrains.kotlin.effects.structure.call.CtNode
@@ -60,7 +61,13 @@ data class EsType(val ktType: KotlinType) {
 
 fun (KotlinType).lift() : EsType = EsType(this)
 
-data class EsFunction(val name: String, val formalArgs: List<EsVariable>, val returnType: EsType) {
-    val returnVar: EsVariable = EsVariable("return_$name", returnType)
+class EsFunction(val name: String, val formalArgs: List<EsVariable>, val returnType: EsType, val descriptor: CallableDescriptor? = null) {
+    constructor(descriptor: CallableDescriptor) : this(
+            descriptor.name.identifier,
+            descriptor.valueParameters.map { EsVariable(it.name.identifier, it.type.lift()) },
+            descriptor.returnType!!.lift(), // TODO: a bit unsafe?
+            descriptor
+    )
+
     var schema: EffectSchema? = null
 }

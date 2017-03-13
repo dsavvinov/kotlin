@@ -75,13 +75,8 @@ class CallTreeBuilder(val context: BindingContext) : KtVisitor<CtNode, Nothing?>
             (it as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.accept(this, data) ?: return null
         } ?: return null
 
-        // TODO: totally temporary!
-        val function: EsFunction = EsFunction(
-                resolvedCall.resultingDescriptor.name.identifier,
-                resolvedCall.resultingDescriptor.valueParameters.map { EsVariable(it.name.identifier, it.type.lift()) },
-                resolvedCall.resultingDescriptor.returnType?.lift() ?: return null
-        )
-
+        val function: EsFunction = EsFunction(resolvedCall.resultingDescriptor)
+        
         return CtCall(function, argNodes)
     }
 

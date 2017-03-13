@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.effects.facade
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.effects.facade.dsl.defineSchema
 import org.jetbrains.kotlin.effects.structure.EsBoolean
 import org.jetbrains.kotlin.effects.structure.EsInt
@@ -30,9 +31,34 @@ import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.operators.EsEqual
 import org.jetbrains.kotlin.effects.structure.schema.operators.EsNot
 import org.jetbrains.kotlin.effects.structure.schema.operators.and
+import org.jetbrains.kotlin.name.FqName
 
 object EffectSchemasResolver {
-    fun getEffectSchema(function: EsFunction): EffectSchema = kludgeFunctions[function] ?: throw IllegalArgumentException("Error: Effect Schema for function $function is not defined")
+    fun getEffectSchema(function: EsFunction): EffectSchema? {
+        function.descriptor ?: return null
+
+        val effectsAnnotationString = function.descriptor.getEffectsAnnotation() ?: return null
+
+        return effectsAnnotationString.parseES() ?: return null
+    }
+
+    private fun CallableDescriptor.getEffectsAnnotation(): String? {
+        val annotation = annotations.findAnnotation(FqName("org.jetbrains.annotations.Effects"))
+        return annotation?.allValueArguments?.toList()?.let { it[0].second.value as String? }
+    }
+
+    private fun String.parseES(): EffectSchema? {
+//        val input = ANTLRInputStream(this)
+//
+//        val tokens = CommonTokenStream(EffectSystemLexer(input))
+//
+//        // EffectSchema should be the one and the only top-level node
+//        val effectSchemaCtx = EffectSystemParser(tokens).effectSchema()
+//
+//        CSTTest().visitEffectSchema(effectSchemaCtx)
+
+        return null
+    }
 }
 
 /**

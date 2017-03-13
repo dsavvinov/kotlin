@@ -34,7 +34,7 @@ class EffectSchemaGenerator : CallTreeVisitor<EsNode> {
         val substitutedArgs = call.childs.map { it.accept(this) }
         val basicSchema = EffectSchemasResolver.getEffectSchema(call.function)
 
-        return basicSchema.bind(call.function, substitutedArgs)
+        return basicSchema!!.bind(call.function, substitutedArgs)
     }
 
     override fun visit(ctIs: CtIs): EsNode = EsIs(ctIs.left.accept(this), ctIs.type)
