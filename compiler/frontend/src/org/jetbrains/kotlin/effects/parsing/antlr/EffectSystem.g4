@@ -21,15 +21,15 @@ clause
  *   https://kotlinlang.org/docs/reference/grammar.html#expression
  */
 expression
-    : conjunction ('||' conjunction)*
+    : conjunction (disjunctionOperator conjunction)*
     ;
 
 conjunction
-    : equalityComparison ('&&' equalityComparison)*
+    : equalityComparison (conjunctionOperator equalityComparison)*
     ;
 
 equalityComparison
-    : comparison ('==' equalityComparison)*
+    : comparison (equalityOperator comparison)*
     ;
 
 comparison
@@ -63,26 +63,38 @@ atomicExpression
     | SimpleName
     ;
 
+disjunctionOperator
+    : '||'
+    ;
+
+conjunctionOperator
+    : '&&'
+    ;
+
+equalityOperator
+    : '=='
+    ;
+
 comparisonOperator
-    : '<' | '>' | '<=' | '>='
+    : LT | GT | LEQ | GEQ
     ;
 
 additiveOperator
-    : '+' | '-'
+    : PLUS | MINUS
     ;
 
 multiplicativeOperator
-    : '*' | '/' | '%'
+    : MUL | DIV | PERC
     ;
 
 prefixUnaryOperation
-    : '-' | '+'
-    | '--' | '++'
-    | '!'
+    : MINUS | PLUS
+    | MINUSMINUS | PLUSPLUS
+    | NOT
     ;
 
 postfixUnaryOperation
-    : '++' | '--' | '!!'
+    : PLUSPLUS | MINUSMINUS | EXCLEXCL
     ;
 
 inOperation
@@ -103,9 +115,21 @@ effectsList
     ;
 
 effect
+    : throwsEffect
+    | returnsEffect
+    | callsEffect
+    ;
+
+throwsEffect
     : 'Throws' SimpleName
-    | 'Returns' (literalConstant | SimpleName)
-    | 'Calls' '(' SimpleName ',' IntegerLiteral ')'
+    ;
+
+returnsEffect
+    : 'Returns' (literalConstant | SimpleName)
+    ;
+
+callsEffect
+    : 'Calls' '(' SimpleName ',' IntegerLiteral ')'
     ;
 
 type
@@ -263,3 +287,17 @@ WS  :  [ \t\r\n\u000C]+ -> skip
     ;
 
 EOL : '\r'? '\n';
+
+LT : '<';
+GT : '>';
+LEQ : '<=';
+GEQ : '>=';
+PLUS : '+';
+MINUS : '-';
+MUL : '*';
+DIV : '/';
+PERC : '%';
+PLUSPLUS : '++';
+MINUSMINUS : '--';
+NOT : '!';
+EXCLEXCL : '!!';
