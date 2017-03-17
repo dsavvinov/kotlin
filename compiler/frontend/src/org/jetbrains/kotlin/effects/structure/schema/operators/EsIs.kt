@@ -19,15 +19,15 @@ package org.jetbrains.kotlin.effects.structure.schema.operators
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsType
-import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.NodeSequence
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.Term
 import org.jetbrains.kotlin.effects.visitors.helpers.transform
+import org.jetbrains.kotlin.types.KotlinType
 
-data class EsIs(override val arg: EsNode, val type: EsType) : UnaryOperator {
+data class EsIs(override val arg: EsNode, val type: KotlinType) : UnaryOperator {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
     override fun newInstance(arg: EsNode): UnaryOperator = EsIs(arg, type)
 

@@ -17,9 +17,8 @@
 package org.jetbrains.kotlin.effects.visitors
 
 import org.jetbrains.kotlin.effects.structure.effects.EsCalls
-import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.effects.Outcome
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
+import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable

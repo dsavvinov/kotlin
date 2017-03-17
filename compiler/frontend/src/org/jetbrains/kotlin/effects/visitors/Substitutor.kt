@@ -25,10 +25,10 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
 
 /**
- * Visits EffectSchema-tree and substitutes every occurence
- * of a given set of variables with corresponding node.
+ * Visits EffectSchema-tree and substitutes every occurrence
+ * of a variable from a given est with corresponding node.
  *
- * Generally, used when we want to bind call-arguments to formal arguments.
+ * Generally, used to bind call-arguments to formal arguments.
  */
 class Substitutor(val substs: Map<EsVariable, EsNode>) : SchemaVisitor<EsNode> {
     override fun visit(node: EsNode): EsNode = node

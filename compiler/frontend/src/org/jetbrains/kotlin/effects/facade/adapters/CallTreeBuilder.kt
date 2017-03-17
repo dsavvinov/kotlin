@@ -16,9 +16,12 @@
 
 package org.jetbrains.kotlin.effects.facade.adapters
 
-import org.jetbrains.kotlin.effects.structure.*
+import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
 import org.jetbrains.kotlin.effects.structure.call.*
-import org.jetbrains.kotlin.effects.structure.general.*
+import org.jetbrains.kotlin.effects.structure.general.EsConstant
+import org.jetbrains.kotlin.effects.structure.general.EsFunction
+import org.jetbrains.kotlin.effects.structure.general.EsVariable
+import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -29,22 +32,22 @@ import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.ifEmpty
 
-class CallTreeBuilder(val context: BindingContext) : KtVisitor<CtNode, Nothing?>() {
+class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNode, Nothing?>() {
 
     fun buildCallTree(call: ResolvedCall<*>): CtNode? {
             return call.call.callElement.accept(this, null)
     }
 
     override fun visitConstantExpression(expression: KtConstantExpression, data: Nothing?): CtNode? {
-        val type: KotlinType = context.getType(expression) ?: return null
+        val type: KotlinType = esResolutionUtils.context.getType(expression) ?: return null
         val compileTimeConstant: CompileTimeConstant<*>
-                = context.get(BindingContext.COMPILE_TIME_VALUE, expression) ?: return null
-        return EsConstant(compileTimeConstant.getValue(type) ?: return null, type.lift())
+                = esResolutionUtils.context.get(BindingContext.COMPILE_TIME_VALUE, expression) ?: return null
+        return EsConstant(compileTimeConstant.getValue(type) ?: return null, type)
     }
 
     override fun visitSimpleNameExpression(expression: KtSimpleNameExpression, data: Nothing?): CtNode? {
-        val type: KotlinType = context.getType(expression) ?: return null
-        return EsVariable(expression.getReferencedName(), type.lift())
+        val type: KotlinType = esResolutionUtils.context.getType(expression) ?: return null
+        return EsVariable(expression.getReferencedName(), type)
     }
 
     override fun visitUnaryExpression(expression: KtUnaryExpression, data: Nothing?): CtNode? {
@@ -68,7 +71,7 @@ class CallTreeBuilder(val context: BindingContext) : KtVisitor<CtNode, Nothing?>
     }
 
     override fun visitCallExpression(expression: KtCallExpression, data: Nothing?): CtNode? {
-        val resolvedCall = expression.getResolvedCall(context) ?: return null
+        val resolvedCall = expression.getResolvedCall(esResolutionUtils.context) ?: return null
 
         // TODO: varargs and default args
         val argNodes = resolvedCall.valueArgumentsByIndex?.map {
@@ -82,7 +85,7 @@ class CallTreeBuilder(val context: BindingContext) : KtVisitor<CtNode, Nothing?>
 
     override fun visitIsExpression(expression: KtIsExpression, data: Nothing?): CtNode? {
         val leftNode: CtNode = expression.leftHandSide.accept(this, data)
-        val rightType: EsType = context.get(BindingContext.TYPE, expression.typeReference)?.lift() ?: return null
+        val rightType: KotlinType = esResolutionUtils.context.get(BindingContext.TYPE, expression.typeReference) ?: return null
         return if (expression.isNegated) CtNot(CtIs(leftNode, rightType)) else CtIs(leftNode, rightType)
     }
 

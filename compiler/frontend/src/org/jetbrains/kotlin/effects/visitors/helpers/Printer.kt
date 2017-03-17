@@ -16,21 +16,16 @@
 
 package org.jetbrains.kotlin.effects.visitors.helpers
 
-import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.schema.operators.EsIs
-import org.jetbrains.kotlin.effects.structure.schema.operators.EsNot
-import org.jetbrains.kotlin.effects.structure.schema.operators.EsOr
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
+import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.Cons
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
-import org.jetbrains.kotlin.effects.structure.schema.operators.EsAnd
-import org.jetbrains.kotlin.effects.structure.schema.operators.EsEqual
+import org.jetbrains.kotlin.effects.structure.schema.operators.*
 
 class EffectSchemaPrinter : SchemaVisitor<Unit> {
     override fun toString(): String {

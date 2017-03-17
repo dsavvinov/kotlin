@@ -2,7 +2,7 @@ package org.jetbrains.kotlin.effects.structure.schema.operators
 
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 
 data class EsAnd(override val left: EsNode, override val right: EsNode) : BinaryOperator {

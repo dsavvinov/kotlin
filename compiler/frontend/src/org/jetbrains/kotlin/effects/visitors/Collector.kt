@@ -16,25 +16,21 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
-import org.jetbrains.kotlin.effects.structure.schema.operators.EsIs
-import org.jetbrains.kotlin.effects.structure.schema.operators.EsNot
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.Cons
 import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
-import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
-import org.jetbrains.kotlin.effects.structure.schema.operators.EsEqual
-import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
+import org.jetbrains.kotlin.effects.structure.schema.operators.*
+import org.jetbrains.kotlin.types.KotlinType
 
 /**
  * Collects statements about variables into given mutable maps
  */
 data class Collector(
         val varsValues: MutableMap<EsVariable, EsConstant>,
-        val varsTypes: MutableMap<EsVariable, EsType>) : SchemaVisitor<Unit>
+        val varsTypes: MutableMap<EsVariable, KotlinType>) : SchemaVisitor<Unit>
 {
     private var isInverted : Boolean = false
 
@@ -86,5 +82,5 @@ data class Collector(
 }
 
 fun (EsNode).collect(varsValues: MutableMap<EsVariable, EsConstant>,
-                     varsTypes: MutableMap<EsVariable, EsType>) =
+                     varsTypes: MutableMap<EsVariable, KotlinType>) =
         Collector(varsValues, varsTypes).let { this.accept(it) }

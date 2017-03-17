@@ -27,12 +27,12 @@ import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.name.FqName
 
 object EffectSchemasResolver {
-    fun getEffectSchema(function: EsFunction): EffectSchema? {
+    fun getEffectSchema(function: EsFunction, esResolutionUtils: EsResolutionUtils): EffectSchema? {
         function.descriptor ?: return null
 
         val effectsAnnotationString = function.descriptor.getEffectsAnnotation() ?: return null
 
-        return effectsAnnotationString.parseES() ?: return null
+        return effectsAnnotationString.parseES(esResolutionUtils) ?: return null
     }
 
     private fun CallableDescriptor.getEffectsAnnotation(): String? {
@@ -40,7 +40,7 @@ object EffectSchemasResolver {
         return annotation?.allValueArguments?.toList()?.let { it[0].second.value as String? }
     }
 
-    private fun String.parseES(): EffectSchema? {
+    private fun String.parseES(esResolutionUtils: EsResolutionUtils): EffectSchema? {
         val input = ANTLRInputStream(this)
 
         val tokens = CommonTokenStream(EffectSystemLexer(input))
@@ -48,6 +48,6 @@ object EffectSchemasResolver {
         // EffectSchema should be the one and the only top-level node
         val effectSchemaCtx = EffectSystemParser(tokens).effectSchema()
 
-        return EsSignatureBuilder().visitEffectSchema(effectSchemaCtx)
+        return EsSignatureBuilder(esResolutionUtils).visitEffectSchema(effectSchemaCtx)
     }
 }

@@ -16,12 +16,11 @@
 
 package org.jetbrains.kotlin.effects.visitors.helpers
 
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.effects.Outcome
-import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.Cons
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema

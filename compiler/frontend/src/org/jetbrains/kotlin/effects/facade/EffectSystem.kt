@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.effects.structure.call.CtCall
 import org.jetbrains.kotlin.effects.structure.effects.Outcome
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.visitors.collect
@@ -29,13 +28,14 @@ import org.jetbrains.kotlin.effects.visitors.flatten
 import org.jetbrains.kotlin.effects.visitors.generateEffectSchema
 import org.jetbrains.kotlin.effects.visitors.helpers.getOutcome
 import org.jetbrains.kotlin.effects.visitors.helpers.print
+import org.jetbrains.kotlin.types.KotlinType
 
 /**
  * Entry-point of EffectSystem. Provides simple interface for compiler.
  */
 object EffectSystem {
-    fun printES(call: CtCall): String {
-        val baseES = call.generateEffectSchema()
+    fun printES(call: CtCall, utils: EsResolutionUtils): String {
+        val baseES = call.generateEffectSchema(utils)
 
         val flatES = baseES.flatten() as EffectSchema
 
@@ -51,8 +51,8 @@ object EffectSystem {
             evES.print()
     }
 
-    fun getInfo(call: CtCall, outcome: Outcome): EsInfoHolder? {
-        val basicEffectSchema = call.generateEffectSchema()
+    fun getInfo(call: CtCall, outcome: Outcome, utils: EsResolutionUtils): EsInfoHolder? {
+        val basicEffectSchema = call.generateEffectSchema(utils)
         val flatEs = basicEffectSchema.flatten()
         val evaluatedEs = flatEs.evaluate() as EffectSchema
 
@@ -61,7 +61,7 @@ object EffectSystem {
 
     private fun (EffectSchema).collectAt(outcome: Outcome) : EsInfoHolder? {
         val varValues = mutableMapOf<EsVariable, EsConstant>()
-        val varTypes = mutableMapOf<EsVariable, EsType>()
+        val varTypes = mutableMapOf<EsVariable, KotlinType>()
 
         var feasible = false
         for (clause in clauses) {

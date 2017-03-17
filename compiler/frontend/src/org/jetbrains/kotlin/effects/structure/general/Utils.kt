@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effects.facade
+package org.jetbrains.kotlin.effects.structure.general
 
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 
-/**
- * Another part of interface between compiler and effect system.
- * EsInfoHolder contains some knowledge about context variables and
- * functions, and can respond to compilers questions.
- */
-interface EsInfoHolder {
-    fun getVariableType(variable: EsVariable): KotlinType?
-    fun getVariableValue(variable: EsVariable): EsConstant?
-}
+fun (Boolean).lift(): EsConstant = EsConstant(this, DefaultBuiltIns.Instance.boolean.defaultType)
+
+fun (Int).lift(): EsConstant = EsConstant(this, DefaultBuiltIns.Instance.intType)
+
+fun (String).lift() : EsConstant = EsConstant(this, DefaultBuiltIns.Instance.stringType)

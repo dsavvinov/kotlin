@@ -17,7 +17,6 @@
 package org.jetbrains.kotlin.effects.structure.call
 
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 
 interface CallTreeVisitor<out T> {

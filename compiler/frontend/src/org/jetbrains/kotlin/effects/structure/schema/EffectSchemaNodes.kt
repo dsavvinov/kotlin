@@ -17,7 +17,7 @@
 package org.jetbrains.kotlin.effects.structure.schema
 
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 
 /**

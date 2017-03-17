@@ -17,25 +17,32 @@
 package org.jetbrains.kotlin.effects.parsing
 
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.jetbrains.kotlin.builtins.DefaultBuiltIns
+import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemBaseVisitor
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemParser
-import org.jetbrains.kotlin.effects.structure.EsAnyNull
-import org.jetbrains.kotlin.effects.structure.EsBoolean
-import org.jetbrains.kotlin.effects.structure.EsInt
-import org.jetbrains.kotlin.effects.structure.EsString
 import org.jetbrains.kotlin.effects.structure.effects.EsCalls
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.general.*
-import org.jetbrains.kotlin.effects.structure.schema.*
+import org.jetbrains.kotlin.effects.structure.general.EsConstant
+import org.jetbrains.kotlin.effects.structure.general.EsFunction
+import org.jetbrains.kotlin.effects.structure.general.EsNode
+import org.jetbrains.kotlin.effects.structure.general.EsVariable
+import org.jetbrains.kotlin.effects.structure.schema.Cons
+import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
+import org.jetbrains.kotlin.effects.structure.schema.Nil
+import org.jetbrains.kotlin.effects.structure.schema.NodeSequence
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
+import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
+import org.jetbrains.kotlin.types.KotlinType
 
 
 typealias BinaryOperatorT<T> = (T, T) -> T
 typealias UnaryOperatorT<T> = (T) -> T
 
 
-class EsSignatureBuilder : EffectSystemBaseVisitor<EsNode?>() {
+class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSystemBaseVisitor<EsNode?>() {
     override fun visitEffectSchema(ctx: EffectSystemParser.EffectSchemaContext): EffectSchema {
         val esClauses = ctx.clause().map { visitClause(it) }
 
@@ -147,8 +154,7 @@ class EsSignatureBuilder : EffectSystemBaseVisitor<EsNode?>() {
 
     override fun visitAtomicExpression(ctx: EffectSystemParser.AtomicExpressionContext): EsNode {
         if (ctx.SimpleName() != null) {
-            // TODO: resolve properly!
-            return EsVariable(ctx.SimpleName().text, EsAnyNull)
+            return resolveVariable(ctx.SimpleName())
         }
 
          if (ctx.literalConstant() != null) {
@@ -192,19 +198,19 @@ class EsSignatureBuilder : EffectSystemBaseVisitor<EsNode?>() {
 
     override fun visitLiteralConstant(ctx: EffectSystemParser.LiteralConstantContext): EsConstant {
         if (ctx.BooleanLiteral() != null) {
-            return EsConstant(ctx.BooleanLiteral().text.toBoolean(), EsBoolean)
+            return EsConstant(ctx.BooleanLiteral().text.toBoolean(), DefaultBuiltIns.Instance.booleanType)
         }
 
         if (ctx.IntegerLiteral() != null) {
-            return EsConstant(ctx.IntegerLiteral().text.toInt(), EsInt)
+            return EsConstant(ctx.IntegerLiteral().text.toInt(), DefaultBuiltIns.Instance.intType)
         }
 
         if (ctx.NullLiteral() != null) {
-            // TODO: this is Nothing? in fact
-            return EsConstant(null, EsAnyNull)
+            // TODO: this is `Nothing?` in fact
+            return EsConstant(null, DefaultBuiltIns.Instance.nullableNothingType)
         }
 
-        return EsConstant(ctx.StringLiteral().text, EsString)
+        return EsConstant(ctx.StringLiteral().text, DefaultBuiltIns.Instance.stringType)
     }
 
     /**
@@ -227,8 +233,10 @@ class EsSignatureBuilder : EffectSystemBaseVisitor<EsNode?>() {
         return acc
     }
 
-    private fun resolveType(simpleName: TerminalNode): EsType {
-        return EsAnyNull
+    private fun resolveType(simpleName: TerminalNode): KotlinType {
+        val ktTypeReference = esResolutionUtils.psiFactory.createType(simpleName.text)
+        val tempContext = DelegatingBindingTrace(esResolutionUtils.context, "tmp")
+        return tempContext.get(BindingContext.TYPE, ktTypeReference)!! //TODO: unsafe?
     }
 
     private fun resolveException(simpleName: TerminalNode): Any? {
@@ -236,7 +244,7 @@ class EsSignatureBuilder : EffectSystemBaseVisitor<EsNode?>() {
     }
 
     private fun resolveVariable(simpleName: TerminalNode): EsVariable {
-        return EsVariable(simpleName.text, EsAnyNull)
+        return EsVariable(simpleName.text, DefaultBuiltIns.Instance.nullableNothingType)
     }
 
     private fun resolveCallable(simpleName: TerminalNode): EsFunction {

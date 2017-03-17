@@ -18,9 +18,8 @@ package org.jetbrains.kotlin.effects.structure.schema.operators
 
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
-import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 
 data class EsOr(override val left: EsNode, override val right: EsNode) : BinaryOperator {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)

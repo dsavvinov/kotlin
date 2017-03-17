@@ -17,7 +17,7 @@
 package org.jetbrains.kotlin.effects.structure.call
 
 import org.jetbrains.kotlin.effects.structure.general.EsFunction
-import org.jetbrains.kotlin.effects.structure.general.EsType
+import org.jetbrains.kotlin.types.KotlinType
 
 /**
  * Represents Call-Tree structure.
@@ -32,7 +32,7 @@ data class CtCall(val function: EsFunction, val childs: List<CtNode>) : CtNode {
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 }
 
-data class CtIs(val left: CtNode, val type: EsType) : CtNode {
+data class CtIs(val left: CtNode, val type: KotlinType) : CtNode {
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 }
 

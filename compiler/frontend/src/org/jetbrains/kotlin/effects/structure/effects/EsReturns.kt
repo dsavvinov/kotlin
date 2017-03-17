@@ -19,10 +19,7 @@ package org.jetbrains.kotlin.effects.structure.effects
 import org.jetbrains.kotlin.effects.facade.Unknown
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.effects.structure.schema.Effect
-import org.jetbrains.kotlin.effects.structure.schema.Operator
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 

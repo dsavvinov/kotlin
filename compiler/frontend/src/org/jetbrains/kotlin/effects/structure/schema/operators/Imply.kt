@@ -16,10 +16,10 @@
 
 package org.jetbrains.kotlin.effects.structure.schema.operators
 
-import org.jetbrains.kotlin.effects.structure.effects.Outcome
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
+import org.jetbrains.kotlin.effects.structure.effects.Outcome
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.lift
+import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.visitors.helpers.getOutcome
 import org.jetbrains.kotlin.effects.visitors.helpers.toList
