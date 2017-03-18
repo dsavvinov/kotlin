@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.effects.structure.schema.NodeSequence
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.types.KotlinType
 
 
@@ -182,7 +183,7 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
         return visitThrowsEffect(ctx.throwsEffect())
     }
 
-    override fun visitThrowsEffect(ctx: EffectSystemParser.ThrowsEffectContext): EsThrows = EsThrows(resolveException(ctx.SimpleName()))
+    override fun visitThrowsEffect(ctx: EffectSystemParser.ThrowsEffectContext): EsThrows = EsThrows(resolveType(ctx.SimpleName()))
 
     override fun visitReturnsEffect(ctx: EffectSystemParser.ReturnsEffectContext): EsReturns {
         val arg: EsNode = ctx.SimpleName()?.let { resolveVariable(it) } ?: visitLiteralConstant(ctx.literalConstant())
@@ -239,15 +240,11 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
         return tempContext.get(BindingContext.TYPE, ktTypeReference)!! //TODO: unsafe?
     }
 
-    private fun resolveException(simpleName: TerminalNode): Any? {
-        return simpleName.text
-    }
-
     private fun resolveVariable(simpleName: TerminalNode): EsVariable {
-        return EsVariable(simpleName.text, DefaultBuiltIns.Instance.nullableNothingType)
+        TODO()
     }
 
     private fun resolveCallable(simpleName: TerminalNode): EsFunction {
-        TODO()
+        throw IllegalStateException("Callables are not supported in Effect Schemas")
     }
 }

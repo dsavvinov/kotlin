@@ -68,9 +68,10 @@ class KotlinEffectToolWindow(private val myProject: Project, private val toolWin
             val call = PsiTreeUtil.getParentOfType(element, KtCallExpression::class.java) ?: return null
 
             val context = call.analyze()
-            esResolutionUtils = EsResolutionUtils(context, KtPsiFactory(element.project))
+            val resolvedCall = call.getResolvedCall(context) ?: return null
 
-            val resolvedCall = call.getResolvedCall(context)
+            esResolutionUtils = EsResolutionUtils(context, KtPsiFactory(element.project), resolvedCall)
+
             return resolvedCall
         }
 
