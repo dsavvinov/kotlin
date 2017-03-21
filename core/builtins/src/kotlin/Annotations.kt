@@ -16,8 +16,7 @@
 
 package kotlin
 
-import kotlin.annotation.AnnotationRetention.BINARY
-import kotlin.annotation.AnnotationRetention.SOURCE
+import kotlin.annotation.AnnotationRetention.*
 import kotlin.annotation.AnnotationTarget.*
 
 /**
@@ -137,3 +136,7 @@ public annotation class DslMarker
 @MustBeDocumented
 @SinceKotlin("1.1")
 public annotation class PublishedApi
+
+@Target(CONSTRUCTOR, FUNCTION, PROPERTY)
+@Retention(RUNTIME)
+public annotation class Effects(val value: String)

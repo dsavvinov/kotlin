@@ -15,6 +15,10 @@ public final class kotlin/DeprecationLevel : java/lang/Enum {
 public abstract interface annotation class kotlin/DslMarker : java/lang/annotation/Annotation {
 }
 
+public abstract interface annotation class kotlin/Effects : java/lang/annotation/Annotation {
+	public abstract fun value ()Ljava/lang/String;
+}
+
 public final class kotlin/ExceptionsKt {
 	public static final fun addSuppressed (Ljava/lang/Throwable;Ljava/lang/Throwable;)V
 	public static final fun getStackTrace (Ljava/lang/Throwable;)[Ljava/lang/StackTraceElement;

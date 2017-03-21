@@ -33,7 +33,7 @@ object EffectSchemasResolver {
     }
 
     private fun CallableDescriptor.getEffectsAnnotation(): String? {
-        val annotation = annotations.findAnnotation(FqName("org.jetbrains.annotations.Effects"))
+        val annotation = annotations.findAnnotation(FqName("Effects"))
         return annotation?.allValueArguments?.toList()?.let { it[0].second.value as String? }
     }
 
