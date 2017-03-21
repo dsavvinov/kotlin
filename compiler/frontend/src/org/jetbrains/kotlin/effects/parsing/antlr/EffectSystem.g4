@@ -4,7 +4,7 @@ grammar EffectSystem;
 // Entry-point
 effectSchema
     : EOF
-    | clause (EOL clause)*
+    | clause (SEMI clause)*
     ;
 
 clause
@@ -72,7 +72,8 @@ conjunctionOperator
     ;
 
 equalityOperator
-    : '=='
+    : EQEQ
+    | EXCLEQ
     ;
 
 comparisonOperator
@@ -288,6 +289,8 @@ WS  :  [ \t\r\n\u000C]+ -> skip
 
 EOL : '\r'? '\n';
 
+SEMI : ';';
+
 LT : '<';
 GT : '>';
 LEQ : '<=';
@@ -301,3 +304,5 @@ PLUSPLUS : '++';
 MINUSMINUS : '--';
 NOT : '!';
 EXCLEXCL : '!!';
+EQEQ : '==';
+EXCLEQ : '!=';

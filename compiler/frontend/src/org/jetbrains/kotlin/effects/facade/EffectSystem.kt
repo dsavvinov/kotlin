@@ -41,14 +41,15 @@ object EffectSystem {
 
         val evES = flatES.evaluate() as EffectSchema
 
-        return "Base es of ${call.function}: \n" +
-            baseES.print() +
-            "\n" +
-            "Flat es of ${call.function}: \n" +
-            flatES.print() +
-            "\n" +
-            "ES of ${call.function}: \n" +
-            evES.print()
+        val name = call.resolvedCall.resultingDescriptor.name
+        return "Base es of $name: \n" +
+               baseES.print() +
+               "\n" +
+               "Flat es of $name: \n" +
+               flatES.print() +
+               "\n" +
+               "ES of $name: \n" +
+               evES.print()
     }
 
     fun getInfo(call: CtCall, outcome: Outcome, utils: EsResolutionUtils): EsInfoHolder? {

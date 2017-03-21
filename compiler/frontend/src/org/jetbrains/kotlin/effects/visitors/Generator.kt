@@ -33,9 +33,9 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.EsNot
 class EffectSchemaGenerator(val esResolutionUtils: EsResolutionUtils) : CallTreeVisitor<EsNode> {
     override fun visit(call: CtCall): EsNode {
         val substitutedArgs = call.childs.map { it.accept(this) }
-        val basicSchema = EffectSchemasResolver.getEffectSchema(call.function, esResolutionUtils)
-
-        return basicSchema!!.bind(call.function, substitutedArgs)
+        val basicSchema = EffectSchemasResolver.getEffectSchema(call.resolvedCall.resultingDescriptor, esResolutionUtils)
+        val boundSchema = basicSchema!!.bind(call.resolvedCall, substitutedArgs)
+        return boundSchema
     }
 
     override fun visit(ctIs: CtIs): EsNode = EsIs(ctIs.left.accept(this), ctIs.type)

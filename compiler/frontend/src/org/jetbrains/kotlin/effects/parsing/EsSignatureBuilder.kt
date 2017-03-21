@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.effects.parsing
 
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemBaseVisitor
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemParser
@@ -33,9 +34,11 @@ import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.NodeSequence
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
-import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
+import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
 import org.jetbrains.kotlin.types.KotlinType
 
 
@@ -43,9 +46,9 @@ typealias BinaryOperatorT<T> = (T, T) -> T
 typealias UnaryOperatorT<T> = (T) -> T
 
 
-class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSystemBaseVisitor<EsNode?>() {
+class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResolutionUtils: EsResolutionUtils) : EffectSystemBaseVisitor<EsNode?>() {
     override fun visitEffectSchema(ctx: EffectSystemParser.EffectSchemaContext): EffectSchema {
-        val esClauses = ctx.clause().map { visitClause(it) }
+        val esClauses = ctx.clause().map(this::visitClause)
 
         return EffectSchema(esClauses)
     }
@@ -58,16 +61,25 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
     }
 
     override fun visitExpression(ctx: EffectSystemParser.ExpressionContext): EsNode =
-            ctx.conjunction().map { visitConjunction(it) }.reduce(::EsOr)
+            ctx.conjunction().map(this::visitConjunction).reduce(::EsOr)
 
     override fun visitConjunction(ctx: EffectSystemParser.ConjunctionContext): EsNode =
-            ctx.equalityComparison().map { visitEqualityComparison(it) }.reduce(::EsAnd)
+            ctx.equalityComparison().map(this::visitEqualityComparison).reduce(::EsAnd)
 
-    override fun visitEqualityComparison(ctx: EffectSystemParser.EqualityComparisonContext): EsNode =
-            ctx.comparison().map { visitComparison(it) }.reduce(::EsEqual)
+    override fun visitEqualityComparison(ctx: EffectSystemParser.EqualityComparisonContext): EsNode {
+        val comparisons = ctx.comparison().map(this::visitComparison)
+        val joiners = ctx.equalityOperator().map<EffectSystemParser.EqualityOperatorContext, BinaryOperatorT<EsNode>> {
+            when ((it.getChild(0) as TerminalNode).symbol.type) {
+                EffectSystemParser.EQEQ -> { x, y -> EsEqual(x, y) }
+                EffectSystemParser.EXCLEQ -> { x, y -> EsNot(EsEqual(x, y)) }
+                else -> throw IllegalArgumentException("Unexpected equality operator: ${it.text}")
+            }
+        }
+        return comparisons.intercalate(joiners)
+    }
 
     override fun visitComparison(ctx: EffectSystemParser.ComparisonContext): EsNode {
-        val namedInfixes = ctx.namedInfix().map { visitNamedInfix(it) }
+        val namedInfixes = ctx.namedInfix().map(this::visitNamedInfix)
         val joiners = ctx.comparisonOperator().map {
             when ((it.getChild(0) as TerminalNode).symbol.type) {
                 EffectSystemParser.GEQ -> TODO()
@@ -81,7 +93,7 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
     }
 
     override fun visitNamedInfix(ctx: EffectSystemParser.NamedInfixContext): EsNode {
-        val additiveExpressions = ctx.additiveExpression().map { visitAdditiveExpression(it) }
+        val additiveExpressions = ctx.additiveExpression().map(this::visitAdditiveExpression)
         if (ctx.isOperation != null) {
             val rhsType = resolveType(ctx.type().SimpleName())
             assert(additiveExpressions.size == 1, { "IsExpression: Expected 1 additive expression, got ${additiveExpressions.size}" })
@@ -97,7 +109,7 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
     }
 
     override fun visitAdditiveExpression(ctx: EffectSystemParser.AdditiveExpressionContext): EsNode {
-        val multiplicativeExpressions = ctx.multiplicativeExpression().map { visitMultiplicativeExpression(it) }
+        val multiplicativeExpressions = ctx.multiplicativeExpression().map(this::visitMultiplicativeExpression)
         val operators = ctx.additiveOperator().map {
             when ((it.getChild(0) as TerminalNode).symbol.type) {
                 EffectSystemParser.PLUS -> TODO()
@@ -110,7 +122,7 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
     }
 
     override fun visitMultiplicativeExpression(ctx: EffectSystemParser.MultiplicativeExpressionContext): EsNode {
-        val unaryExpressions = ctx.prefixUnaryExpression().map { visitPrefixUnaryExpression(it) }
+        val unaryExpressions = ctx.prefixUnaryExpression().map(this::visitPrefixUnaryExpression)
         val operators = ctx.multiplicativeOperator().map {
             when((it.getChild(0) as TerminalNode).symbol.type) {
                 EffectSystemParser.MUL -> TODO()
@@ -167,7 +179,7 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
 
 
     override fun visitEffectsList(ctx: EffectSystemParser.EffectsListContext): NodeSequence {
-        val effects = ctx.effect().map { visitEffect(it) }
+        val effects = ctx.effect().map(this::visitEffect)
         return effects.foldRight(Nil, ::Cons)
     }
 
@@ -186,7 +198,7 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
     override fun visitThrowsEffect(ctx: EffectSystemParser.ThrowsEffectContext): EsThrows = EsThrows(resolveType(ctx.SimpleName()))
 
     override fun visitReturnsEffect(ctx: EffectSystemParser.ReturnsEffectContext): EsReturns {
-        val arg: EsNode = ctx.SimpleName()?.let { resolveVariable(it) } ?: visitLiteralConstant(ctx.literalConstant())
+        val arg: EsNode = ctx.SimpleName()?.let(this::resolveVariable) ?: visitLiteralConstant(ctx.literalConstant())
         return EsReturns(arg)
     }
 
@@ -211,7 +223,7 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
             return EsConstant(null, DefaultBuiltIns.Instance.nullableNothingType)
         }
 
-        return EsConstant(ctx.StringLiteral().text, DefaultBuiltIns.Instance.stringType)
+        return EsConstant(ctx.StringLiteral().text.trim('"'), DefaultBuiltIns.Instance.stringType)
     }
 
     /**
@@ -227,7 +239,7 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
         if (size == 1) return this[0]
 
         var acc = joiners[0](this[0], this[1])
-        for (i in 2..size) {
+        for (i in 2..size - 1) {
             acc = joiners[i - 1](acc, this[i])
         }
 
@@ -241,7 +253,14 @@ class EsSignatureBuilder(val esResolutionUtils: EsResolutionUtils) : EffectSyste
     }
 
     private fun resolveVariable(simpleName: TerminalNode): EsVariable {
-        TODO()
+        val name = Name.identifier(simpleName.text)
+
+        val parameterDescriptor = ownerDescriptor.valueParameters.find { it.name == name }
+                                  ?: throw IllegalStateException("Can't find value parameter with a given name")
+        val idInfo = IdentifierInfo.Variable(parameterDescriptor, DataFlowValue.Kind.STABLE_VALUE, null)
+        val dfv = DataFlowValue(idInfo, parameterDescriptor.type)
+
+        return EsVariable(dfv)
     }
 
     private fun resolveCallable(simpleName: TerminalNode): EsFunction {

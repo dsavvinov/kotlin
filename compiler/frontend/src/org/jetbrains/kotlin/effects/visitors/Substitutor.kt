@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
+import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
 import org.jetbrains.kotlin.effects.structure.general.EsFunction
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
@@ -23,14 +24,21 @@ import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
+import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.VarargValueArgument
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
+import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
 
 /**
  * Visits EffectSchema-tree and substitutes every occurrence
- * of a variable from a given est with corresponding node.
+ * of a variable from a given set with corresponding node.
  *
  * Generally, used to bind call-arguments to formal arguments.
  */
-class Substitutor(val substs: Map<EsVariable, EsNode>) : SchemaVisitor<EsNode> {
+class Substitutor(val substs: Map<DataFlowValue, EsNode>) : SchemaVisitor<EsNode> {
     override fun visit(node: EsNode): EsNode = node
 
     override fun visit(schema: EffectSchema): EsNode {
@@ -44,11 +52,17 @@ class Substitutor(val substs: Map<EsVariable, EsNode>) : SchemaVisitor<EsNode> {
     override fun visit(unaryOperator: UnaryOperator): EsNode =
             unaryOperator.newInstance(unaryOperator.arg.accept(this))
 
-    override fun visit(variable: EsVariable): EsNode = substs[variable] ?: variable
+    override fun visit(variable: EsVariable): EsNode = substs[variable.value] ?: variable
 }
 
-fun (EffectSchema).bind(function: EsFunction, args: List<EsNode>) : EffectSchema {
-    val substs = function.formalArgs.zip(args).toMap()
+fun (EffectSchema).bind(resolvedCall: ResolvedCall<*>, args: List<EsNode>) : EffectSchema {
+    val parametersDescriptors = resolvedCall.resultingDescriptor.valueParameters
+    val idInfos = parametersDescriptors.map { IdentifierInfo.Variable(it, DataFlowValue.Kind.STABLE_VALUE, null) }
+    val dataFlowValues = idInfos.zip(parametersDescriptors).map {
+        (idInfo, parameterDescriptor) -> DataFlowValue(idInfo, parameterDescriptor.type)
+    }
+
+    val substs = dataFlowValues.zip(args).toMap()
 
     val substitutor = Substitutor(substs)
     return substitutor.visit(this) as EffectSchema

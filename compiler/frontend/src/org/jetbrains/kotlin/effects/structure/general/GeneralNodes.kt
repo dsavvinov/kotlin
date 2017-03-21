@@ -17,6 +17,8 @@
 package org.jetbrains.kotlin.effects.structure.general
 
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.effects.structure.call.CallTreeVisitor
 import org.jetbrains.kotlin.effects.structure.call.CtNode
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
@@ -25,13 +27,15 @@ import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.Term
 import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 import org.jetbrains.kotlin.effects.visitors.helpers.toNodeSequence
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
+import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
 import org.jetbrains.kotlin.types.KotlinType
 
 interface EsNode {
     fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
 }
 
-data class EsVariable(val reference: String, val type: KotlinType) : EsNode, CtNode, Term {
+data class EsVariable(val value: DataFlowValue) : EsNode, CtNode, Term {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 
@@ -49,14 +53,10 @@ data class EsConstant(val value: Any?, val type: KotlinType) : EsNode, CtNode, T
     override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), EsReturns(this).toNodeSequence())))
 }
 
-// TODO: composition or inheritance? Depends on the real KtType, I think
-// Inheritance pros:
-//   - Get all kt-types functionality (like, upper-bounds, lower-bounds, lca, subtyping, etc)
-
-class EsFunction(val name: String, val formalArgs: List<EsVariable>, val returnType: KotlinType, val descriptor: CallableDescriptor? = null) {
+class EsFunction(val name: String, val formalArgs: List<ValueParameterDescriptor>, val returnType: KotlinType, val descriptor: CallableDescriptor? = null) {
     constructor(descriptor: CallableDescriptor) : this(
             descriptor.name.identifier,
-            descriptor.valueParameters.map { EsVariable(it.name.identifier, it.type) },
+            descriptor.valueParameters,
             descriptor.returnType!!, // TODO: a bit unsafe?
             descriptor
     )

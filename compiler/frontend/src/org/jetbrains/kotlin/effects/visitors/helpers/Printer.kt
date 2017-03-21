@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.effects.visitors.helpers
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
+import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.Cons
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
+import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
 
 class EffectSchemaPrinter : SchemaVisitor<Unit> {
     override fun toString(): String {
@@ -52,10 +54,11 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
         sb.append("$indent}")
     }
 
-    private fun inBrackets(body: () -> Unit): Unit {
-        sb.append("(")
+    private fun inBrackets(father: EsNode, child: EsNode, body: () -> Unit): Unit {
+        val needsBrackets = getPriority(child) < getPriority(father)
+        if (needsBrackets) sb.append("(")
         body()
-        sb.append(")")
+        if (needsBrackets) sb.append(")")
     }
 
     override fun visit(schema: EffectSchema) {
@@ -77,14 +80,18 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
     }
 
     override fun visit(esEqualOperator: EsEqual): Unit {
-        inBrackets {
+        // Write "x" instead of something like "x == true"
+        if (esEqualOperator.right is EsConstant && esEqualOperator.right == true.lift()) {
             esEqualOperator.left.accept(this)
+            return
+        }
 
-            // Write "x" instead of something like "x == true"
-            if ((esEqualOperator.right is EsConstant && esEqualOperator.right == true.lift()).not()) {
-                sb.append(" == ")
-                esEqualOperator.right.accept(this)
-            }
+        inBrackets(esEqualOperator, esEqualOperator.left) {
+            esEqualOperator.left.accept(this)
+        }
+        sb.append(" == ")
+        inBrackets(esEqualOperator, esEqualOperator.right) {
+            esEqualOperator.right.accept(this)
         }
     }
 
@@ -93,24 +100,24 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
     }
 
     override fun visit(esOr: EsOr): Unit {
-        inBrackets { esOr.left.accept(this) }
+        inBrackets(esOr, esOr.left) { esOr.left.accept(this) }
         sb.append(" OR ")
-        inBrackets { esOr.right.accept(this) }
+        inBrackets(esOr, esOr.right) { esOr.right.accept(this) }
     }
 
     override fun visit(and: EsAnd): Unit {
-        inBrackets { and.left.accept(this) }
+        inBrackets(and, and.left) { and.left.accept(this) }
         sb.append(" AND ")
-        inBrackets { and.right.accept(this) }
+        inBrackets(and, and.right) { and.right.accept(this) }
     }
 
     override fun visit(esNot: EsNot): Unit {
         sb.append("NOT")
-        inBrackets { esNot.arg.accept(this) }
+        inBrackets(esNot, esNot.arg) { esNot.arg.accept(this) }
     }
 
     override fun visit(variable: EsVariable): Unit {
-        sb.append(variable.reference)
+        sb.append((variable.value.identifierInfo as IdentifierInfo.Variable).variable.name)
     }
 
     override fun visit(constant: EsConstant): Unit {
@@ -131,6 +138,16 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
 
     override fun visit(nil: Nil) {
         super.visit(nil)
+    }
+
+    private fun getPriority(node: EsNode): Int {
+        return when (node) {
+            is EsOr -> 0
+            is EsAnd -> 1
+            is EsEqual -> 2
+            is EsNot -> 5
+            else -> 999
+        }
     }
 }
 

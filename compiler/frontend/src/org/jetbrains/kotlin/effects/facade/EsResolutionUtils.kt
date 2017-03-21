@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.effects.facade
 
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
@@ -24,5 +25,5 @@ import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 class EsResolutionUtils(
         val context: BindingContext,
         val psiFactory: KtPsiFactory,
-        val resolvedCall: ResolvedCall<out CallableDescriptor>
+        val moduleDescriptor: ModuleDescriptor
         )

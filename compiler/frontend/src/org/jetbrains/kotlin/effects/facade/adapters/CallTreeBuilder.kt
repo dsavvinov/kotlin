@@ -24,13 +24,17 @@ import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
+import org.jetbrains.kotlin.psi.synthetics.findClassDescriptor
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.ifEmpty
+
 
 class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNode, Nothing?>() {
 
@@ -45,10 +49,9 @@ class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNo
         return EsConstant(compileTimeConstant.getValue(type) ?: return null, type)
     }
 
-    override fun visitSimpleNameExpression(expression: KtSimpleNameExpression, data: Nothing?): CtNode? {
-        val type: KotlinType = esResolutionUtils.context.getType(expression) ?: return null
-        return EsVariable(expression.getReferencedName(), type)
-    }
+    override fun visitSimpleNameExpression(expression: KtSimpleNameExpression, data: Nothing?): CtNode? =
+        expression.createDataFlowValue()?.let(::EsVariable)
+
 
     override fun visitUnaryExpression(expression: KtUnaryExpression, data: Nothing?): CtNode? {
         val argNode = expression.baseExpression?.accept(this, data) ?: return null
@@ -78,9 +81,7 @@ class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNo
             (it as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.accept(this, data) ?: return null
         } ?: return null
 
-        val function: EsFunction = EsFunction(resolvedCall.resultingDescriptor)
-        
-        return CtCall(function, argNodes)
+        return CtCall(resolvedCall, argNodes)
     }
 
     override fun visitIsExpression(expression: KtIsExpression, data: Nothing?): CtNode? {
@@ -91,5 +92,14 @@ class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNo
 
     override fun visitStringTemplateExpression(expression: KtStringTemplateExpression, data: Nothing?): CtNode {
         return expression.entries.map { it.text }.ifEmpty { listOf("") }.reduce { s, acc -> s + acc }.lift()
+    }
+
+    private fun KtExpression.createDataFlowValue() : DataFlowValue? {
+        return DataFlowValueFactory.createDataFlowValue(
+                expression = this,
+                type = esResolutionUtils.context.getType(this) ?: return null,
+                bindingContext = esResolutionUtils.context,
+                containingDeclarationOrModule = esResolutionUtils.moduleDescriptor
+        )
     }
 }

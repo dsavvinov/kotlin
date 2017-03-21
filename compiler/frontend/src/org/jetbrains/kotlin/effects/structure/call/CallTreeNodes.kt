@@ -16,7 +16,7 @@
 
 package org.jetbrains.kotlin.effects.structure.call
 
-import org.jetbrains.kotlin.effects.structure.general.EsFunction
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.types.KotlinType
 
 /**
@@ -28,7 +28,7 @@ interface CtNode {
     fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 }
 
-data class CtCall(val function: EsFunction, val childs: List<CtNode>) : CtNode {
+data class CtCall(val resolvedCall: ResolvedCall<*>, val childs: List<CtNode>) : CtNode {
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 }
 

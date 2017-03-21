@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
 
 /**
  * Tries to flatten a given EffectSchema-tree, that is,
- * returned such value so that it will not contain any
+ * returns such value that it will not contain any
  * nested effect schemas.
  */
 class Combiner : SchemaVisitor<EsNode> {
