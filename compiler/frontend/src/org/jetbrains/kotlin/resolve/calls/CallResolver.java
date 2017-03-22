@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.config.LanguageVersionSettings;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.Annotations;
+import org.jetbrains.kotlin.effects.facade.EffectSystem;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStatus;
 import org.jetbrains.kotlin.psi.*;
@@ -606,7 +607,14 @@ public class CallResolver {
 
         if (!(resolutionTask.resolutionKind instanceof NewResolutionOldInference.ResolutionKind.GivenCandidates)) {
             assert resolutionTask.name != null;
-            return newCallResolver.runResolution(context, resolutionTask.name, resolutionTask.resolutionKind, tracing);
+            OverloadResolutionResultsImpl<D> resolutionResults =
+                    newCallResolver.runResolution(context, resolutionTask.name, resolutionTask.resolutionKind, tracing);
+
+            if (resolutionTask.resolutionKind instanceof NewResolutionOldInference.ResolutionKind.Function) {
+                return EffectSystem.INSTANCE.computeEffectsForArguments(resolutionResults, context, languageVersionSettings, typeResolver);
+            }
+
+            return resolutionResults;
         }
         else {
             assert resolutionTask.givenCandidates != null;

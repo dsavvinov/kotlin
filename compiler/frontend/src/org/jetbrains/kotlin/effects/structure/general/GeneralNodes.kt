@@ -42,7 +42,7 @@ data class EsVariable(val value: DataFlowValue) : EsNode, CtNode, Term {
     override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), EsReturns(this).toNodeSequence())))
 }
 
-data class EsConstant(val value: Any?, val type: KotlinType) : EsNode, CtNode, Term {
+data class EsConstant(val value: Any?, val type: KotlinType, val dataFlowValue: DataFlowValue?) : EsNode, CtNode, Term {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 

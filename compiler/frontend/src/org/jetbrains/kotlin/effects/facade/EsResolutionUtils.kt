@@ -16,14 +16,28 @@
 
 package org.jetbrains.kotlin.effects.facade
 
-import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.TypeResolver
+import org.jetbrains.kotlin.resolve.calls.context.CallResolutionContext
 
 class EsResolutionUtils(
         val context: BindingContext,
         val psiFactory: KtPsiFactory,
+        val typeResolver: TypeResolver? = null,
         val moduleDescriptor: ModuleDescriptor
-        )
+) {
+    lateinit var trace: BindingTrace
+    lateinit var resolutionContext: CallResolutionContext<*>
+
+    constructor(resolutionContext: CallResolutionContext<*>, psiFactory: KtPsiFactory, typeResolver: TypeResolver?, moduleDescriptor: ModuleDescriptor)
+            : this(resolutionContext.trace.bindingContext,
+                   psiFactory,
+                   typeResolver,
+                   moduleDescriptor) {
+        trace = resolutionContext.trace
+        this.resolutionContext = resolutionContext
+    }
+}

@@ -71,7 +71,7 @@ class KotlinEffectToolWindow(private val myProject: Project, private val toolWin
             val resolvedCall = call.getResolvedCall(context) ?: return null
             val moduleDescriptor = call.findModuleDescriptor()
 
-            esResolutionUtils = EsResolutionUtils(context, KtPsiFactory(element.project), moduleDescriptor)
+            esResolutionUtils = EsResolutionUtils(context, KtPsiFactory(element.project), null, moduleDescriptor)
 
             return resolvedCall
         }

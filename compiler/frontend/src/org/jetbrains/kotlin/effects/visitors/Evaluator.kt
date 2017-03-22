@@ -68,3 +68,5 @@ class Evaluator : SchemaVisitor<EsNode> {
 }
 
 fun (EsNode).evaluate() : EsNode = Evaluator().let { this.accept(it) }
+
+fun (EffectSchema).evaluate() = Evaluator().let { this.accept(it) } as EffectSchema

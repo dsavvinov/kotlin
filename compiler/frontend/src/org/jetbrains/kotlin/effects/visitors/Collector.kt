@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
@@ -23,18 +24,17 @@ import org.jetbrains.kotlin.effects.structure.schema.Cons
 import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.types.KotlinType
 
 /**
  * Collects statements about variables into given mutable maps
  */
-data class Collector(
-        val varsValues: MutableMap<EsVariable, EsConstant>,
-        val varsTypes: MutableMap<EsVariable, KotlinType>) : SchemaVisitor<Unit>
+data class Collector(var dataFlowInfo: DataFlowInfo, val languageVersionSettings: LanguageVersionSettings) : SchemaVisitor<Unit>
 {
     private var isInverted : Boolean = false
 
-    fun inverted(body: () -> Unit) = {
+    fun inverted(body: () -> Unit) {
         isInverted.xor(true)
         body()
         isInverted.xor(true)
@@ -53,15 +53,21 @@ data class Collector(
 
     override fun visit(esIsOperator: EsIs) {
         if (esIsOperator.arg is EsVariable) {
-            varsTypes[esIsOperator.arg] = esIsOperator.type
+            dataFlowInfo = dataFlowInfo.establishSubtyping(esIsOperator.arg.value, esIsOperator.type, languageVersionSettings)
         }
     }
 
     override fun visit(esEqualOperator: EsEqual) {
         if (esEqualOperator.left is EsVariable && esEqualOperator.right is EsConstant) {
-            varsValues[esEqualOperator.left] = esEqualOperator.right
-            varsTypes[esEqualOperator.left] = esEqualOperator.right.type
-            return
+            TODO()
+        }
+
+        if (esEqualOperator.left is EsVariable && esEqualOperator.right is EsVariable) {
+            if (isInverted) {
+                dataFlowInfo = dataFlowInfo.disequate(esEqualOperator.left.value, esEqualOperator.right.value, languageVersionSettings)
+            } else {
+                dataFlowInfo = dataFlowInfo.equate(esEqualOperator.left.value, esEqualOperator.right.value, /* sameTypes = */ false, languageVersionSettings)
+            }
         }
 
         esEqualOperator.left.accept(this)
@@ -81,6 +87,5 @@ data class Collector(
 
 }
 
-fun (EsNode).collect(varsValues: MutableMap<EsVariable, EsConstant>,
-                     varsTypes: MutableMap<EsVariable, KotlinType>) =
-        Collector(varsValues, varsTypes).let { this.accept(it) }
+fun (EsNode).collect(dataFlowInfo: DataFlowInfo, languageVersionSettings: LanguageVersionSettings) : DataFlowInfo =
+        Collector(dataFlowInfo, languageVersionSettings).also { this.accept(it) }.dataFlowInfo

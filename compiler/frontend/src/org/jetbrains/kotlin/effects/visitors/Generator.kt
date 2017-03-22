@@ -30,27 +30,37 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.EsNot
 /**
  * Generates tree of effect schemas given a call-tree
  */
-class EffectSchemaGenerator(val esResolutionUtils: EsResolutionUtils) : CallTreeVisitor<EsNode> {
-    override fun visit(call: CtCall): EsNode {
-        val substitutedArgs = call.childs.map { it.accept(this) }
+class EffectSchemaGenerator(val esResolutionUtils: EsResolutionUtils) : CallTreeVisitor<EsNode?> {
+    override fun visit(call: CtCall): EffectSchema? {
+        val substitutedArgs = call.childs.map { it.accept(this) ?: return null}
         val basicSchema = EffectSchemasResolver.getEffectSchema(call.resolvedCall.resultingDescriptor, esResolutionUtils)
-        val boundSchema = basicSchema!!.bind(call.resolvedCall, substitutedArgs)
+        val boundSchema = basicSchema?.bind(call.resolvedCall, substitutedArgs)
         return boundSchema
     }
 
-    override fun visit(ctIs: CtIs): EsNode = EsIs(ctIs.left.accept(this), ctIs.type)
+    override fun visit(ctIs: CtIs): EsNode? {
+        val left = ctIs.left.accept(this) ?: return null
+        return EsIs(left, ctIs.type)
+    }
 
-    override fun visit(ctEqual: CtEqual): EsNode = EsEqual(ctEqual.left.accept(this), ctEqual.right.accept(this))
+    override fun visit(ctEqual: CtEqual): EsNode? {
+        val left = ctEqual.left.accept(this) ?: return null
+        val right = ctEqual.right.accept(this) ?: return null
+        return EsEqual(left, right)
+    }
 
-    override fun visit(ctNot: CtNot): EsNode = EsNot(ctNot.arg.accept(this))
+    override fun visit(ctNot: CtNot): EsNode? {
+        val arg = ctNot.arg.accept(this) ?: return null
+        return EsNot(arg)
+    }
 
     override fun visit(variable: EsVariable): EsNode = variable
 
     override fun visit(constant: EsConstant): EsNode = constant
 }
 
-fun (CtCall).generateEffectSchema(utils: EsResolutionUtils) : EffectSchema {
+fun (CtCall).generateEffectSchema(utils: EsResolutionUtils) : EffectSchema? {
     val generator = EffectSchemaGenerator(utils)
 
-    return accept(generator) as EffectSchema
+    return accept(generator) as EffectSchema?
 }

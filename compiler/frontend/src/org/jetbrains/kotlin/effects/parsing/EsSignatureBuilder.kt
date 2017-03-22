@@ -37,7 +37,9 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.*
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
+import org.jetbrains.kotlin.resolve.TemporaryBindingTrace
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
 import org.jetbrains.kotlin.types.KotlinType
 
@@ -210,20 +212,26 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     }
 
     override fun visitLiteralConstant(ctx: EffectSystemParser.LiteralConstantContext): EsConstant {
+        val ktExpression = esResolutionUtils.psiFactory.createExpression(ctx.text)
+        val value: Any?
+        val type: KotlinType
+
         if (ctx.BooleanLiteral() != null) {
-            return EsConstant(ctx.BooleanLiteral().text.toBoolean(), DefaultBuiltIns.Instance.booleanType)
+            value = ctx.BooleanLiteral().text.toBoolean()
+            type = DefaultBuiltIns.Instance.booleanType
+        } else if (ctx.IntegerLiteral() != null) {
+            value = ctx.IntegerLiteral().text.toInt()
+            type = DefaultBuiltIns.Instance.intType
+        } else if (ctx.NullLiteral() != null) {
+            value = null
+            type = DefaultBuiltIns.Instance.nullableNothingType
+        } else {
+            value = ctx.StringLiteral().text.trim('"')
+            type = DefaultBuiltIns.Instance.stringType
         }
 
-        if (ctx.IntegerLiteral() != null) {
-            return EsConstant(ctx.IntegerLiteral().text.toInt(), DefaultBuiltIns.Instance.intType)
-        }
-
-        if (ctx.NullLiteral() != null) {
-            // TODO: this is `Nothing?` in fact
-            return EsConstant(null, DefaultBuiltIns.Instance.nullableNothingType)
-        }
-
-        return EsConstant(ctx.StringLiteral().text.trim('"'), DefaultBuiltIns.Instance.stringType)
+        val dataFlowValue = DataFlowValueFactory.createDataFlowValue(ktExpression, type, esResolutionUtils.resolutionContext)
+        return EsConstant(value, type, dataFlowValue)
     }
 
     /**
@@ -248,8 +256,13 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
 
     private fun resolveType(simpleName: TerminalNode): KotlinType {
         val ktTypeReference = esResolutionUtils.psiFactory.createType(simpleName.text)
-        val tempContext = DelegatingBindingTrace(esResolutionUtils.context, "tmp")
-        return tempContext.get(BindingContext.TYPE, ktTypeReference)!! //TODO: unsafe?
+        val type = esResolutionUtils.typeResolver?.resolveType(
+                esResolutionUtils.resolutionContext.scope,
+                ktTypeReference,
+                TemporaryBindingTrace.create(esResolutionUtils.resolutionContext.trace, "ES-resolving"),
+                /* checkBounds = */ false
+        )
+        return type!!
     }
 
     private fun resolveVariable(simpleName: TerminalNode): EsVariable {

@@ -81,3 +81,5 @@ class Combiner : SchemaVisitor<EsNode> {
 }
 
 fun (EsNode).flatten() : EsNode = Combiner().let { accept(it) }
+
+fun (EffectSchema).flatten() : EffectSchema = Combiner().let { accept(it) } as EffectSchema
