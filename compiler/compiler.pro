@@ -51,6 +51,7 @@ messages/**)
 -libraryjars '<bootstrap.runtime>'
 -libraryjars '<bootstrap.reflect>'
 -libraryjars '<bootstrap.script.runtime>'
+-libraryjars '<antlr-4-official.jar>'
 
 -target 1.6
 -dontoptimize

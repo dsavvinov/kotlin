@@ -28,6 +28,8 @@
     <property name="protobuf-lite.jar" value="${basedir}/dependencies/protobuf-2.6.1-lite.jar"/>
     <property name="javax.inject.jar" value="${basedir}/lib/javax.inject.jar"/>
 
+    <property name="antlr-4-official.jar" value="${basedir}/compiler/frontend/src/org/jetbrains/kotlin/effects/parsing/antlr/antlr4-runtime-4.6.jar"/>
+
     <property name="java.target" value="1.6"/>
 
     <condition property="bootstrap.or.local.build" value="true">
@@ -68,6 +70,8 @@
         <file file="${bootstrap.script.runtime}"/>
         <fileset dir="${idea.sdk}" includes="core/*.jar"/>
         <pathelement location="${protobuf.jar}"/>
+
+        <file file="${antlr-4-official.jar}"/>
 
         <fileset dir="${basedir}/lib" includes="**/*.jar"/>
         <fileset dir="${dependencies}" includes="jansi.jar"/>
