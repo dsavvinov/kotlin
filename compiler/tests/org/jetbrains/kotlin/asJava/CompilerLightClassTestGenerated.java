@@ -60,6 +60,30 @@ public class CompilerLightClassTestGenerated extends AbstractCompilerLightClassT
         doTest(fileName);
     }
 
+    @TestMetadata("JvmNameOnMember.kt")
+    public void testJvmNameOnMember() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/JvmNameOnMember.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("JvmStatic.kt")
+    public void testJvmStatic() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/JvmStatic.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("NestedObjects.kt")
+    public void testNestedObjects() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/NestedObjects.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("PublishedApi.kt")
+    public void testPublishedApi() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/PublishedApi.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("compiler/testData/asJava/lightClasses/compilationErrors")
     @TestDataPath("$PROJECT_ROOT")
     @RunWith(JUnit3RunnerWithInners.class)
@@ -68,9 +92,27 @@ public class CompilerLightClassTestGenerated extends AbstractCompilerLightClassT
             KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/asJava/lightClasses/compilationErrors"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
         }
 
+        @TestMetadata("AnnotationModifiers.kt")
+        public void testAnnotationModifiers() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/compilationErrors/AnnotationModifiers.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("SameName.kt")
+        public void testSameName() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/compilationErrors/SameName.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("TopLevelDestructuring.kt")
         public void testTopLevelDestructuring() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/compilationErrors/TopLevelDestructuring.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("WrongAnnotations.kt")
+        public void testWrongAnnotations() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/compilationErrors/WrongAnnotations.kt");
             doTest(fileName);
         }
     }

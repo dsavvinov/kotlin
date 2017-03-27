@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.psi.KtFile
 class MoveFilesWithDeclarationsProcessor(
         project: Project,
         private val sourceFiles: List<KtFile>,
-        targetDirectory: PsiDirectory,
+        private val targetDirectory: PsiDirectory,
         private val targetFileName: String?,
         searchInComments: Boolean,
         searchInNonJavaFiles: Boolean,
@@ -43,25 +43,8 @@ class MoveFilesWithDeclarationsProcessor(
                                     true,
                                     searchInComments,
                                     searchInNonJavaFiles,
-                                    MoveCallbackImpl(sourceFiles, targetFileName, moveCallback),
+                                    moveCallback,
                                     EmptyRunnable.INSTANCE) {
-    class MoveCallbackImpl(
-            private val sourceFiles: List<KtFile>,
-            private val targetFileName: String?,
-            private val nextCallback: MoveCallback?
-    ) : MoveCallback {
-        override fun refactoringCompleted() {
-            try {
-                if (targetFileName != null) {
-                    sourceFiles.single().name = targetFileName
-                }
-            }
-            finally {
-                nextCallback?.refactoringCompleted()
-            }
-        }
-    }
-
     override fun getCommandName(): String {
         return if (targetFileName != null) "Move " + sourceFiles.single().name else "Move"
     }
@@ -69,32 +52,43 @@ class MoveFilesWithDeclarationsProcessor(
     override fun preprocessUsages(refUsages: Ref<Array<UsageInfo>>): Boolean {
         val usages = refUsages.get()
 
-        val distinctConflictUsages = UsageViewUtil.removeDuplicatedUsages(usages.filterIsInstance<ConflictUsageInfo>().toTypedArray())
+        val (conflictUsages, usagesToProcess) = usages.partition { it is ConflictUsageInfo }
+
+        val distinctConflictUsages = UsageViewUtil.removeDuplicatedUsages(conflictUsages.toTypedArray())
         val conflicts = MultiMap<PsiElement, String>()
         for (conflictUsage in distinctConflictUsages) {
             conflicts.putValues(conflictUsage.element, (conflictUsage as ConflictUsageInfo).messages)
         }
+
+        refUsages.set(usagesToProcess.toTypedArray())
 
         return showConflicts(conflicts, usages)
     }
 
     // Assign a temporary name to file-under-move to avoid naming conflict during the refactoring
     private fun renameFileTemporarily() {
-        if (targetFileName != null) {
-            val sourceFile = sourceFiles.single()
-            //noinspection ConstantConditions
-            val temporaryName = UniqueNameGenerator.generateUniqueName(
-                    "temp",
-                    "",
-                    ".kt",
-                    sourceFile.containingDirectory!!.files.map { file -> file.name })
-            sourceFile.name = temporaryName
+        if (targetFileName == null || targetDirectory.findFile(targetFileName) == null) return
+
+        val sourceFile = sourceFiles.single()
+        val temporaryName = UniqueNameGenerator.generateUniqueName("temp", "", ".kt") {
+            sourceFile.containingDirectory!!.findFile(it) == null
         }
+        sourceFile.name = temporaryName
     }
 
     override fun performRefactoring(usages: Array<UsageInfo>) {
-        renameFileTemporarily()
+        val needTemporaryRename = targetFileName != null && targetDirectory.findFile(targetFileName) != null
+        if (needTemporaryRename) {
+            renameFileTemporarily()
+        }
 
-        super.performRefactoring(usages)
+        try {
+            super.performRefactoring(usages)
+        }
+        finally {
+            if (needTemporaryRename) {
+                sourceFiles.single().name = targetFileName!!
+            }
+        }
     }
 }

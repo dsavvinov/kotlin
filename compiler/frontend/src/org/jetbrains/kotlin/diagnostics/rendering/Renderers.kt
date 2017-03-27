@@ -120,7 +120,7 @@ object Renderers {
 
     @JvmField val RENDER_CLASS_OR_OBJECT = Renderer {
         classOrObject: KtClassOrObject ->
-        val name = if (classOrObject.getName() != null) " '" + classOrObject.getName() + "'" else ""
+        val name = if (classOrObject.name != null) " '" + classOrObject.name + "'" else ""
         if (classOrObject is KtClass) "Class" + name else "Object" + name
     }
 
@@ -358,7 +358,7 @@ object Renderers {
             override fun get(key: TypeConstructor): TypeProjection? {
                 val typeDescriptor = key.declarationDescriptor as? TypeParameterDescriptor ?: return null
                 if (typeDescriptor.containingDeclaration != descriptor.typeAliasDescriptor) return null
-                return inferredTypesForTypeParameters[typeDescriptor.index]?.let { TypeProjectionImpl(it) }
+                return inferredTypesForTypeParameters[typeDescriptor.index]?.let(::TypeProjectionImpl)
             }
         })
 

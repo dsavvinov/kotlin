@@ -961,7 +961,7 @@ public class KotlinTypeMapper {
 
         if (!(descriptor instanceof ConstructorDescriptor) &&
             descriptor.getVisibility() == Visibilities.INTERNAL &&
-            !descriptor.getAnnotations().hasAnnotation(KotlinBuiltIns.FQ_NAMES.publishedApi)) {
+            !DescriptorUtilsKt.isPublishedApi(descriptor)) {
             return name + "$" + NameUtils.sanitizeAsJavaIdentifier(moduleName);
         }
 
@@ -1503,5 +1503,14 @@ public class KotlinTypeMapper {
         }
 
         return null;
+    }
+
+    @NotNull
+    public String classInternalName(@NotNull ClassDescriptor classDescriptor) {
+        Type recordedType = typeMappingConfiguration.getPredefinedTypeForClass(classDescriptor);
+        if (recordedType != null) {
+            return recordedType.getInternalName();
+        }
+        return TypeSignatureMappingKt.computeInternalName(classDescriptor, typeMappingConfiguration);
     }
 }

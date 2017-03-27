@@ -58,7 +58,7 @@ fun KotlinFacetSettings.initializeIfNeeded(
     val project = module.project
 
     if (compilerSettings == null) {
-        compilerSettings = copyBean(KotlinCompilerSettings.getInstance(project).settings)
+        compilerSettings = KotlinCompilerSettings.getInstance(project).settings
     }
 
     val commonArguments = KotlinCommonCompilerArgumentsHolder.getInstance(module.project).settings
@@ -66,8 +66,8 @@ fun KotlinFacetSettings.initializeIfNeeded(
     if (compilerArguments == null) {
         val targetPlatformKind = platformKind ?: getDefaultTargetPlatform(module, rootModel)
         compilerArguments = targetPlatformKind.createCompilerArguments().apply {
-            mergeBeans(commonArguments, this)
             targetPlatformKind.getPlatformCompilerArgumentsByProject(module.project)?.let { mergeBeans(it, this) }
+            mergeBeans(commonArguments, this)
         }
     }
 
@@ -113,7 +113,7 @@ fun Module.getOrCreateFacet(modelsProvider: IdeModifiableModelsProvider, useProj
 
 fun KotlinFacet.configureFacet(
         compilerVersion: String,
-        coroutineSupport: CoroutineSupport,
+        coroutineSupport: LanguageFeature.State,
         platformKind: TargetPlatformKind<*>?, // if null, detect by module dependencies
         modelsProvider: IdeModifiableModelsProvider
 ) {
@@ -133,21 +133,28 @@ fun KotlinFacet.configureFacet(
 
 // "Primary" fields are written to argument beans directly and thus not presented in the "additional arguments" string
 // Update these lists when facet/project settings UI changes
-private val commonPrimaryFields = listOf("languageVersion",
-                                         "apiVersion",
-                                         "suppressWarnings",
-                                         "coroutinesEnable",
-                                         "coroutinesWarn",
-                                         "coroutinesError",
-                                         "pluginClasspaths",
-                                         "pluginOptions")
-private val jvmPrimaryFields = commonPrimaryFields +
-                               listOf("jvmTarget")
-private val jsPrimaryFields = commonPrimaryFields +
-                              listOf("sourceMap",
-                                     "outputPrefix",
-                                     "outputPostfix",
-                                     "moduleKind")
+val commonUIExposedFields = listOf("languageVersion",
+                                   "apiVersion",
+                                   "suppressWarnings",
+                                   "coroutinesEnable",
+                                   "coroutinesWarn",
+                                   "coroutinesError")
+private val commonUIHiddenFields = listOf("pluginClasspaths",
+                                          "pluginOptions")
+private val commonPrimaryFields = commonUIExposedFields + commonUIHiddenFields
+
+private val jvmSpecificUIExposedFields = listOf("jvmTarget",
+                                                "destination",
+                                                "classpath")
+val jvmUIExposedFields = commonUIExposedFields + jvmSpecificUIExposedFields
+private val jvmPrimaryFields = commonPrimaryFields + jvmSpecificUIExposedFields
+
+private val jsSpecificUIExposedFields = listOf("sourceMap",
+                                               "outputPrefix",
+                                               "outputPostfix",
+                                               "moduleKind")
+val jsUIExposedFields = commonUIExposedFields + jsSpecificUIExposedFields
+private val jsPrimaryFields = commonPrimaryFields + jsSpecificUIExposedFields
 
 private val CommonCompilerArguments.primaryFields: List<String>
     get() = when (this) {
@@ -162,7 +169,7 @@ fun parseCompilerArgumentsToFacet(arguments: List<String>, defaultArguments: Lis
     with(kotlinFacet.configuration.settings) {
         val compilerArguments = this.compilerArguments ?: return
 
-        val defaultCompilerArguments = compilerArguments.javaClass.newInstance()
+        val defaultCompilerArguments = compilerArguments::class.java.newInstance()
         parseArguments(defaultArguments.toTypedArray(), defaultCompilerArguments, true)
 
         val oldCoroutineSupport = CoroutineSupport.byCompilerArguments(compilerArguments)
@@ -182,7 +189,7 @@ fun parseCompilerArgumentsToFacet(arguments: List<String>, defaultArguments: Lis
 
         fun exposeAsAdditionalArgument(field: Field) = field.name !in primaryFields && field.get(compilerArguments) != field.get(defaultCompilerArguments)
 
-        val additionalArgumentsString = with(compilerArguments.javaClass.newInstance()) {
+        val additionalArgumentsString = with(compilerArguments::class.java.newInstance()) {
             copyFieldsSatisfying(compilerArguments, this, ::exposeAsAdditionalArgument)
             ArgumentUtils.convertArgumentsToStringList(this).joinToString(separator = " ") {
                 if (StringUtil.containsWhitespaces(it) || it.startsWith('"')) {
@@ -193,7 +200,7 @@ fun parseCompilerArgumentsToFacet(arguments: List<String>, defaultArguments: Lis
         compilerSettings?.additionalArguments =
                 if (additionalArgumentsString.isNotEmpty()) additionalArgumentsString else CompilerSettings.DEFAULT_ADDITIONAL_ARGUMENTS
 
-        with(compilerArguments.javaClass.newInstance()) {
+        with(compilerArguments::class.java.newInstance()) {
             copyFieldsSatisfying(this, compilerArguments, ::exposeAsAdditionalArgument)
         }
 

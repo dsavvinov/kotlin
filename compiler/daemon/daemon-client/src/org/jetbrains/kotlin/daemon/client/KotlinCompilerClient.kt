@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.daemon.client
 
 import net.rubygrapefruit.platform.Native
+import net.rubygrapefruit.platform.NativeException
 import net.rubygrapefruit.platform.ProcessLauncher
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -24,7 +25,6 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.daemon.common.*
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCompilationComponents
 import org.jetbrains.kotlin.progress.CompilationCanceledStatus
-import org.jetbrains.kotlin.utils.addToStdlib.check
 import java.io.File
 import java.io.OutputStream
 import java.io.PrintStream
@@ -43,6 +43,7 @@ class CompilationServices(
         val compilationCanceledStatus: CompilationCanceledStatus? = null
 )
 
+data class CompileServiceSession(val compileService: CompileService, val sessionId: Int)
 
 object KotlinCompilerClient {
 
@@ -51,6 +52,14 @@ object KotlinCompilerClient {
 
     val verboseReporting = System.getProperty(COMPILE_DAEMON_VERBOSE_REPORT_PROPERTY) != null
 
+    fun getOrCreateClientFlagFile(daemonOptions: DaemonOptions): File =
+            // for jps property is passed from IDEA to JPS in KotlinBuildProcessParametersProvider
+            System.getProperty(COMPILE_DAEMON_CLIENT_ALIVE_PATH_PROPERTY)
+                ?.let(String::trimQuotes)
+                ?.takeUnless(String::isBlank)
+                ?.let(::File)
+                ?.takeIf(File::exists)
+                ?: makeAutodeletingFlagFile(baseDir = File(daemonOptions.runFilesPathOrDefault))
 
     fun connectToCompileService(compilerId: CompilerId,
                                 daemonJVMOptions: DaemonJVMOptions,
@@ -59,12 +68,7 @@ object KotlinCompilerClient {
                                 autostart: Boolean = true,
                                 checkId: Boolean = true
     ): CompileService? {
-        val flagFile = System.getProperty(COMPILE_DAEMON_CLIENT_ALIVE_PATH_PROPERTY)
-                     ?.let(String::trimQuotes)
-                     ?.check { !it.isBlank() }
-                     ?.let(::File)
-                     ?.check(File::exists)
-                     ?: makeAutodeletingFlagFile(baseDir = File(daemonOptions.runFilesPathOrDefault))
+        val flagFile = getOrCreateClientFlagFile(daemonOptions)
         return connectToCompileService(compilerId, flagFile, daemonJVMOptions, daemonOptions, reportingTargets, autostart)
     }
 
@@ -82,7 +86,7 @@ object KotlinCompilerClient {
                             reportingTargets,
                             autostart,
                             leaseSession = false,
-                            sessionAliveFlagFile = null)?.first
+                            sessionAliveFlagFile = null)?.compileService
 
 
     fun connectAndLease(compilerId: CompilerId,
@@ -93,19 +97,20 @@ object KotlinCompilerClient {
                         autostart: Boolean,
                         leaseSession: Boolean,
                         sessionAliveFlagFile: File? = null
-    ): Pair<CompileService, Int>? = connectLoop(reportingTargets) {
+    ): CompileServiceSession? = connectLoop(reportingTargets) {
+        setupServerHostName()
         val (service, newJVMOptions) = tryFindSuitableDaemonOrNewOpts(File(daemonOptions.runFilesPath), compilerId, daemonJVMOptions, { cat, msg -> reportingTargets.report(cat, msg) })
         if (service != null) {
             // the newJVMOptions could be checked here for additional parameters, if needed
             service.registerClient(clientAliveFlagFile.absolutePath)
             reportingTargets.report(DaemonReportCategory.DEBUG, "connected to the daemon")
-            if (!leaseSession) service to CompileService.NO_SESSION
+            if (!leaseSession) CompileServiceSession(service, CompileService.NO_SESSION)
             else {
                 val sessionId = service.leaseCompileSession(sessionAliveFlagFile?.absolutePath)
                 if (sessionId is CompileService.CallResult.Dying)
                     null
                 else
-                    service to sessionId.get()
+                    CompileServiceSession(service, sessionId.get())
             }
         } else {
             reportingTargets.report(DaemonReportCategory.DEBUG, "no suitable daemon found")
@@ -211,7 +216,7 @@ object KotlinCompilerClient {
             val unrecognized = it.trimQuotes().split(",").filterExtractProps(opts.mappers, "")
             if (unrecognized.any())
                 throw IllegalArgumentException(
-                        "Unrecognized client options passed via property ${COMPILE_DAEMON_OPTIONS_PROPERTY}: " + unrecognized.joinToString(" ") +
+                        "Unrecognized client options passed via property $COMPILE_DAEMON_OPTIONS_PROPERTY: " + unrecognized.joinToString(" ") +
                         "\nSupported options: " + opts.mappers.joinToString(", ", transform = { it.names.first() }))
         }
         return opts
@@ -370,9 +375,7 @@ object KotlinCompilerClient {
         val javaExecutable = File(File(System.getProperty("java.home"), "bin"), "java")
         val platformSpecificOptions = listOf(
                 // hide daemon window
-                "-Djava.awt.headless=true",
-                // prevent host name resolution
-                "-Djava.rmi.server.hostname=${LoopbackNetworkInterface.loopbackInetAddressName}")
+                "-Djava.awt.headless=true")
         val args = listOf(
                    javaExecutable.absolutePath, "-cp", compilerId.compilerClasspath.joinToString(File.pathSeparator)) +
                    platformSpecificOptions +
@@ -384,8 +387,15 @@ object KotlinCompilerClient {
         val processBuilder = ProcessBuilder(args)
         processBuilder.redirectErrorStream(true)
         // assuming daemon process is deaf and (mostly) silent, so do not handle streams
-        val daemonLauncher = Native.get(ProcessLauncher::class.java)
-        val daemon = daemonLauncher.start(processBuilder)
+        val daemon =
+                try {
+                    val nativeLauncher = Native.get(ProcessLauncher::class.java)
+                    nativeLauncher.start(processBuilder)
+                }
+                catch (e: NativeException) {
+                    reportingTargets.report(DaemonReportCategory.DEBUG, "Could not start daemon with native process launcher, falling back to ProcessBuilder#start")
+                    processBuilder.start()
+                }
 
         val isEchoRead = Semaphore(1)
         isEchoRead.acquire()
@@ -396,11 +406,13 @@ object KotlinCompilerClient {
                         daemon.inputStream
                                 .reader()
                                 .forEachLine {
+                                    reportingTargets.report(DaemonReportCategory.DEBUG, it, "daemon")
+
                                     if (it == COMPILE_DAEMON_IS_READY_MESSAGE) {
+                                        reportingTargets.report(DaemonReportCategory.DEBUG, "Received the message signalling that the daemon is ready")
                                         isEchoRead.release()
                                         return@forEachLine
                                     }
-                                    reportingTargets.report(DaemonReportCategory.DEBUG, it, "daemon")
                                 }
                     }
                     finally {

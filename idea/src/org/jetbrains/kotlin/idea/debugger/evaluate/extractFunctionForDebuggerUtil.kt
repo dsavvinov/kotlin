@@ -84,7 +84,7 @@ fun getFunctionForExtractedFragment(
 
         val newDebugExpressions = addDebugExpressionIntoTmpFileForExtractFunction(originalFile, codeFragment, breakpointLine)
         if (newDebugExpressions.isEmpty()) return null
-        val tmpFile = newDebugExpressions.first().getContainingKtFile()
+        val tmpFile = newDebugExpressions.first().containingKtFile
 
         if (LOG.isDebugEnabled) {
             LOG.debug("TMP_FILE:\n${runReadAction { tmpFile.text }}")
@@ -235,8 +235,7 @@ private fun getExpressionToAddDebugExpressionBefore(tmpFile: KtFile, contextElem
 private fun addDebugExpressionBeforeContextElement(codeFragment: KtCodeFragment, contextElement: PsiElement): List<KtExpression> {
     val elementBefore = findElementBefore(contextElement)
 
-    val parent = elementBefore?.parent
-    if (parent == null || elementBefore == null) return emptyList()
+    val parent = elementBefore?.parent ?: return emptyList()
 
     val psiFactory = KtPsiFactory(codeFragment)
 
@@ -244,7 +243,7 @@ private fun addDebugExpressionBeforeContextElement(codeFragment: KtCodeFragment,
 
     fun insertExpression(expr: KtElement?): List<KtExpression> {
         when (expr) {
-            is KtBlockExpression -> return expr.statements.flatMap { insertExpression(it) }
+            is KtBlockExpression -> return expr.statements.flatMap(::insertExpression)
             is KtExpression -> {
                 val newDebugExpression = parent.addBefore(expr, elementBefore)
                 if (newDebugExpression == null) {

@@ -45,7 +45,6 @@ import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.diagnostics.Diagnostics
 import org.jetbrains.kotlin.resolve.jvm.JvmClassName
 import org.jetbrains.kotlin.serialization.deserialization.DeserializationConfiguration
-import org.jetbrains.org.objectweb.asm.Opcodes
 import java.io.File
 
 class GenerationState @JvmOverloads constructor(
@@ -70,8 +69,9 @@ class GenerationState @JvmOverloads constructor(
     abstract class GenerateClassFilter {
         abstract fun shouldAnnotateClass(processingClassOrObject: KtClassOrObject): Boolean
         abstract fun shouldGenerateClass(processingClassOrObject: KtClassOrObject): Boolean
-        abstract fun shouldGeneratePackagePart(jetFile: KtFile): Boolean
+        abstract fun shouldGeneratePackagePart(ktFile: KtFile): Boolean
         abstract fun shouldGenerateScript(script: KtScript): Boolean
+        open fun shouldGenerateClassMembers(processingClassOrObject: KtClassOrObject) = shouldGenerateClass(processingClassOrObject)
 
         companion object {
             @JvmField val GENERATE_ALL: GenerateClassFilter = object : GenerateClassFilter() {
@@ -81,7 +81,7 @@ class GenerationState @JvmOverloads constructor(
 
                 override fun shouldGenerateScript(script: KtScript): Boolean = true
 
-                override fun shouldGeneratePackagePart(jetFile: KtFile): Boolean = true
+                override fun shouldGeneratePackagePart(ktFile: KtFile): Boolean = true
             }
         }
     }
@@ -92,7 +92,8 @@ class GenerationState @JvmOverloads constructor(
     val incrementalCacheForThisTarget: IncrementalCache?
     val packagesWithObsoleteParts: Set<FqName>
     val obsoleteMultifileClasses: List<FqName>
-    val deserializationConfiguration: DeserializationConfiguration = CompilerDeserializationConfiguration(configuration)
+    val deserializationConfiguration: DeserializationConfiguration =
+            CompilerDeserializationConfiguration(configuration.languageVersionSettings)
 
     init {
         val icComponents = configuration.get(JVMConfigurationKeys.INCREMENTAL_COMPILATION_COMPONENTS)
@@ -113,7 +114,7 @@ class GenerationState @JvmOverloads constructor(
         }
     }
 
-    val extraJvmDiagnosticsTrace: BindingTrace = DelegatingBindingTrace(bindingContext, "For extra diagnostics in ${this.javaClass}", false)
+    val extraJvmDiagnosticsTrace: BindingTrace = DelegatingBindingTrace(bindingContext, "For extra diagnostics in ${this::class.java}", false)
     private val interceptedBuilderFactory: ClassBuilderFactory
     private var used = false
 

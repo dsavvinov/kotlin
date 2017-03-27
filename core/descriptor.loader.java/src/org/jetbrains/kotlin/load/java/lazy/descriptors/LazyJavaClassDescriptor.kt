@@ -48,8 +48,6 @@ import org.jetbrains.kotlin.serialization.deserialization.NotFoundClasses
 import org.jetbrains.kotlin.storage.getValue
 import org.jetbrains.kotlin.types.*
 import org.jetbrains.kotlin.utils.addIfNotNull
-import org.jetbrains.kotlin.utils.addToStdlib.check
-import org.jetbrains.kotlin.utils.toReadOnlyList
 import java.util.*
 
 class LazyJavaClassDescriptor(
@@ -184,11 +182,11 @@ class LazyJavaClassDescriptor(
                 })
             }
 
-            return if (result.isNotEmpty()) result.toReadOnlyList() else listOf(c.module.builtIns.anyType)
+            return if (result.isNotEmpty()) result.toList() else listOf(c.module.builtIns.anyType)
         }
 
         private fun getPurelyImplementedSupertype(): KotlinType? {
-            val annotatedPurelyImplementedFqName = getPurelyImplementsFqNameFromAnnotation()?.check {
+            val annotatedPurelyImplementedFqName = getPurelyImplementsFqNameFromAnnotation()?.takeIf {
                 !it.isRoot && it.toUnsafe().startsWith(KotlinBuiltIns.BUILT_INS_PACKAGE_NAME)
             }
 
@@ -240,7 +238,7 @@ class LazyJavaClassDescriptor(
 
         override fun getDeclarationDescriptor() = this@LazyJavaClassDescriptor
 
-        override fun toString(): String = getName().asString()
+        override fun toString(): String = name.asString()
     }
 
     // Only needed when calculating built-ins member scope

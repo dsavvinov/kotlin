@@ -524,6 +524,12 @@ public class IrTextTestCaseGenerated extends AbstractIrTextTestCase {
             doTest(fileName);
         }
 
+        @TestMetadata("enumEntryAsReceiver.kt")
+        public void testEnumEntryAsReceiver() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/expressions/enumEntryAsReceiver.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("equality.kt")
         public void testEquality() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/expressions/equality.kt");
@@ -599,6 +605,18 @@ public class IrTextTestCaseGenerated extends AbstractIrTextTestCase {
         @TestMetadata("jvmStaticFieldReference.kt")
         public void testJvmStaticFieldReference() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/expressions/jvmStaticFieldReference.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("kt16904.kt")
+        public void testKt16904() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/expressions/kt16904.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("kt16905.kt")
+        public void testKt16905() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/ir/irText/expressions/kt16905.kt");
             doTest(fileName);
         }
 

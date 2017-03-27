@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.common.DefaultAnalyzerFacade
 import org.jetbrains.kotlin.cli.jvm.compiler.CliLightClassGenerationSupport
 import org.jetbrains.kotlin.cli.jvm.compiler.JvmPackagePartProvider
+import org.jetbrains.kotlin.config.JvmTarget
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
 import org.jetbrains.kotlin.config.languageVersionSettings
@@ -216,7 +217,7 @@ abstract class AbstractDiagnosticsTest : BaseDiagnosticsTest() {
         }
 
         return result ?: BaseDiagnosticsTest.DiagnosticTestLanguageVersionSettings(
-                BaseDiagnosticsTest.DEFAULT_DIAGNOSTIC_TESTS_FEATURES.keysToMap { true },
+                BaseDiagnosticsTest.DEFAULT_DIAGNOSTIC_TESTS_FEATURES,
                 LanguageVersionSettingsImpl.DEFAULT.apiVersion,
                 LanguageVersionSettingsImpl.DEFAULT.languageVersion
         )
@@ -265,10 +266,6 @@ abstract class AbstractDiagnosticsTest : BaseDiagnosticsTest() {
         @Suppress("NAME_SHADOWING")
         var files = files
 
-        val configuration = environment.configuration.copy().apply {
-            this.languageVersionSettings = languageVersionSettings
-        }
-
         // New JavaDescriptorResolver is created for each module, which is good because it emulates different Java libraries for each module,
         // albeit with same class names
         // See TopDownAnalyzerFacadeForJVM#analyzeFilesWithJavaIntegration
@@ -281,7 +278,7 @@ abstract class AbstractDiagnosticsTest : BaseDiagnosticsTest() {
                     moduleContext.project,
                     files,
                     moduleTrace,
-                    configuration,
+                    environment.configuration.copy().apply { this.languageVersionSettings = languageVersionSettings },
                     { scope -> JvmPackagePartProvider(environment, scope) }
             )
         }
@@ -316,7 +313,8 @@ abstract class AbstractDiagnosticsTest : BaseDiagnosticsTest() {
                 LookupTracker.DO_NOTHING,
                 JvmPackagePartProvider(environment, moduleContentScope),
                 moduleClassResolver,
-                configuration
+                JvmTarget.JVM_1_6,
+                languageVersionSettings
         )
         container.initJvmBuiltInsForTopDownAnalysis()
         moduleClassResolver.resolver = container.get<JavaDescriptorResolver>()

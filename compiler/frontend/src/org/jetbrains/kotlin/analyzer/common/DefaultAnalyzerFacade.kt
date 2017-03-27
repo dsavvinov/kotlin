@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackagePartProvider
 import org.jetbrains.kotlin.descriptors.impl.CompositePackageFragmentProvider
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
-import org.jetbrains.kotlin.frontend.di.configureCommon
 import org.jetbrains.kotlin.frontend.di.configureModule
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.load.kotlin.MetadataFinderFactory
@@ -49,11 +48,10 @@ import org.jetbrains.kotlin.serialization.deserialization.MetadataPackageFragmen
  * See [TargetPlatform.Default]
  */
 object DefaultAnalyzerFacade : AnalyzerFacade<PlatformAnalysisParameters>() {
-    private val compilerConfiguration = CompilerConfiguration().apply {
-        languageVersionSettings = LanguageVersionSettingsImpl(
-                LanguageVersion.LATEST, ApiVersion.LATEST, setOf(LanguageFeature.MultiPlatformProjects)
-        )
-    }
+    private val languageVersionSettings = LanguageVersionSettingsImpl(
+            LanguageVersion.LATEST, ApiVersion.LATEST,
+            specificFeatures = mapOf(LanguageFeature.MultiPlatformProjects to LanguageFeature.State.ENABLED)
+    )
 
     private class SourceModuleInfo(
             override val name: Name,
@@ -128,14 +126,15 @@ object DefaultAnalyzerFacade : AnalyzerFacade<PlatformAnalysisParameters>() {
             targetEnvironment: TargetEnvironment,
             packagePartProvider: PackagePartProvider
     ): StorageComponentContainer = createContainer("ResolveCommonCode", targetPlatform) {
-        configureModule(moduleContext, targetPlatform, bindingTrace)
+        configureModule(moduleContext, targetPlatform, TargetPlatformVersion.NoVersion, bindingTrace)
 
         useInstance(moduleContentScope)
         useInstance(LookupTracker.DO_NOTHING)
         useImpl<ResolveSession>()
         useImpl<LazyTopDownAnalyzer>()
         useImpl<FileScopeProviderImpl>()
-        configureCommon(compilerConfiguration)
+        useInstance(languageVersionSettings)
+        useImpl<AnnotationResolverImpl>()
         useImpl<CompilerDeserializationConfiguration>()
         useInstance(packagePartProvider)
         useInstance(declarationProviderFactory)

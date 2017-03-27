@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.cli.jvm
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.openapi.vfs.VirtualFile
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
@@ -120,25 +121,22 @@ object JvmRuntimeVersionsConsistencyChecker {
             val actualApi = ApiVersion.parse(actualRuntimeVersion.toString())
             if (actualApi != null) {
                 val inferredApiVersion =
-                        if (@Suppress("DEPRECATION") languageVersionSettings.isApiVersionExplicit)
+                        if (configuration.getBoolean(CLIConfigurationKeys.IS_API_VERSION_EXPLICIT))
                             languageVersionSettings.apiVersion
                         else
+                            // "minOf" is needed in case when API version was inferred from language version and it's older than actualApi.
+                            // For example, in "kotlinc-1.2 -language-version 1.0 -cp kotlin-runtime-1.1.jar" we should still infer API = 1.0
                             minOf(languageVersionSettings.apiVersion, actualApi)
 
-                // "minOf" is needed in case when API version was inferred from language version and it's older than actualApi.
-                // For example, in "kotlinc-1.2 -language-version 1.0 -cp kotlin-runtime-1.1.jar" we should still infer API = 1.0
-                val newSettings = LanguageVersionSettingsImpl(
-                        languageVersionSettings.languageVersion,
-                        inferredApiVersion,
-                        languageVersionSettings.additionalFeatures,
-                        isApiVersionExplicit = false
-                )
+                val newSettings = object : LanguageVersionSettings by languageVersionSettings {
+                    override val apiVersion: ApiVersion get() = inferredApiVersion
+                }
 
                 messageCollector.issue(null, "Old runtime has been found in the classpath. " +
                                              "Initial language version settings: $languageVersionSettings. " +
                                              "Updated language version settings: $newSettings", CompilerMessageSeverity.LOGGING)
 
-                configuration.put(CommonConfigurationKeys.LANGUAGE_VERSION_SETTINGS, newSettings)
+                configuration.languageVersionSettings = newSettings
             }
             else {
                 messageCollector.issue(null, "Could not parse runtime JAR version: $actualRuntimeVersion")

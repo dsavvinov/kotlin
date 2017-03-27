@@ -778,6 +778,12 @@ public class FindUsagesTestGenerated extends AbstractFindUsagesTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("labeledReturns.0.kt")
+            public void testLabeledReturns() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("idea/testData/findUsages/kotlin/findFunctionUsages/labeledReturns.0.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("localClassMember.0.kt")
             public void testLocalClassMember() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("idea/testData/findUsages/kotlin/findFunctionUsages/localClassMember.0.kt");
@@ -971,6 +977,18 @@ public class FindUsagesTestGenerated extends AbstractFindUsagesTest {
         public static class FindPrimaryConstructorUsages extends AbstractFindUsagesTest {
             public void testAllFilesPresentInFindPrimaryConstructorUsages() throws Exception {
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/findUsages/kotlin/findPrimaryConstructorUsages"), Pattern.compile("^(.+)\\.0\\.kt$"), TargetBackend.ANY, true);
+            }
+
+            @TestMetadata("annotationEntry.0.kt")
+            public void testAnnotationEntry() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("idea/testData/findUsages/kotlin/findPrimaryConstructorUsages/annotationEntry.0.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("constructorCall.0.kt")
+            public void testConstructorCall() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("idea/testData/findUsages/kotlin/findPrimaryConstructorUsages/constructorCall.0.kt");
+                doTest(fileName);
             }
 
             @TestMetadata("jvmOverloaded.0.kt")
@@ -1187,6 +1205,12 @@ public class FindUsagesTestGenerated extends AbstractFindUsagesTest {
         public static class FindSecondaryConstructorUsages extends AbstractFindUsagesTest {
             public void testAllFilesPresentInFindSecondaryConstructorUsages() throws Exception {
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/findUsages/kotlin/findSecondaryConstructorUsages"), Pattern.compile("^(.+)\\.0\\.kt$"), TargetBackend.ANY, true);
+            }
+
+            @TestMetadata("constructorCall.0.kt")
+            public void testConstructorCall() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("idea/testData/findUsages/kotlin/findSecondaryConstructorUsages/constructorCall.0.kt");
+                doTest(fileName);
             }
 
             @TestMetadata("defaultSecondaryConstructor.0.kt")

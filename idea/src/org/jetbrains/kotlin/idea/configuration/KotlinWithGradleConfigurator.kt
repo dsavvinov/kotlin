@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.idea.configuration
 
 import com.intellij.codeInsight.CodeInsightUtilCore
 import com.intellij.ide.actions.OpenFileAction
+import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleUtil
@@ -62,22 +63,23 @@ abstract class KotlinWithGradleConfigurator : KotlinProjectConfigurator {
             return ConfigureKotlinStatus.CONFIGURED
         }
 
-        val moduleGradleFile = getBuildGradleFile(module.project, getModuleFilePath(module))
-        if (moduleGradleFile != null && !isFileConfigured(moduleGradleFile)) {
+        val buildFiles = listOf(getBuildGradleFile(module.project, getModuleFilePath(module)),
+                                getBuildGradleFile(module.project, getTopLevelProjectFilePath(module.project)))
+                .filterNotNull()
+        if (buildFiles.none { buildFile -> allGradleConfigurators.any { it.isFileConfigured(buildFile) } })
             return ConfigureKotlinStatus.CAN_BE_CONFIGURED
-        }
-
-        val projectGradleFile = getBuildGradleFile(module.project, getTopLevelProjectFilePath(module.project))
-        if (projectGradleFile != null && !isFileConfigured(projectGradleFile)) {
-            return ConfigureKotlinStatus.CAN_BE_CONFIGURED
-        }
 
         return ConfigureKotlinStatus.BROKEN
     }
 
+    private val allGradleConfigurators: Collection<KotlinWithGradleConfigurator>
+        get() = Extensions.getExtensions(KotlinProjectConfigurator.EP_NAME).filterIsInstance<KotlinWithGradleConfigurator>()
+
     protected open fun isApplicable(module: Module): Boolean {
         return KotlinPluginUtil.isGradleModule(module) && !KotlinPluginUtil.isAndroidGradleModule(module)
     }
+
+    protected open fun getMinimumSupportedVersion() = "1.0.0"
 
     private fun isFileConfigured(projectGradleFile: GroovyFile): Boolean {
         val fileText = projectGradleFile.text
@@ -88,40 +90,48 @@ abstract class KotlinWithGradleConfigurator : KotlinProjectConfigurator {
 
     @JvmSuppressWildcards
     override fun configure(project: Project, excludeModules: Collection<Module>) {
-        val dialog = ConfigureDialogWithModulesAndVersion(project, this, excludeModules)
+        val dialog = ConfigureDialogWithModulesAndVersion(project, this, excludeModules, getMinimumSupportedVersion())
 
         dialog.show()
         if (!dialog.isOK) return
 
         project.executeCommand("Configure Kotlin") {
             val collector = createConfigureKotlinNotificationCollector(project)
-            val changedFiles = HashSet<GroovyFile>()
-            val projectGradleFile = getBuildGradleFile(project, getTopLevelProjectFilePath(project))
-            if (projectGradleFile != null && canConfigureFile(projectGradleFile)) {
-                val isModified = changeGradleFile(projectGradleFile, true, dialog.kotlinVersion, collector)
-                if (isModified) {
-                    changedFiles.add(projectGradleFile)
-                }
-            }
-
-            for (module in dialog.modulesToConfigure) {
-                val file = getBuildGradleFile(project, getModuleFilePath(module))
-                if (file != null && canConfigureFile(file)) {
-                    val isModified = changeGradleFile(file, false, dialog.kotlinVersion, collector)
-                    if (isModified) {
-                        changedFiles.add(file)
-                    }
-                }
-                else {
-                    showErrorMessage(project, "Cannot find build.gradle file for module " + module.name)
-                }
-            }
+            val changedFiles = configureWithVersion(project, dialog.modulesToConfigure, dialog.kotlinVersion, collector)
 
             for (file in changedFiles) {
                 OpenFileAction.openFile(file.virtualFile, project)
             }
             collector.showNotification()
         }
+    }
+
+    fun configureWithVersion(project: Project,
+                             modulesToConfigure: List<Module>,
+                             kotlinVersion: String,
+                             collector: NotificationMessageCollector): HashSet<GroovyFile> {
+        val changedFiles = HashSet<GroovyFile>()
+        val projectGradleFile = getBuildGradleFile(project, getTopLevelProjectFilePath(project))
+        if (projectGradleFile != null && canConfigureFile(projectGradleFile)) {
+            val isModified = changeGradleFile(projectGradleFile, true, kotlinVersion, collector)
+            if (isModified) {
+                changedFiles.add(projectGradleFile)
+            }
+        }
+
+        for (module in modulesToConfigure) {
+            val file = getBuildGradleFile(project, getModuleFilePath(module))
+            if (file != null && canConfigureFile(file)) {
+                val isModified = changeGradleFile(file, false, kotlinVersion, collector)
+                if (isModified) {
+                    changedFiles.add(file)
+                }
+            }
+            else {
+                showErrorMessage(project, "Cannot find build.gradle file for module " + module.name)
+            }
+        }
+        return changedFiles
     }
 
     protected fun addElementsToModuleFile(file: GroovyFile, version: String): Boolean {
@@ -152,12 +162,12 @@ abstract class KotlinWithGradleConfigurator : KotlinProjectConfigurator {
 
         val dependenciesBlock = getDependenciesBlock(file)
         val sdk = ModuleUtil.findModuleForPsiElement(file)?.let { ModuleRootManager.getInstance(it).sdk }
-        wasModified = wasModified or addExpressionInBlockIfNeeded(getDependencyDirective(sdk), dependenciesBlock, false)
+        wasModified = wasModified or addExpressionInBlockIfNeeded(getDependencyDirective(sdk, version), dependenciesBlock, false)
 
         return wasModified
     }
 
-    protected open fun getDependencyDirective(sdk: Sdk?) = getRuntimeLibrary(sdk)
+    protected open fun getDependencyDirective(sdk: Sdk?, version: String) = getRuntimeLibrary(sdk, version)
 
     protected abstract val applyPluginDirective: String
 
@@ -196,8 +206,8 @@ abstract class KotlinWithGradleConfigurator : KotlinProjectConfigurator {
         return isModified
     }
 
-    open fun getRuntimeLibrary(sdk: Sdk?): String {
-        return getRuntimeLibraryForSdk(sdk)
+    open fun getRuntimeLibrary(sdk: Sdk?, version: String): String {
+        return getRuntimeLibraryForSdk(sdk, version)
     }
 
     companion object {
@@ -515,8 +525,8 @@ abstract class KotlinWithGradleConfigurator : KotlinProjectConfigurator {
             return addLastExpressionInBlockIfNeeded(snippet, repositoriesBlock)
         }
 
-        fun getRuntimeLibraryForSdk(sdk: Sdk?): String {
-            return getDependencySnippet(getStdlibArtifactId(sdk))
+        fun getRuntimeLibraryForSdk(sdk: Sdk?, version: String): String {
+            return getDependencySnippet(getStdlibArtifactId(sdk, version))
         }
 
         fun getDependencySnippet(artifactId: String) = "compile \"org.jetbrains.kotlin:$artifactId:\$kotlin_version\""

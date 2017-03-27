@@ -88,6 +88,7 @@ import static org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin.
 import static org.jetbrains.kotlin.types.Variance.INVARIANT;
 import static org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils.isLocalFunction;
 import static org.jetbrains.org.objectweb.asm.Opcodes.*;
+import static org.jetbrains.org.objectweb.asm.Type.getObjectType;
 
 public class ImplementationBodyCodegen extends ClassBodyCodegen {
     private static final String ENUM_VALUES_FIELD_NAME = "$VALUES";
@@ -113,7 +114,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
             boolean isLocal
     ) {
         super(aClass, context, v, state, parentCodegen);
-        this.classAsmType = typeMapper.mapClass(descriptor);
+        this.classAsmType = getObjectType(typeMapper.classInternalName(descriptor));
         this.isLocal = isLocal;
         delegationFieldsInfo = getDelegationFieldsInfo(myClass.getSuperTypeListEntries());
     }
@@ -127,55 +128,47 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         boolean isAbstract = false;
         boolean isInterface = false;
         boolean isFinal = false;
-        boolean isStatic;
         boolean isAnnotation = false;
         boolean isEnum = false;
 
         ClassKind kind = descriptor.getKind();
 
-        if (kind == ClassKind.OBJECT) {
-            isStatic = isCompanionObject(descriptor);
-            isFinal = true;
+        Modality modality = descriptor.getModality();
+
+        if (modality == Modality.ABSTRACT || modality == Modality.SEALED) {
+            isAbstract = true;
         }
-        else {
-            Modality modality = descriptor.getModality();
 
-            if (modality == Modality.ABSTRACT || modality == Modality.SEALED) {
-                isAbstract = true;
-            }
+        if (kind == ClassKind.INTERFACE) {
+            isAbstract = true;
+            isInterface = true;
+        }
+        else if (kind == ClassKind.ANNOTATION_CLASS) {
+            isAbstract = true;
+            isInterface = true;
+            isAnnotation = true;
+        }
+        else if (kind == ClassKind.ENUM_CLASS) {
+            isAbstract = hasAbstractMembers(descriptor);
+            isEnum = true;
+        }
 
-            if (kind == ClassKind.INTERFACE) {
-                isAbstract = true;
-                isInterface = true;
-            }
-            else if (kind == ClassKind.ANNOTATION_CLASS) {
-                isAbstract = true;
-                isInterface = true;
-                isAnnotation = true;
-            }
-            else if (kind == ClassKind.ENUM_CLASS) {
-                isAbstract = hasAbstractMembers(descriptor);
-                isEnum = true;
-            }
-
-            if (modality != Modality.OPEN && !isAbstract) {
-                // Light-class mode: Do not make enum classes final since PsiClass corresponding to enum is expected to be inheritable from
-                isFinal = !(kind == ClassKind.ENUM_CLASS && !state.getClassBuilderMode().generateBodies);
-            }
-
-            isStatic = !descriptor.isInner();
+        if (modality != Modality.OPEN && !isAbstract) {
+            isFinal = kind == ClassKind.OBJECT ||
+                      // Light-class mode: Do not make enum classes final since PsiClass corresponding to enum is expected to be inheritable from
+                      !(kind == ClassKind.ENUM_CLASS && !state.getClassBuilderMode().generateBodies);
         }
 
         int access = 0;
 
-        if (!state.getClassBuilderMode().generateBodies && !DescriptorUtils.isTopLevelDeclaration(descriptor)) {
+        if (state.getClassBuilderMode() == ClassBuilderMode.LIGHT_CLASSES && !DescriptorUtils.isTopLevelDeclaration(descriptor)) {
             // !ClassBuilderMode.generateBodies means we are generating light classes & looking at a nested or inner class
             // Light class generation is implemented so that Cls-classes only read bare code of classes,
             // without knowing whether these classes are inner or not (see ClassStubBuilder.EMPTY_STRATEGY)
             // Thus we must write full accessibility flags on inner classes in this mode
             access |= getVisibilityAccessFlag(descriptor);
             // Same for STATIC
-            if (isStatic) {
+            if (!descriptor.isInner()) {
                 access |= ACC_STATIC;
             }
         }
@@ -332,7 +325,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
 
         for (String kotlinMarkerInterface : kotlinMarkerInterfaces) {
             sw.writeInterface();
-            sw.writeAsmType(Type.getObjectType(kotlinMarkerInterface));
+            sw.writeAsmType(getObjectType(kotlinMarkerInterface));
             sw.writeInterfaceEnd();
         }
 

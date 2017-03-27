@@ -17,8 +17,6 @@
 package org.jetbrains.kotlin.resolve.calls.tower
 
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptor
-import org.jetbrains.kotlin.descriptors.impl.TypeAliasConstructorDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.calls.smartcasts.getReceiverValueWithSmartCast
@@ -42,8 +40,6 @@ import org.jetbrains.kotlin.types.isDynamic
 import org.jetbrains.kotlin.types.typeUtil.getImmediateSuperclassNotAny
 import org.jetbrains.kotlin.utils.SmartList
 import org.jetbrains.kotlin.utils.addIfNotNull
-import org.jetbrains.kotlin.utils.singletonOrEmptyList
-import org.jetbrains.kotlin.utils.toReadOnlyList
 import java.util.*
 
 internal abstract class AbstractScopeTowerLevel(
@@ -148,7 +144,7 @@ internal class MemberScopeTowerLevel(
     override fun getFunctions(name: Name, extensionReceiver: ReceiverValueWithSmartCastInfo?): Collection<CandidateWithBoundDispatchReceiver<FunctionDescriptor>> {
         return collectMembers {
             getContributedFunctions(name, location) + it.getInnerConstructors(name, location) +
-            syntheticScopes.collectSyntheticMemberFunctions(it.singletonOrEmptyList(), name, location)
+            syntheticScopes.collectSyntheticMemberFunctions(listOfNotNull(it), name, location)
         }
     }
 }
@@ -278,17 +274,16 @@ private fun ResolutionScope.getContributedFunctionsAndConstructors(
         syntheticConstructorsProvider.getSyntheticConstructors(classifier, location).filterTo(result) { it.dispatchReceiverParameter == null }
     }
 
-    return result.toReadOnlyList()
+    return result.toList()
 }
 
 private fun ClassifierDescriptor.getCallableConstructors(): Collection<FunctionDescriptor> =
-        when (this) {
-            is TypeAliasDescriptor ->
-                getTypeAliasConstructors()
-            is ClassDescriptor ->
-                if (canHaveCallableConstructors) constructors else emptyList()
-            else -> emptyList()
-        }
+    when (this) {
+        is TypeAliasDescriptor -> if (canHaveCallableConstructors) constructors else emptyList()
+        is ClassDescriptor -> if (canHaveCallableConstructors) constructors else emptyList()
+        else -> emptyList()
+    }
+
 
 private fun ResolutionScope.getContributedObjectVariables(name: Name, location: LookupLocation): Collection<VariableDescriptor> {
     val objectDescriptor = getFakeDescriptorForObject(getContributedClassifier(name, location))
@@ -321,11 +316,5 @@ private fun getClassWithConstructors(classifier: ClassifierDescriptor?): ClassDe
 private val ClassDescriptor.canHaveCallableConstructors: Boolean
     get() = !ErrorUtils.isError(this) && !kind.isSingleton
 
-fun TypeAliasDescriptor.getTypeAliasConstructors(withDispatchReceiver: Boolean = false): Collection<TypeAliasConstructorDescriptor> {
-    val classDescriptor = this.classDescriptor ?: return emptyList()
-    if (!classDescriptor.canHaveCallableConstructors) return emptyList()
-
-    return classDescriptor.constructors.mapNotNull {
-        TypeAliasConstructorDescriptorImpl.createIfAvailable(this, it, withDispatchReceiver)
-    }
-}
+private val TypeAliasDescriptor.canHaveCallableConstructors: Boolean
+    get() = classDescriptor != null && !ErrorUtils.isError(classDescriptor) && classDescriptor!!.canHaveCallableConstructors

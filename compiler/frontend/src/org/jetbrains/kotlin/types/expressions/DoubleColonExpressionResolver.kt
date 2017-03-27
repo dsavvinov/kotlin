@@ -262,7 +262,7 @@ class DoubleColonExpressionResolver(
     private fun KtQualifiedExpression.buildNewExpressionForReservedGenericPropertyCallChainResolution(): KtExpression? {
         val parts = this.getQualifierChainParts()?.map { it.getQualifiedNameStringPart() ?: return null } ?: return null
         val qualifiedExpressionText = parts.joinToString(separator = ".")
-        return KtPsiFactory(this).createExpression(qualifiedExpressionText)
+        return KtPsiFactory(this, markGenerated = false).createExpression(qualifiedExpressionText)
     }
 
     private fun resolveReservedExpressionOnLHS(expression: KtExpression, c: ExpressionTypingContext): DoubleColonLHS.Expression? {
@@ -772,7 +772,7 @@ class DoubleColonExpressionResolver(
                         val setter = descriptor.setter
                         setter == null || Visibilities.isVisible(receiverType?.let(::TransientReceiver), setter, scopeOwnerDescriptor)
                     }
-                    reflectionTypes.getKPropertyType(Annotations.EMPTY, receiverType, descriptor.type, mutable)
+                    reflectionTypes.getKPropertyType(Annotations.EMPTY, listOfNotNull(receiverType), descriptor.type, mutable)
                 }
                 is VariableDescriptor -> null
                 else -> throw UnsupportedOperationException("Callable reference resolved to an unsupported descriptor: $descriptor")

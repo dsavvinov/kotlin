@@ -17,7 +17,7 @@
 package org.jetbrains.kotlin.cli.common.arguments
 
 import com.intellij.util.xmlb.XmlSerializerUtil
-import com.sampullara.cli.Args
+import org.jetbrains.kotlin.cli.common.parser.com.sampullara.cli.Args
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.*
@@ -37,23 +37,23 @@ import java.util.*
     }
 }
 
-fun <T : Any> copyBean(bean: T) = copyFields(bean, bean.javaClass.newInstance(), true, collectFieldsToCopy(bean.javaClass, false))
+fun <T : Any> copyBean(bean: T) = copyFields(bean, bean::class.java.newInstance(), true, collectFieldsToCopy(bean::class.java, false))
 
 fun <From : Any, To : From> mergeBeans(from: From, to: To): To {
     // TODO: rewrite when updated version of com.intellij.util.xmlb is available on TeamCity
-    return copyFields(from, XmlSerializerUtil.createCopy(to), false, collectFieldsToCopy(from.javaClass, false))
+    return copyFields(from, to, false, collectFieldsToCopy(from::class.java, false))
 }
 
-fun <From : Any, To : Any> copyInheritedFields(from: From, to: To) = copyFields(from, to, true, collectFieldsToCopy(from.javaClass, true))
+fun <From : Any, To : Any> copyInheritedFields(from: From, to: To) = copyFields(from, to, true, collectFieldsToCopy(from::class.java, true))
 
 fun <From : Any, To : Any> copyFieldsSatisfying(from: From, to: To, predicate: (Field) -> Boolean) =
-        copyFields(from, to, true, collectFieldsToCopy(from.javaClass, false).filter(predicate))
+        copyFields(from, to, true, collectFieldsToCopy(from::class.java, false).filter(predicate))
 
 private fun <From : Any, To : Any> copyFields(from: From, to: To, deepCopyWhenNeeded: Boolean, fieldsToCopy: List<Field>): To {
     if (from == to) return to
 
     for (fromField in fieldsToCopy) {
-        val toField = to.javaClass.getField(fromField.name)
+        val toField = to::class.java.getField(fromField.name)
         val fromValue = fromField.get(from)
         toField.set(to, if (deepCopyWhenNeeded) fromValue?.copyValueIfNeeded() else fromValue)
     }
@@ -72,14 +72,14 @@ private fun Any.copyValueIfNeeded(): Any {
         is DoubleArray -> Arrays.copyOf(this, size)
         is BooleanArray -> Arrays.copyOf(this, size)
 
-        is Array<*> -> java.lang.reflect.Array.newInstance(javaClass.componentType, size).apply {
+        is Array<*> -> java.lang.reflect.Array.newInstance(this::class.java.componentType, size).apply {
             this as Array<Any?>
             (this@copyValueIfNeeded as Array<Any?>).forEachIndexed { i, value -> this[i] = value?.copyValueIfNeeded() }
         }
 
-        is MutableCollection<*> -> (this as Collection<Any?>).mapTo(javaClass.newInstance() as MutableCollection<Any?>) { it?.copyValueIfNeeded() }
+        is MutableCollection<*> -> (this as Collection<Any?>).mapTo(this::class.java.newInstance() as MutableCollection<Any?>) { it?.copyValueIfNeeded() }
 
-        is MutableMap<*, *> -> (javaClass.newInstance() as MutableMap<Any?, Any?>).apply {
+        is MutableMap<*, *> -> (this::class.java.newInstance() as MutableMap<Any?, Any?>).apply {
             for ((k, v) in this@copyValueIfNeeded.entries) {
                 put(k?.copyValueIfNeeded(), v?.copyValueIfNeeded())
             }
@@ -89,7 +89,7 @@ private fun Any.copyValueIfNeeded(): Any {
     }
 }
 
-private fun collectFieldsToCopy(clazz: Class<*>, inheritedOnly: Boolean): List<Field> {
+fun collectFieldsToCopy(clazz: Class<*>, inheritedOnly: Boolean): List<Field> {
     val fromFields = ArrayList<Field>()
 
     var currentClass: Class<*>? = if (inheritedOnly) clazz.superclass else clazz

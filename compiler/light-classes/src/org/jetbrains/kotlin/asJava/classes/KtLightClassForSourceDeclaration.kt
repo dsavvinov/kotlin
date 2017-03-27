@@ -21,7 +21,6 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.util.Comparing
 import com.intellij.openapi.util.Key
 import com.intellij.psi.*
-import com.intellij.psi.impl.DebugUtil
 import com.intellij.psi.impl.java.stubs.PsiJavaFileStub
 import com.intellij.psi.scope.PsiScopeProcessor
 import com.intellij.psi.search.SearchScope
@@ -34,11 +33,10 @@ import com.intellij.util.containers.ContainerUtil
 import org.jetbrains.annotations.NonNls
 import org.jetbrains.kotlin.asJava.LightClassGenerationSupport
 import org.jetbrains.kotlin.asJava.LightClassUtil
-import org.jetbrains.kotlin.asJava.builder.ClsWrapperStubPsiFactory.getOriginalElement
+import org.jetbrains.kotlin.asJava.builder.InvalidLightClassDataHolder
 import org.jetbrains.kotlin.asJava.builder.LightClassData
+import org.jetbrains.kotlin.asJava.builder.LightClassDataHolder
 import org.jetbrains.kotlin.asJava.builder.LightClassDataProviderForClassOrObject
-import org.jetbrains.kotlin.asJava.builder.OutermostKotlinClassLightClassData
-import org.jetbrains.kotlin.asJava.builder.WithFileStubAndExtraDiagnostics
 import org.jetbrains.kotlin.asJava.elements.FakeFileForLightClass
 import org.jetbrains.kotlin.asJava.elements.KtLightIdentifier
 import org.jetbrains.kotlin.asJava.elements.KtLightModifierListWithExplicitModifiers
@@ -61,16 +59,16 @@ import java.util.*
 import javax.swing.Icon
 
 abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtClassOrObject)
-: KtLightClassBase(classOrObject.manager), StubBasedPsiElement<KotlinClassOrObjectStub<out KtClassOrObject>> {
+    : KtLazyLightClass(classOrObject.manager), StubBasedPsiElement<KotlinClassOrObjectStub<out KtClassOrObject>> {
     private val lightIdentifier = KtLightIdentifier(this, classOrObject)
 
-    private val _extendsList by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val listDelegate = super.getExtendsList() ?: return@lazy null
+    private val _extendsList by lazyPub {
+        val listDelegate = super.getExtendsList() ?: return@lazyPub null
         KtLightPsiReferenceList(listDelegate, this)
     }
 
-    private val _implementsList by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val listDelegate = super.getImplementsList() ?: return@lazy null
+    private val _implementsList by lazyPub {
+        val listDelegate = super.getImplementsList() ?: return@lazyPub null
         KtLightPsiReferenceList(listDelegate, this)
     }
 
@@ -80,48 +78,31 @@ abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtC
     abstract override fun getParent(): PsiElement?
     abstract override fun getQualifiedName(): String?
 
-    override val clsDelegate: PsiClass by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val javaFileStub = getJavaFileStub()
+    override val clsDelegate: PsiClass get() = lightClassData.clsDelegate
 
-        findDelegateClass(javaFileStub) ?: run {
-            val outermostClassOrObject = getOutermostClassOrObject(classOrObject)
-            val ktFileText: String? = try {
-                outermostClassOrObject.containingFile.text
-            }
-            catch (e: Exception) {
-                "Can't get text for outermost class"
-            }
+    override val lightClassData: LightClassData by lazyPub { findLightClassData() }
 
-            val stubFileText = DebugUtil.stubTreeToString(javaFileStub)
-            throw IllegalStateException("Couldn't get delegate for $this\nin $ktFileText\nstub: \n$stubFileText")
-        }
-    }
+    open protected fun findLightClassData() = getLightClassDataHolder().findDataForClassOrObject(classOrObject)
 
-    protected open fun findDelegateClass(javaFileStub: PsiJavaFileStub): PsiClass? {
-        return LightClassUtil.findClass(javaFileStub) {
-            getOriginalElement(it as StubElement<*>) == classOrObject
-        }
-    }
-
-    private fun getJavaFileStub(): PsiJavaFileStub = getLightClassData().javaFileStub
+    private fun getJavaFileStub(): PsiJavaFileStub = getLightClassDataHolder().javaFileStub
 
     protected fun getDescriptor(): ClassDescriptor? {
         return LightClassGenerationSupport.getInstance(project).resolveToDescriptor(classOrObject) as? ClassDescriptor
     }
 
-    private fun getLightClassData(): OutermostKotlinClassLightClassData {
-        val lightClassData = getLightClassData(classOrObject)
-        if (lightClassData !is OutermostKotlinClassLightClassData) {
+    protected fun getLightClassDataHolder(): LightClassDataHolder.ForClass {
+        val lightClassData = getLightClassDataHolder(classOrObject)
+        if (lightClassData is InvalidLightClassDataHolder) {
             LOG.error("Invalid light class data for existing light class:\n$lightClassData\n${classOrObject.getElementTextWithContext()}")
         }
-        return lightClassData as OutermostKotlinClassLightClassData
+        return lightClassData
     }
 
-    private val _containingFile: PsiFile by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    private val _containingFile: PsiFile by lazyPub {
         classOrObject.containingFile.virtualFile ?: error("No virtual file for " + classOrObject.text)
 
         object : FakeFileForLightClass(
-                classOrObject.getContainingKtFile(),
+                classOrObject.containingKtFile,
                 { if (classOrObject.isTopLevel()) this else create(getOutermostClassOrObject(classOrObject))!! },
                 { getJavaFileStub() }
         ) {
@@ -161,7 +142,7 @@ abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtC
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other == null || javaClass != other.javaClass) return false
+        if (other == null || this::class.java != other::class.java) return false
 
         val aClass = other as KtLightClassForSourceDeclaration
 
@@ -184,7 +165,7 @@ abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtC
         return super.getContainingClass()
     }
 
-    private val _typeParameterList: PsiTypeParameterList by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    private val _typeParameterList: PsiTypeParameterList by lazyPub {
         LightClassUtil.buildLightTypeParameterList(this, classOrObject)
     }
 
@@ -194,7 +175,7 @@ abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtC
 
     override fun getName(): String? = classOrObject.nameAsName?.asString()
 
-    private val _modifierList : PsiModifierList by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    private val _modifierList: PsiModifierList by lazyPub {
         object : KtLightModifierListWithExplicitModifiers(this@KtLightClassForSourceDeclaration, computeModifiers()) {
             override val delegate: PsiAnnotationOwner
                 get() = this@KtLightClassForSourceDeclaration.delegate.modifierList!!
@@ -313,7 +294,7 @@ abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtC
         return this
     }
 
-    override fun toString() = "${this.javaClass.simpleName}:${classOrObject.getDebugText()}"
+    override fun toString() = "${this::class.java.simpleName}:${classOrObject.getDebugText()}"
 
     override fun getOwnInnerClasses(): List<PsiClass> {
         val result = ArrayList<PsiClass>()
@@ -342,17 +323,17 @@ abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtC
     override fun getImplementsList() = _implementsList
 
     companion object {
-        private val JAVA_API_STUB = Key.create<CachedValue<WithFileStubAndExtraDiagnostics>>("JAVA_API_STUB")
+        private val JAVA_API_STUB = Key.create<CachedValue<LightClassDataHolder.ForClass>>("JAVA_API_STUB")
 
         private val jetTokenToPsiModifier = listOf(
                 PUBLIC_KEYWORD to PsiModifier.PUBLIC,
-                INTERNAL_KEYWORD to  PsiModifier.PUBLIC,
+                INTERNAL_KEYWORD to PsiModifier.PUBLIC,
                 PROTECTED_KEYWORD to PsiModifier.PROTECTED,
                 FINAL_KEYWORD to PsiModifier.FINAL)
 
 
         fun create(classOrObject: KtClassOrObject): KtLightClassForSourceDeclaration? {
-            if (classOrObject.getContainingKtFile().isScript || classOrObject.hasModifier(KtTokens.HEADER_KEYWORD))  {
+            if (classOrObject.containingKtFile.isScript || classOrObject.hasModifier(KtTokens.HEADER_KEYWORD)) {
                 return null
             }
 
@@ -366,7 +347,7 @@ abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtC
                 return null
             }
 
-            if (classOrObject.isLocal()) {
+            if (classOrObject.isLocal) {
                 if (classOrObject.containingFile.virtualFile == null) return null
 
                 return KtLightClassForLocalDeclaration(classOrObject)
@@ -383,26 +364,20 @@ abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtC
             return classOrObject.getBody()?.declarations?.isEmpty() ?: true
         }
 
-        fun getLightClassData(classOrObject: KtClassOrObject): LightClassData {
+        fun getLightClassDataHolder(classOrObject: KtClassOrObject): LightClassDataHolder.ForClass {
             return getLightClassCachedValue(classOrObject).value
         }
 
-        fun getLightClassCachedValue(classOrObject: KtClassOrObject): CachedValue<WithFileStubAndExtraDiagnostics> {
-            val outermostClassOrObject = getOutermostClassOrObject(classOrObject)
-            var value = outermostClassOrObject.getUserData(JAVA_API_STUB)
+        fun getLightClassCachedValue(classOrObject: KtClassOrObject): CachedValue<LightClassDataHolder.ForClass> {
+            var value =
+                    getOutermostClassOrObject(classOrObject).getUserData(JAVA_API_STUB) // stub computed for outer class can be used for inner/nested
+                    ?: classOrObject.getUserData(JAVA_API_STUB)
             if (value == null) {
                 value = CachedValuesManager.getManager(classOrObject.project).createCachedValue(
-                        LightClassDataProviderForClassOrObject(outermostClassOrObject), false)
-                value = outermostClassOrObject.putUserDataIfAbsent(JAVA_API_STUB, value)
+                        LightClassDataProviderForClassOrObject(classOrObject), false)
+                value = classOrObject.putUserDataIfAbsent(JAVA_API_STUB, value)
             }
             return value
-        }
-
-        private fun getOutermostClassOrObject(classOrObject: KtClassOrObject): KtClassOrObject {
-            val outermostClass = KtPsiUtil.getOutermostClassOrObject(classOrObject) ?:
-                throw IllegalStateException("Attempt to build a light class for a local class: " + classOrObject.text)
-
-            return outermostClass
         }
 
         private fun checkSuperTypeByFQName(classDescriptor: ClassDescriptor, qualifiedName: String, deep: Boolean): Boolean {
@@ -441,3 +416,11 @@ abstract class KtLightClassForSourceDeclaration(protected val classOrObject: KtC
     override val originKind: LightClassOriginKind
         get() = LightClassOriginKind.SOURCE
 }
+
+fun getOutermostClassOrObject(classOrObject: KtClassOrObject): KtClassOrObject {
+    val outermostClass = KtPsiUtil.getOutermostClassOrObject(classOrObject) ?:
+                         throw IllegalStateException("Attempt to build a light class for a local class: " + classOrObject.text)
+
+    return outermostClass
+}
+

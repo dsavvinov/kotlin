@@ -1,6 +1,7 @@
 package templates
 
 import templates.Family.*
+import templates.SequenceClass.*
 
 fun mapping(): List<GenericFunction> {
     val templates = arrayListOf<GenericFunction>()
@@ -300,6 +301,7 @@ fun mapping(): List<GenericFunction> {
             @sample samples.collections.Collections.Transformations.groupBy
             """
         }
+        sequenceClassification(terminal)
         typeParam("K")
         returns("Map<K, List<T>>")
         body { "return groupByTo(LinkedHashMap<K, MutableList<T>>(), keySelector)" }
@@ -321,6 +323,7 @@ fun mapping(): List<GenericFunction> {
             @sample samples.collections.Collections.Transformations.groupBy
             """
         }
+        sequenceClassification(terminal)
         returns("M")
         body {
             """
@@ -349,6 +352,7 @@ fun mapping(): List<GenericFunction> {
             @sample samples.collections.Collections.Transformations.groupByKeysAndValues
             """
         }
+        sequenceClassification(terminal)
         typeParam("K")
         typeParam("V")
         returns("Map<K, List<V>>")
@@ -375,6 +379,7 @@ fun mapping(): List<GenericFunction> {
             @sample samples.collections.Collections.Transformations.groupByKeysAndValues
             """
         }
+        sequenceClassification(terminal)
         returns("M")
         body {
             """
@@ -417,5 +422,14 @@ fun mapping(): List<GenericFunction> {
         }
     }
 
+    val terminalOperationPattern = Regex("^\\w+To")
+    templates.forEach { with (it) {
+        if (sequenceClassification.isEmpty()) {
+            if (terminalOperationPattern in signature)
+                sequenceClassification(terminal)
+            else
+                sequenceClassification(intermediate, stateless)
+        }
+    } }
     return templates
 }

@@ -98,7 +98,6 @@ import static org.jetbrains.kotlin.types.expressions.TypeReconstructionUtil.reco
 
 @SuppressWarnings("SuspiciousMethodCalls")
 public class BasicExpressionTypingVisitor extends ExpressionTypingVisitor {
-
     private static final TokenSet BARE_TYPES_ALLOWED = TokenSet.create(AS_KEYWORD, AS_SAFE);
 
     protected BasicExpressionTypingVisitor(@NotNull ExpressionTypingInternals facade) {
@@ -687,8 +686,7 @@ public class BasicExpressionTypingVisitor extends ExpressionTypingVisitor {
         trace.record(CALL, expression, call);
 
         if (context.trace.wantsDiagnostics()) {
-            CallCheckerContext callCheckerContext =
-                    new CallCheckerContext(context, components.languageVersionSettings, components.compilerConfiguration);
+            CallCheckerContext callCheckerContext = new CallCheckerContext(context, components.languageVersionSettings);
             for (CallChecker checker : components.callCheckers) {
                 checker.check(resolvedCall, expression, callCheckerContext);
             }
@@ -732,14 +730,14 @@ public class BasicExpressionTypingVisitor extends ExpressionTypingVisitor {
                             final ClassDescriptor descriptor
                     ) {
                         if (slice == CLASS && declaration == expression.getObjectDeclaration()) {
-                            KotlinType defaultType = DeferredType.createRecursionIntolerant(components.globalContext.getStorageManager(),
-                                                                                            context.trace,
-                                                                                            new Function0<KotlinType>() {
-                                                                                                @Override
-                                                                                                public KotlinType invoke() {
-                                                                                                    return descriptor.getDefaultType();
-                                                                                                }
-                                                                                            });
+                            KotlinType defaultType = components.wrappedTypeFactory.createRecursionIntolerantDeferredType(
+                                    context.trace,
+                                    new Function0<KotlinType>() {
+                                        @Override
+                                        public KotlinType invoke() {
+                                            return descriptor.getDefaultType();
+                                        }
+                                    });
                             result[0] = defaultType;
                         }
                     }
@@ -996,8 +994,7 @@ public class BasicExpressionTypingVisitor extends ExpressionTypingVisitor {
                 if (resolvedCall != null && trace.wantsDiagnostics()) {
                     // Call must be validated with the actual, not temporary trace in order to report operator diagnostic
                     // Only unary assignment expressions (++, --) and +=/... must be checked, normal assignments have the proper trace
-                    CallCheckerContext callCheckerContext =
-                            new CallCheckerContext(context, trace, components.languageVersionSettings, components.compilerConfiguration);
+                    CallCheckerContext callCheckerContext = new CallCheckerContext(context, trace, components.languageVersionSettings);
                     for (CallChecker checker : components.callCheckers) {
                         checker.check(resolvedCall, expression, callCheckerContext);
                     }
@@ -1064,8 +1061,7 @@ public class BasicExpressionTypingVisitor extends ExpressionTypingVisitor {
         resolvedCall.markCallAsCompleted();
 
         if (context.trace.wantsDiagnostics()) {
-            CallCheckerContext callCheckerContext =
-                    new CallCheckerContext(context, components.languageVersionSettings, components.compilerConfiguration);
+            CallCheckerContext callCheckerContext = new CallCheckerContext(context, components.languageVersionSettings);
             for (CallChecker checker : components.callCheckers) {
                 checker.check(resolvedCall, expression, callCheckerContext);
             }
@@ -1196,7 +1192,7 @@ public class BasicExpressionTypingVisitor extends ExpressionTypingVisitor {
                 expression,
                 receiver,
                 // semantically, a call to `==` is a safe call
-                new KtPsiFactory(expression.getProject()).createSafeCallNode(),
+                new KtPsiFactory(expression.getProject(), false).createSafeCallNode(),
                 operationSign,
                 Collections.singletonList(right)
         );
@@ -1505,6 +1501,14 @@ public class BasicExpressionTypingVisitor extends ExpressionTypingVisitor {
     }
 
     @Override
+    public KotlinTypeInfo visitCollectionLiteralExpression(
+            @NotNull KtCollectionLiteralExpression expression, ExpressionTypingContext context
+    ) {
+        return CollectionLiteralResolver.INSTANCE.resolveCollectionLiteral(
+                expression, context, components.callResolver, components.builtIns, components.languageVersionSettings);
+    }
+
+    @Override
     public KotlinTypeInfo visitClass(@NotNull KtClass klass, ExpressionTypingContext context) {
         // analyze class in illegal position and write descriptor to trace but do not write to any scope
         components.localClassifierAnalyzer.processClassOrObject(
@@ -1681,13 +1685,7 @@ public class BasicExpressionTypingVisitor extends ExpressionTypingVisitor {
             parent = parent.getParent();
         }
 
-        return isParentForBlockLevelExpression(parent);
-    }
-
-    private static boolean isParentForBlockLevelExpression(@Nullable PsiElement parent) {
-        return parent instanceof KtBlockExpression ||
-               parent instanceof KtContainerNodeForControlStructureBody ||
-               parent instanceof KtWhenEntry;
+        return KtPsiUtil.isStatementContainer(parent);
     }
 
     @Override

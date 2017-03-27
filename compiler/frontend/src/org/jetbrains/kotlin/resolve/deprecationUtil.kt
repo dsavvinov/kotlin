@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,9 @@ import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DeprecationLevelValue.*
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
+import org.jetbrains.kotlin.resolve.calls.checkers.hasSubpackageOfKotlin
+import org.jetbrains.kotlin.resolve.calls.checkers.isOperatorMod
+import org.jetbrains.kotlin.resolve.calls.checkers.shouldWarnAboutDeprecatedModFromBuiltIns
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedMemberDescriptor
@@ -179,6 +182,13 @@ private fun DeclarationDescriptor.getOwnDeprecations(languageVersionSettings: La
         // and from the typealias declaration
         return underlyingConstructorDescriptor.getOwnDeprecations(languageVersionSettings) +
                typeAliasDescriptor.getOwnDeprecations(languageVersionSettings)
+    }
+
+    // The problem is that declaration `mod` in built-ins has @Deprecated annotation but actually it was deprecated only in version 1.1
+    if (this is FunctionDescriptor && this.isOperatorMod() && this.hasSubpackageOfKotlin()) {
+        if (!shouldWarnAboutDeprecatedModFromBuiltIns(languageVersionSettings)) {
+            return emptyList()
+        }
     }
 
     val result = SmartList<Deprecation>()

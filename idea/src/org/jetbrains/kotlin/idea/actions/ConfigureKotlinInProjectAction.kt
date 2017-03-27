@@ -33,8 +33,8 @@ abstract class ConfigureKotlinInProjectAction : AnAction() {
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
 
-        val modules = getModulesWithKotlinFiles(project).ifEmpty { project.allModules() }
-        if (modules.all { isModuleConfigured(it) }) {
+        val modules = getConfigurableModulesWithKotlinFiles(project).ifEmpty { project.allModules() }
+        if (modules.all(::isModuleConfigured)) {
             Messages.showInfoMessage("All modules with Kotlin files are configured", e.presentation.text!!)
             return
         }

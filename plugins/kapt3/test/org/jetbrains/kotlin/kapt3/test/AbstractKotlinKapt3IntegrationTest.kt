@@ -70,7 +70,7 @@ abstract class AbstractKotlinKapt3IntegrationTest : CodegenTestCase() {
             name: String,
             vararg supportedAnnotations: String,
             options: Map<String, String> = emptyMap()
-    ) = testAP(false, name, options, { set, roundEnv, env -> fail("Should not run") }, *supportedAnnotations)
+    ) = testAP(false, name, options, { _, _, _ -> fail("Should not run") }, *supportedAnnotations)
 
     protected fun testAP(
             shouldRun: Boolean,
@@ -162,7 +162,7 @@ abstract class AbstractKotlinKapt3IntegrationTest : CodegenTestCase() {
             incrementalDataOutputDir: File
     ) : AbstractKapt3Extension(PathUtil.getJdkClassesRoots() + PathUtil.getKotlinPathsForIdeaPlugin().runtimePath,
                                emptyList(), javaSourceRoots, outputDir, outputDir,
-                               stubsOutputDir, incrementalDataOutputDir, options, true, System.currentTimeMillis(),
+                               stubsOutputDir, incrementalDataOutputDir, options, "", true, System.currentTimeMillis(),
                                KaptLogger(true), correctErrorTypes = true
     ) {
         internal var savedStubs: String? = null

@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.renderer.render
 import org.jetbrains.kotlin.resolve.annotations.hasJvmStaticAnnotation
 import org.jetbrains.kotlin.resolve.jvm.platform.JvmPlatform
-import org.jetbrains.kotlin.utils.singletonOrEmptyList
 
 fun Converter.convertImportList(importList: PsiImportList): ImportList {
     val imports = importList.allImportStatements
@@ -50,7 +49,7 @@ fun Converter.convertImport(anImport: PsiImportStatementBase, dumpConversion: Bo
     }
     else {
         convertImport(fqName, reference, onDemand, anImport is PsiImportStaticStatement)
-                .map { Import(it) }
+                .map(::Import)
     }
     return convertedImports.map { it.assignPrototype(anImport) }
 }
@@ -134,7 +133,7 @@ private fun convertStaticExplicitImport(fqName: FqName, target: PsiElement?): Li
                 is KtClassBody -> {
                     val parentClass = originParent.parent as KtClassOrObject
                     if (parentClass is KtObjectDeclaration && parentClass.isCompanion()) {
-                        return parentClass.getFqName()?.child(nameToImport)?.render().singletonOrEmptyList()
+                        return listOfNotNull(parentClass.getFqName()?.child(nameToImport)?.render())
                     }
                 }
             }
@@ -164,7 +163,7 @@ private fun renderImportName(fqName: FqName, isOnDemand: Boolean)
 // TODO: use the correct LanguageVersionSettings instance here
 private val DEFAULT_IMPORTS_SET: Set<FqName> = JvmPlatform.getDefaultImports(LanguageVersionSettingsImpl.DEFAULT)
         .filter { it.isAllUnder }
-        .map { it.fqnPart() }
+        .map { it.fqName }
         .toSet()
 
 private fun isImportedByDefault(c: KtLightClass) = c.qualifiedName?.let { FqName(it).parent() } in DEFAULT_IMPORTS_SET

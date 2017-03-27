@@ -33,8 +33,6 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getNonStrictParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.isExtensionDeclaration
-import org.jetbrains.kotlin.utils.addToStdlib.singletonList
-import org.jetbrains.kotlin.utils.addToStdlib.singletonOrEmptyList
 import java.util.*
 
 fun KtClassOrObject.toLightClass(): KtLightClass? = LightClassGenerationSupport.getInstance(project).getLightClass(this)
@@ -47,20 +45,18 @@ fun KtFile.findFacadeClass(): KtLightClass? {
 
 fun KtElement.toLightElements(): List<PsiNamedElement> =
         when (this) {
-            is KtClassOrObject -> toLightClass().singletonOrEmptyList()
+            is KtClassOrObject -> listOfNotNull(toLightClass())
             is KtNamedFunction,
             is KtSecondaryConstructor -> LightClassUtil.getLightClassMethods(this as KtFunction)
             is KtProperty -> LightClassUtil.getLightClassPropertyMethods(this).allDeclarations
-            is KtPropertyAccessor -> LightClassUtil.getLightClassAccessorMethod(this).singletonOrEmptyList()
-            is KtParameter -> ArrayList<PsiNamedElement>().let { elements ->
+            is KtPropertyAccessor -> listOfNotNull(LightClassUtil.getLightClassAccessorMethod(this))
+            is KtParameter -> mutableListOf<PsiNamedElement>().also { elements ->
                 toPsiParameters().toCollection(elements)
                 LightClassUtil.getLightClassPropertyMethods(this).toCollection(elements)
-                toAnnotationLightMethod()?.let { elements.add(it) }
-
-                elements
+                toAnnotationLightMethod()?.let(elements::add)
             }
             is KtTypeParameter -> toPsiTypeParameters()
-            is KtFile -> findFacadeClass().singletonOrEmptyList()
+            is KtFile -> listOfNotNull(findFacadeClass())
             else -> listOf()
         }
 
@@ -70,8 +66,8 @@ fun PsiElement.toLightMethods(): List<PsiMethod> =
             is KtProperty -> LightClassUtil.getLightClassPropertyMethods(this).toList()
             is KtParameter -> LightClassUtil.getLightClassPropertyMethods(this).toList()
             is KtPropertyAccessor -> LightClassUtil.getLightClassAccessorMethods(this)
-            is KtClass -> toLightClass()?.getConstructors()?.firstOrNull().singletonOrEmptyList()
-            is PsiMethod -> this.singletonList()
+            is KtClass -> listOfNotNull(toLightClass()?.constructors?.firstOrNull())
+            is PsiMethod -> listOf(this)
             else -> listOf()
         }
 
@@ -88,8 +84,8 @@ fun PsiElement.getRepresentativeLightMethod(): PsiMethod? =
 fun KtParameter.toPsiParameters(): Collection<PsiParameter> {
     val paramList = getNonStrictParentOfType<KtParameterList>() ?: return emptyList()
 
-    val paramIndex = paramList.getParameters().indexOf(this)
-    val owner = paramList.getParent()
+    val paramIndex = paramList.parameters.indexOf(this)
+    val owner = paramList.parent
     val lightParamIndex = if (owner is KtDeclaration && owner.isExtensionDeclaration()) paramIndex + 1 else paramIndex
 
     val methods: Collection<PsiMethod> =
@@ -141,9 +137,7 @@ val KtClassOrObject.hasInterfaceDefaultImpls: Boolean
     get() = this is KtClass && isInterface() && hasNonAbstractMembers(this)
 
 private fun hasNonAbstractMembers(ktInterface: KtClass): Boolean {
-    return ktInterface.declarations.any {
-        isNonAbstractMember(it)
-    }
+    return ktInterface.declarations.any(::isNonAbstractMember)
 }
 
 private fun isNonAbstractMember(member: KtDeclaration?): Boolean {

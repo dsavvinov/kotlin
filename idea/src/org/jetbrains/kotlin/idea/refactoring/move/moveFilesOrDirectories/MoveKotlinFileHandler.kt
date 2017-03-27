@@ -24,7 +24,7 @@ import com.intellij.refactoring.move.moveFilesOrDirectories.MoveFileHandler
 import com.intellij.refactoring.move.moveFilesOrDirectories.MoveFilesOrDirectoriesUtil
 import com.intellij.usageView.UsageInfo
 import org.jetbrains.kotlin.idea.KotlinLanguage
-import org.jetbrains.kotlin.idea.codeInsight.shorten.runWithElementsToShortenIsEmptyIgnored
+import org.jetbrains.kotlin.idea.codeInsight.shorten.runRefactoringAndKeepDelayedRequests
 import org.jetbrains.kotlin.idea.core.getPackage
 import org.jetbrains.kotlin.idea.core.packageMatchesDirectory
 import org.jetbrains.kotlin.idea.core.quoteIfNeeded
@@ -91,7 +91,7 @@ class MoveKotlinFileHandler : MoveFileHandler() {
                         elementsToMove = psiFile.declarations.filterIsInstance<KtNamedDeclaration>(),
                         moveTarget = moveTarget,
                         delegate = MoveDeclarationsDelegate.TopLevel,
-                        updateInternalReferences = false
+                        scanEntireFile = true
                 ),
                 Mover.Idle
         )
@@ -122,7 +122,6 @@ class MoveKotlinFileHandler : MoveFileHandler() {
             usages += it.findUsages()
             usages += it.getConflictsAsUsages()
         }
-        newParent?.let { usages += findInternalUsages(psiFile, it) }
         return usages
     }
 
@@ -146,7 +145,7 @@ class MoveKotlinFileHandler : MoveFileHandler() {
 
     fun retargetUsages(usageInfos: List<UsageInfo>?, moveDeclarationsProcessor: MoveKotlinDeclarationsProcessor) {
         postProcessMoveUsages(usageInfos?.firstIsInstanceOrNull<InternalUsagesWrapper>()?.usages ?: emptyList())
-        moveDeclarationsProcessor.project.runWithElementsToShortenIsEmptyIgnored {
+        moveDeclarationsProcessor.project.runRefactoringAndKeepDelayedRequests {
             usageInfos?.let { moveDeclarationsProcessor.execute(it) }
         }
     }

@@ -18,7 +18,9 @@ package org.jetbrains.kotlin.idea.configuration
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.extensions.Extensions
+import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
@@ -57,7 +59,7 @@ val EAP_11_REPOSITORY = RepositoryDescription(
         isSnapshot = false)
 
 fun isModuleConfigured(module: Module): Boolean {
-    return Extensions.getExtensions(KotlinProjectConfigurator.EP_NAME).any {
+    return allConfigurators().any {
         it.getStatus(module) == ConfigureKotlinStatus.CONFIGURED
     }
 }
@@ -71,8 +73,20 @@ fun getModulesWithKotlinFiles(project: Project): Collection<Module> {
         return emptyList()
     }
 
-    return project.allModules().filter { module ->
-        FileTypeIndex.containsFileOfType(KotlinFileType.INSTANCE, module.getModuleScope(true))
+    return project.allModules()
+            .filter { module ->
+                FileTypeIndex.containsFileOfType(KotlinFileType.INSTANCE, module.getModuleScope(true))
+            }
+}
+
+fun getConfigurableModulesWithKotlinFiles(project: Project): Collection<Module> {
+    val modules = getModulesWithKotlinFiles(project)
+    if (modules.isEmpty()) return modules
+
+    val pathMap = ModuleManager.getInstance(project).modules.asList().buildExternalPathMap()
+    return modules.mapTo(HashSet()) { module ->
+        val externalPath = module.externalProjectPath
+        if (externalPath == null) module else (pathMap[externalPath] ?: module)
     }
 }
 
@@ -85,8 +99,8 @@ fun showConfigureKotlinNotificationIfNeeded(module: Module) {
 fun showConfigureKotlinNotificationIfNeeded(project: Project, excludeModules: List<Module> = emptyList()) {
     ApplicationManager.getApplication().executeOnPooledThread {
         val notificationString = DumbService.getInstance(project).runReadActionInSmartMode(Computable {
-            val modules = getModulesWithKotlinFiles(project) - excludeModules
-            if (modules.all { isModuleConfigured(it) }) null else ConfigureKotlinNotification.getNotificationString(project, excludeModules)
+            val modules = getConfigurableModulesWithKotlinFiles(project) - excludeModules
+            if (modules.all(::isModuleConfigured)) null else ConfigureKotlinNotification.getNotificationString(project, excludeModules)
         })
         if (notificationString != null) {
             ApplicationManager.getApplication().invokeLater {
@@ -97,35 +111,73 @@ fun showConfigureKotlinNotificationIfNeeded(project: Project, excludeModules: Li
 }
 
 fun getAbleToRunConfigurators(project: Project): Collection<KotlinProjectConfigurator> {
-    val modules = getModulesWithKotlinFiles(project).ifEmpty { project.allModules() }
+    val modules = getConfigurableModulesWithKotlinFiles(project).ifEmpty { project.allModules() }
 
-    return Extensions.getExtensions(KotlinProjectConfigurator.EP_NAME).filter { configurator ->
+    return allConfigurators().filter { configurator ->
         modules.any { module -> configurator.getStatus(module) == ConfigureKotlinStatus.CAN_BE_CONFIGURED }
     }
 }
 
 fun getAbleToRunConfigurators(module: Module): Collection<KotlinProjectConfigurator> {
-    return Extensions.getExtensions(KotlinProjectConfigurator.EP_NAME).filter { it.getStatus(module) == ConfigureKotlinStatus.CAN_BE_CONFIGURED }
+    return allConfigurators().filter { it.getStatus(module) == ConfigureKotlinStatus.CAN_BE_CONFIGURED }
 }
 
 fun getConfiguratorByName(name: String): KotlinProjectConfigurator? {
-    return Extensions.getExtensions(KotlinProjectConfigurator.EP_NAME).firstOrNull { it.name == name }
+    return allConfigurators().firstOrNull { it.name == name }
 }
+
+fun allConfigurators() = Extensions.getExtensions(KotlinProjectConfigurator.EP_NAME)
 
 fun getNonConfiguredModules(project: Project, configurator: KotlinProjectConfigurator): List<Module> {
-    return project.allModules().filter { module -> configurator.getStatus(module) == ConfigureKotlinStatus.CAN_BE_CONFIGURED }
+    return project.allModules()
+            .filter { module -> configurator.canConfigure(module) }
+            .excludeSourceRootModules()
 }
 
+private fun KotlinProjectConfigurator.canConfigure(module: Module) =
+        getStatus(module) == ConfigureKotlinStatus.CAN_BE_CONFIGURED &&
+        (allConfigurators().toList() - this).none { it.getStatus(module) == ConfigureKotlinStatus.CONFIGURED }
+
+fun Collection<Module>.excludeSourceRootModules(): List<Module> {
+    val pathMap = buildExternalPathMap()
+    return filter { it.externalProjectId == null || it.externalProjectPath == null } + pathMap.values
+}
+
+fun Collection<Module>.buildExternalPathMap(): Map<String, Module> {
+    val pathMap = mutableMapOf<String, Module>()
+    for (module in this) {
+        val externalId = module.externalProjectId
+        val externalPath = module.externalProjectPath
+        if (externalId != null && externalPath != null) {
+            val previousModule = pathMap[externalPath]
+            // the module without the source root suffix will have the shortest name
+            if (previousModule == null || isSourceRootPrefix(externalId, previousModule.externalProjectId!!)) {
+                pathMap[externalPath] = module
+            }
+        }
+    }
+    return pathMap
+}
+
+private fun isSourceRootPrefix(externalId: String, previousModuleExternalId: String)
+        = externalId.length < previousModuleExternalId.length && previousModuleExternalId.startsWith(externalId)
+
+val Module.externalProjectId: String?
+    get() = ExternalSystemApiUtil.getExternalProjectId(this)
+
+val Module.externalProjectPath: String?
+    get() = ExternalSystemApiUtil.getExternalProjectPath(this)
+
 fun getNonConfiguredModulesWithKotlinFiles(project: Project, configurator: KotlinProjectConfigurator): List<Module> {
-    val modules = getModulesWithKotlinFiles(project)
+    val modules = getConfigurableModulesWithKotlinFiles(project)
     return modules.filter { module -> configurator.getStatus(module) == ConfigureKotlinStatus.CAN_BE_CONFIGURED }
 }
 
-fun getNonConfiguredModules(project: Project, excludeModules: Collection<Module> = emptyList()): Collection<Module> {
-    val modulesWithKotlinFiles = getModulesWithKotlinFiles(project) - excludeModules
-    val ableToRunConfigurators = getAbleToRunConfigurators(project)
+fun getNonConfiguredModulesWithKotlinFiles(project: Project, excludeModules: Collection<Module> = emptyList()): Collection<Module> {
+    val modulesWithKotlinFiles = getConfigurableModulesWithKotlinFiles(project) - excludeModules
+    val configurators = allConfigurators()
     return modulesWithKotlinFiles.filter { module ->
-        ableToRunConfigurators.any { it.getStatus(module) == ConfigureKotlinStatus.CAN_BE_CONFIGURED }
+        configurators.any { it.getStatus(module) == ConfigureKotlinStatus.CAN_BE_CONFIGURED }
     }
 }
 
@@ -159,7 +211,7 @@ fun hasKotlinFilesInSources(module: Module): Boolean {
 }
 
 fun isSnapshot(version: String): Boolean {
-    return version.contains("SNAPSHOT")
+    return version.contains("SNAPSHOT", ignoreCase = true)
 }
 
 fun isEap(version: String): Boolean {

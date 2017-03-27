@@ -172,7 +172,7 @@ class GradleInspectionTest : GradleImportingTestCase() {
         val globalContext = CodeInsightTestFixtureImpl.createGlobalContextForTool(scope, myProject, inspectionManager, toolWrapper)
 
         val resultRef = Ref<List<String>>()
-        UsefulTestCase.edt {
+        invokeTestRunnable {
             InspectionTestUtil.runTool(toolWrapper, scope, globalContext)
             val presentation = globalContext.getPresentation(toolWrapper)
 
@@ -186,12 +186,5 @@ class GradleInspectionTest : GradleImportingTestCase() {
         }
 
         return resultRef.get()
-    }
-
-
-    override fun invokeTestRunnable(runnable: Runnable) {
-        runInEdtAndWait {
-            runnable.run()
-        }
     }
 }

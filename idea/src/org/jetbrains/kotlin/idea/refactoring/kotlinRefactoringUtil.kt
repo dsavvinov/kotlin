@@ -253,7 +253,7 @@ fun <T, E : PsiElement> getPsiElementPopup(
 
     val list = JBList(elements.map(toPsi))
     list.cellRenderer = renderer
-    list.addListSelectionListener { e ->
+    list.addListSelectionListener {
         highlighter?.dropHighlight()
         val index = list.selectedIndex
         if (index >= 0) {
@@ -932,7 +932,7 @@ fun checkSuperMethodsWithPopup(
         append(" of ")
         append(SymbolPresentationUtil.getSymbolPresentableText(superClass))
     }
-    val list = JBList(renameBase, renameCurrent)
+    val list = JBList<String>(renameBase, renameCurrent)
     JBPopupFactory.getInstance()
             .createListPopupBuilder(list)
             .setTitle(title)

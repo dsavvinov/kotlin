@@ -30,8 +30,10 @@ import org.jetbrains.kotlin.psi.KtScript
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
 import java.io.File
 import kotlin.reflect.KClass
-import kotlin.reflect.memberFunctions
-import kotlin.reflect.primaryConstructor
+import kotlin.reflect.KFunction
+import kotlin.reflect.KParameter
+import kotlin.reflect.full.memberFunctions
+import kotlin.reflect.full.primaryConstructor
 
 open class KotlinScriptDefinitionFromAnnotatedTemplate(
         template: KClass<out Any>,
@@ -68,6 +70,14 @@ open class KotlinScriptDefinitionFromAnnotatedTemplate(
     }
 
     private val acceptedAnnotations: List<KClass<out Annotation>> by lazy {
+
+        fun sameSignature(left: KFunction<*>, right: KFunction<*>): Boolean =
+                left.parameters.size == right.parameters.size &&
+                left.parameters.zip(right.parameters).all {
+                    it.first.kind == KParameter.Kind.INSTANCE ||
+                    it.first.type == it.second.type
+                }
+
         val resolveMethod = ScriptDependenciesResolver::resolve
         val resolverMethodAnnotations =
                 resolver?.let { it::class }?.memberFunctions?.find { function ->
@@ -95,7 +105,7 @@ open class KotlinScriptDefinitionFromAnnotatedTemplate(
         }
 
         fun makeScriptContents() = BasicScriptContents(file, getAnnotations = {
-            val classLoader = (template as Any).javaClass.classLoader
+            val classLoader = template.java.classLoader
             try {
                 getAnnotationEntries(file, project)
                         .mapNotNull { psiAnn ->

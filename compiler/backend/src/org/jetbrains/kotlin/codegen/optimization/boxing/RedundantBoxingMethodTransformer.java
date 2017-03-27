@@ -21,7 +21,9 @@ import kotlin.collections.CollectionsKt;
 import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.codegen.optimization.common.StrictBasicValue;
+import org.jetbrains.kotlin.codegen.optimization.common.UtilKt;
 import org.jetbrains.kotlin.codegen.optimization.transformer.MethodTransformer;
+import org.jetbrains.org.objectweb.asm.Label;
 import org.jetbrains.org.objectweb.asm.Opcodes;
 import org.jetbrains.org.objectweb.asm.Type;
 import org.jetbrains.org.objectweb.asm.commons.InstructionAdapter;
@@ -48,7 +50,7 @@ public class RedundantBoxingMethodTransformer extends MethodTransformer {
 
             adaptLocalVariableTableForBoxedValues(node, frames);
 
-            applyVariablesRemapping(node, buildVariablesRemapping(valuesToOptimize, node));
+            UtilKt.remapLocalVariables(node, buildVariablesRemapping(valuesToOptimize, node));
 
             adaptInstructionsForBoxedValues(node, valuesToOptimize);
         }
@@ -221,21 +223,6 @@ public class RedundantBoxingMethodTransformer extends MethodTransformer {
         return remapping;
     }
 
-    private static void applyVariablesRemapping(@NotNull MethodNode node, @NotNull int[] remapping) {
-        for (AbstractInsnNode insn : node.instructions.toArray()) {
-            if (insn instanceof VarInsnNode) {
-                ((VarInsnNode) insn).var = remapping[((VarInsnNode) insn).var];
-            }
-            if (insn instanceof IincInsnNode) {
-                ((IincInsnNode) insn).var = remapping[((IincInsnNode) insn).var];
-            }
-        }
-
-        for (LocalVariableNode localVariableNode : node.localVariables) {
-            localVariableNode.index = remapping[localVariableNode.index];
-        }
-    }
-
     private static void adaptInstructionsForBoxedValues(
             @NotNull MethodNode node,
             @NotNull RedundantBoxedValuesCollection values
@@ -341,9 +328,68 @@ public class RedundantBoxingMethodTransformer extends MethodTransformer {
                 );
                 node.instructions.set(insn, new InsnNode(Opcodes.ICONST_1));
                 break;
+            case Opcodes.INVOKESTATIC:
+                if (BoxingInterpreterKt.isAreEqualIntrinsic(insn)) {
+                    adaptAreEqualIntrinsic(node, insn, value);
+                    break;
+                }
+                else {
+                    // fall-through to default
+                }
             default:
                 // CHECKCAST or unboxing-method call
                 node.instructions.remove(insn);
         }
+    }
+
+    private static void adaptAreEqualIntrinsic(@NotNull MethodNode node, @NotNull AbstractInsnNode insn, @NotNull BoxedValueDescriptor value) {
+        Type unboxedType = value.getUnboxedType();
+
+        switch (unboxedType.getSort()) {
+            case Type.BOOLEAN:
+            case Type.BYTE:
+            case Type.SHORT:
+            case Type.INT:
+            case Type.CHAR:
+                adaptAreEqualIntrinsicForInt(node, insn);
+                break;
+            case Type.LONG:
+                adaptAreEqualIntrinsicForLong(node, insn);
+                break;
+            case Type.OBJECT:
+                break;
+            default:
+                throw new AssertionError("Unexpected unboxed type kind: " + unboxedType);
+        }
+    }
+
+    private static void adaptAreEqualIntrinsicForInt(@NotNull MethodNode node, @NotNull AbstractInsnNode insn) {
+        LabelNode lNotEqual = new LabelNode(new Label());
+        LabelNode lDone = new LabelNode(new Label());
+        node.instructions.insertBefore(insn, new JumpInsnNode(Opcodes.IF_ICMPNE, lNotEqual));
+        node.instructions.insertBefore(insn, new InsnNode(Opcodes.ICONST_1));
+        node.instructions.insertBefore(insn, new JumpInsnNode(Opcodes.GOTO, lDone));
+        node.instructions.insertBefore(insn, lNotEqual);
+        node.instructions.insertBefore(insn, new InsnNode(Opcodes.ICONST_0));
+        node.instructions.insertBefore(insn, lDone);
+
+        node.instructions.remove(insn);
+    }
+
+    private static void adaptAreEqualIntrinsicForLong(@NotNull MethodNode node, @NotNull AbstractInsnNode insn) {
+        node.instructions.insertBefore(insn, new InsnNode(Opcodes.LCMP));
+        ifEqual1Else0(node, insn);
+        node.instructions.remove(insn);
+    }
+
+    private static void ifEqual1Else0(@NotNull MethodNode node, @NotNull AbstractInsnNode insn) {
+        LabelNode lNotEqual = new LabelNode(new Label());
+        LabelNode lDone = new LabelNode(new Label());
+        node.instructions.insertBefore(insn, new JumpInsnNode(Opcodes.IFNE, lNotEqual));
+        node.instructions.insertBefore(insn, new InsnNode(Opcodes.ICONST_1));
+        node.instructions.insertBefore(insn, new JumpInsnNode(Opcodes.GOTO, lDone));
+        node.instructions.insertBefore(insn, lNotEqual);
+        node.instructions.insertBefore(insn, new InsnNode(Opcodes.ICONST_0));
+        node.instructions.insertBefore(insn, lDone);
     }
 }

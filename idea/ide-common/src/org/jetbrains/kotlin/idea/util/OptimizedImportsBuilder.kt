@@ -39,7 +39,6 @@ import org.jetbrains.kotlin.resolve.scopes.ImportingScope
 import org.jetbrains.kotlin.resolve.scopes.utils.findClassifier
 import org.jetbrains.kotlin.resolve.scopes.utils.parentsWithSelf
 import org.jetbrains.kotlin.resolve.scopes.utils.replaceImportingScopes
-import org.jetbrains.kotlin.utils.singletonOrEmptyList
 import java.util.*
 
 class OptimizedImportsBuilder(
@@ -92,7 +91,7 @@ class OptimizedImportsBuilder(
                 .mapNotNull { it.importPath }
                 .filter {
                     val aliasName = it.alias
-                    aliasName != null && aliasName != it.fqnPart().shortName()
+                    aliasName != null && aliasName != it.fqName.shortName()
                 }
                 .mapTo(importRules) { ImportRule.Add(it) }
 
@@ -294,7 +293,7 @@ class OptimizedImportsBuilder(
                     names.flatMap { name ->
                         scope.getContributedFunctions(name, NoLookupLocation.FROM_IDE) +
                         scope.getContributedVariables(name, NoLookupLocation.FROM_IDE) +
-                        scope.getContributedClassifier(name, NoLookupLocation.FROM_IDE).singletonOrEmptyList()
+                        listOfNotNull(scope.getContributedClassifier(name, NoLookupLocation.FROM_IDE))
                     }
                 }
                 .filter { it.isNotEmpty() }

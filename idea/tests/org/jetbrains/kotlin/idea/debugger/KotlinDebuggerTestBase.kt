@@ -20,7 +20,10 @@ import com.intellij.debugger.DebuggerInvocationUtil
 import com.intellij.debugger.SourcePosition
 import com.intellij.debugger.actions.MethodSmartStepTarget
 import com.intellij.debugger.actions.SmartStepTarget
-import com.intellij.debugger.engine.*
+import com.intellij.debugger.engine.BasicStepMethodFilter
+import com.intellij.debugger.engine.DebugProcessImpl
+import com.intellij.debugger.engine.MethodFilter
+import com.intellij.debugger.engine.SuspendContextImpl
 import com.intellij.debugger.engine.evaluation.CodeFragmentKind
 import com.intellij.debugger.engine.evaluation.EvaluationContextImpl
 import com.intellij.debugger.engine.evaluation.TextWithImportsImpl
@@ -42,7 +45,11 @@ import com.intellij.psi.PsiManager
 import com.intellij.psi.search.FilenameIndex
 import com.intellij.xdebugger.XDebuggerManager
 import com.intellij.xdebugger.XDebuggerUtil
-import com.intellij.xdebugger.breakpoints.*
+import com.intellij.xdebugger.breakpoints.XBreakpointManager
+import com.intellij.xdebugger.breakpoints.XBreakpointProperties
+import com.intellij.xdebugger.breakpoints.XBreakpointType
+import com.intellij.xdebugger.breakpoints.XLineBreakpointType
+import com.sun.jdi.request.StepRequest
 import org.jetbrains.java.debugger.breakpoints.properties.JavaBreakpointProperties
 import org.jetbrains.java.debugger.breakpoints.properties.JavaLineBreakpointProperties
 import org.jetbrains.kotlin.idea.debugger.breakpoints.KotlinFieldBreakpoint
@@ -64,8 +71,14 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
     private var oldDisableKotlinInternalClasses = false
     private var oldRenderDelegatedProperties = false
 
-    protected lateinit var evaluationContext: EvaluationContextImpl
-    protected lateinit var debuggerContext: DebuggerContextImpl
+    protected var _evaluationContext: EvaluationContextImpl? = null
+    protected val evaluationContext get() = _evaluationContext!!
+
+    protected var _debuggerContext: DebuggerContextImpl? = null
+    protected val debuggerContext get() = _debuggerContext!!
+
+    protected var _commandProvider: KotlinSteppingCommandProvider? = KotlinSteppingCommandProvider()
+    protected val commandProvider get() = _commandProvider!!
 
     override fun initApplication() {
         super.initApplication()
@@ -74,7 +87,12 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
 
     override fun tearDown() {
         super.tearDown()
+
         restoreDefaultSettings()
+
+        _evaluationContext = null
+        _debuggerContext = null
+        _commandProvider = null
     }
 
     protected fun configureSettings(fileText: String) {
@@ -119,7 +137,7 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
         get() = debugProcess ?: throw AssertionError("createLocalProcess() should be called before getDebugProcess()")
 
     fun doOnBreakpoint(action: SuspendContextImpl.() -> Unit) {
-        super.onBreakpoint(SuspendContextRunnable {
+        super.onBreakpoint({
             try {
                 initContexts(it)
                 it.printContext()
@@ -136,22 +154,25 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
     }
 
     protected fun initContexts(suspendContext: SuspendContextImpl) {
-        evaluationContext = createEvaluationContext(suspendContext)
-        debuggerContext = createDebuggerContext(suspendContext)
+        _evaluationContext = createEvaluationContext(suspendContext)
+        _debuggerContext = createDebuggerContext(suspendContext)
     }
 
     protected fun SuspendContextImpl.doStepInto(ignoreFilters: Boolean, smartStepFilter: MethodFilter?) {
-        dp.managerThread!!.schedule(dp.createStepIntoCommand(this, ignoreFilters, smartStepFilter))
+        val stepIntoCommand = runReadAction {
+            commandProvider.getStepIntoCommand(this, ignoreFilters, smartStepFilter, StepRequest.STEP_LINE)
+        } ?: dp.createStepIntoCommand(this, ignoreFilters, smartStepFilter)
+        dp.managerThread.schedule(stepIntoCommand)
     }
 
     protected fun SuspendContextImpl.doStepOut() {
-        val stepOutCommand = runReadAction { KotlinSteppingCommandProvider().getStepOutCommand(this, debuggerContext) }
+        val stepOutCommand = runReadAction { commandProvider.getStepOutCommand(this, debuggerContext) }
                              ?: dp.createStepOutCommand(this)
         dp.managerThread.schedule(stepOutCommand)
     }
 
     protected fun SuspendContextImpl.doStepOver() {
-        val stepOverCommand = runReadAction { KotlinSteppingCommandProvider().getStepOverCommand(this, false, debuggerContext) }
+        val stepOverCommand = runReadAction { commandProvider.getStepOverCommand(this, false, debuggerContext) }
                              ?: dp.createStepOverCommand(this, false)
         dp.managerThread.schedule(stepOverCommand)
     }
@@ -173,7 +194,7 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
 
         when {
             !line.startsWith("//") -> return
-            line.startsWith("// STEP_INTO: ") -> repeat("// STEP_INTO: ") { stepInto(this) }
+            line.startsWith("// STEP_INTO: ") -> repeat("// STEP_INTO: ") { doStepInto(false, null) }
             line.startsWith("// STEP_OUT: ") -> repeat("// STEP_OUT: ") { doStepOut() }
             line.startsWith("// STEP_OVER: ") -> repeat("// STEP_OVER: ") { doStepOver() }
             line.startsWith("// SMART_STEP_INTO_BY_INDEX: ") -> doOnBreakpoint { doSmartStepInto(InTextDirectivesUtils.getPrefixedInt(line, "// SMART_STEP_INTO_BY_INDEX: ")!!) }
@@ -282,7 +303,7 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
                 if (comment.startsWith("//FieldWatchpoint!")) {
                     val javaBreakpoint = createBreakpointOfType(
                             breakpointManager,
-                            kotlinFieldBreakpointType as XLineBreakpointType<XBreakpointProperties<*>>,
+                            kotlinFieldBreakpointType,
                             lineIndex,
                             virtualFile)
                     if (javaBreakpoint is KotlinFieldBreakpoint) {
@@ -296,7 +317,7 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
                     }
                 }
                 else if (comment.startsWith("//Breakpoint!")) {
-                    val ordinal = getPropertyFromComment(comment, "lambdaOrdinal")?.toInt() ?: null
+                    val ordinal = getPropertyFromComment(comment, "lambdaOrdinal")?.toInt()
                     val condition = getPropertyFromComment(comment, "condition")
                     createLineBreakpoint(breakpointManager, file, lineIndex, ordinal, condition)
                 }
@@ -337,7 +358,7 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
         val kotlinLineBreakpointType = findBreakpointType(KotlinLineBreakpointType::class.java)
         val javaBreakpoint = createBreakpointOfType(
                 breakpointManager,
-                kotlinLineBreakpointType  as XLineBreakpointType<XBreakpointProperties<*>>,
+                kotlinLineBreakpointType,
                 lineIndex,
                 file.virtualFile)
         if (javaBreakpoint is LineBreakpoint<*>) {
@@ -380,9 +401,9 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
         return BreakpointManager.getJavaBreakpoint(xBreakpoint)
     }
 
-    private inline fun <reified T> findBreakpointType(javaClass: Class<T>): T {
-        val kotlinFieldBreakpointTypeClass = javaClass as Class<out XBreakpointType<XBreakpoint<XBreakpointProperties<*>>, XBreakpointProperties<*>>>
-        return XDebuggerUtil.getInstance().findBreakpointType(kotlinFieldBreakpointTypeClass) as T
+    @Suppress("UNCHECKED_CAST")
+    private inline fun <reified T : XBreakpointType<*, *>> findBreakpointType(javaClass: Class<T>): XLineBreakpointType<XBreakpointProperties<*>> {
+        return XDebuggerUtil.getInstance().findBreakpointType(javaClass) as XLineBreakpointType<XBreakpointProperties<*>>
     }
 
     protected fun createAdditionalBreakpoints(fileText: String) {
@@ -412,7 +433,7 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
 
         assert(sourceFiles.size == 1) { "One source file should be found: name = $fileName, sourceFiles = $sourceFiles" }
 
-        val runnable = Runnable() {
+        val runnable = Runnable {
             val psiSourceFile = PsiManager.getInstance(project).findFile(sourceFiles.first())!!
 
             val breakpointManager = XDebuggerManager.getInstance(myProject).breakpointManager

@@ -23,15 +23,15 @@ import org.jetbrains.kotlin.idea.facet.KotlinFacet
 import org.junit.Assert
 import org.junit.Test
 
+internal fun GradleImportingTestCase.facetSettings(moduleName: String) = KotlinFacet.get(getModule(moduleName))!!.configuration.settings
+
+internal val GradleImportingTestCase.facetSettings: KotlinFacetSettings
+    get() = facetSettings("project_main")
+
+internal val GradleImportingTestCase.testFacetSettings: KotlinFacetSettings
+    get() = facetSettings("project_test")
+
 class GradleFacetImportTest : GradleImportingTestCase() {
-    private fun facetSettings(moduleName: String) = KotlinFacet.get(getModule(moduleName))!!.configuration.settings
-
-    private val facetSettings: KotlinFacetSettings
-        get() = facetSettings("project_main")
-
-    private val testFacetSettings: KotlinFacetSettings
-        get() = facetSettings("project_test")
-
     @Test
     fun testJvmImport() {
         createProjectSubFile("build.gradle", """
@@ -191,7 +191,7 @@ class GradleFacetImportTest : GradleImportingTestCase() {
         importProject()
 
         with (facetSettings) {
-            Assert.assertEquals(CoroutineSupport.ENABLED, coroutineSupport)
+            Assert.assertEquals(LanguageFeature.State.ENABLED, coroutineSupport)
         }
     }
 
@@ -236,7 +236,7 @@ class GradleFacetImportTest : GradleImportingTestCase() {
 
             importProject()
 
-            Assert.assertEquals(CoroutineSupport.ENABLED, coroutineSupport)
+            Assert.assertEquals(LanguageFeature.State.ENABLED, coroutineSupport)
             Assert.assertEquals(true, compilerArguments!!.coroutinesEnable)
             Assert.assertEquals(false, compilerArguments!!.coroutinesWarn)
             Assert.assertEquals(false, compilerArguments!!.coroutinesError)
@@ -272,7 +272,7 @@ class GradleFacetImportTest : GradleImportingTestCase() {
         importProject()
 
         with (facetSettings) {
-            Assert.assertEquals(CoroutineSupport.ENABLED, coroutineSupport)
+            Assert.assertEquals(LanguageFeature.State.ENABLED, coroutineSupport)
         }
     }
 
@@ -446,40 +446,6 @@ class GradleFacetImportTest : GradleImportingTestCase() {
     }
 
     @Test
-    fun testCommonImport() {
-        createProjectSubFile("build.gradle", """
-            group 'Again'
-            version '1.0-SNAPSHOT'
-
-            buildscript {
-                repositories {
-                    mavenCentral()
-                    maven {
-                        url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1'
-                    }
-                }
-
-                dependencies {
-                    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.0")
-                }
-            }
-
-            apply plugin: 'kotlin'
-
-            dependencies {
-                compile "org.jetbrains.kotlin:kotlin-stdlib-common:1.1.0"
-            }
-        """)
-        importProject()
-
-        with (facetSettings) {
-            Assert.assertEquals("1.1", languageLevel!!.versionString)
-            Assert.assertEquals("1.1", apiLevel!!.versionString)
-            Assert.assertEquals(TargetPlatformKind.Common, targetPlatformKind)
-        }
-    }
-
-    @Test
     fun testJvmImportByPlatformPlugin() {
         createProjectSubFile("build.gradle", """
             group 'Again'
@@ -566,6 +532,66 @@ class GradleFacetImportTest : GradleImportingTestCase() {
             Assert.assertEquals("1.1", languageLevel!!.versionString)
             Assert.assertEquals("1.1", apiLevel!!.versionString)
             Assert.assertEquals(TargetPlatformKind.Common, targetPlatformKind)
+        }
+    }
+
+    @Test
+    fun testJvmImportByKotlinPlugin() {
+        createProjectSubFile("build.gradle", """
+            group 'Again'
+            version '1.0-SNAPSHOT'
+
+            buildscript {
+                repositories {
+                    mavenCentral()
+                    maven {
+                        url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1'
+                    }
+                }
+
+                dependencies {
+                    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.0")
+                }
+            }
+
+            apply plugin: 'kotlin'
+        """)
+        importProject()
+
+        with (facetSettings) {
+            Assert.assertEquals("1.1", languageLevel!!.versionString)
+            Assert.assertEquals("1.1", apiLevel!!.versionString)
+            Assert.assertEquals(TargetPlatformKind.Jvm[JvmTarget.JVM_1_6], targetPlatformKind)
+        }
+    }
+
+    @Test
+    fun testJsImportByKotlin2JsPlugin() {
+        createProjectSubFile("build.gradle", """
+            group 'Again'
+            version '1.0-SNAPSHOT'
+
+            buildscript {
+                repositories {
+                    mavenCentral()
+                    maven {
+                        url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1'
+                    }
+                }
+
+                dependencies {
+                    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.0")
+                }
+            }
+
+            apply plugin: 'kotlin2js'
+        """)
+        importProject()
+
+        with (facetSettings) {
+            Assert.assertEquals("1.1", languageLevel!!.versionString)
+            Assert.assertEquals("1.1", apiLevel!!.versionString)
+            Assert.assertEquals(TargetPlatformKind.JavaScript, targetPlatformKind)
         }
     }
 

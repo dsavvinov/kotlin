@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.asJava.toLightClass
 import org.jetbrains.kotlin.asJava.unwrapped
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.idea.caches.resolve.resolveToDescriptor
+import org.jetbrains.kotlin.idea.codeInsight.shorten.isToBeShortened
 import org.jetbrains.kotlin.idea.refactoring.move.*
 import org.jetbrains.kotlin.idea.util.IdeDescriptorRenderers
 import org.jetbrains.kotlin.lexer.KtTokens
@@ -34,26 +35,26 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 
 sealed class MoveDeclarationsDelegate {
     abstract fun getContainerChangeInfo(originalDeclaration: KtNamedDeclaration, moveTarget: KotlinMoveTarget): ContainerChangeInfo
-    abstract fun findUsages(descriptor: MoveDeclarationsDescriptor): List<UsageInfo>
+    abstract fun findInternalUsages(descriptor: MoveDeclarationsDescriptor): List<UsageInfo>
     abstract fun collectConflicts(
             descriptor: MoveDeclarationsDescriptor,
-            usages: MutableList<UsageInfo>,
+            internalUsages: MutableSet<UsageInfo>,
             conflicts: MultiMap<PsiElement, String>
     )
     abstract fun preprocessDeclaration(descriptor: MoveDeclarationsDescriptor, originalDeclaration: KtNamedDeclaration)
-    abstract fun preprocessUsages(project: Project, usages: List<UsageInfo>)
+    abstract fun preprocessUsages(project: Project, descriptor: MoveDeclarationsDescriptor, usages: List<UsageInfo>)
 
     object TopLevel : MoveDeclarationsDelegate() {
         override fun getContainerChangeInfo(originalDeclaration: KtNamedDeclaration, moveTarget: KotlinMoveTarget): ContainerChangeInfo {
-            return ContainerChangeInfo(ContainerInfo.Package(originalDeclaration.getContainingKtFile().packageFqName),
+            return ContainerChangeInfo(ContainerInfo.Package(originalDeclaration.containingKtFile.packageFqName),
                                        ContainerInfo.Package(moveTarget.targetContainerFqName!!))
         }
 
-        override fun findUsages(descriptor: MoveDeclarationsDescriptor): List<UsageInfo> = emptyList()
+        override fun findInternalUsages(descriptor: MoveDeclarationsDescriptor): List<UsageInfo> = emptyList()
 
         override fun collectConflicts(
                 descriptor: MoveDeclarationsDescriptor,
-                usages: MutableList<UsageInfo>,
+                internalUsages: MutableSet<UsageInfo>,
                 conflicts: MultiMap<PsiElement, String>
         ) {
 
@@ -63,7 +64,7 @@ sealed class MoveDeclarationsDelegate {
 
         }
 
-        override fun preprocessUsages(project: Project, usages: List<UsageInfo>) {
+        override fun preprocessUsages(project: Project, descriptor: MoveDeclarationsDescriptor, usages: List<UsageInfo>) {
 
         }
     }
@@ -83,17 +84,17 @@ sealed class MoveDeclarationsDelegate {
             return ContainerChangeInfo(originalInfo, newInfo)
         }
 
-        override fun findUsages(descriptor: MoveDeclarationsDescriptor): List<UsageInfo> {
+        override fun findInternalUsages(descriptor: MoveDeclarationsDescriptor): List<UsageInfo> {
             val classToMove = descriptor.elementsToMove.singleOrNull() as? KtClass ?: return emptyList()
             return collectOuterInstanceReferences(classToMove)
         }
 
         override fun collectConflicts(
                 descriptor: MoveDeclarationsDescriptor,
-                usages: MutableList<UsageInfo>,
+                internalUsages: MutableSet<UsageInfo>,
                 conflicts: MultiMap<PsiElement, String>
         ) {
-            val usageIterator = usages.iterator()
+            val usageIterator = internalUsages.iterator()
             while (usageIterator.hasNext()) {
                 val usage = usageIterator.next()
                 val element = usage.element ?: continue
@@ -130,25 +131,30 @@ sealed class MoveDeclarationsDelegate {
                         val type = (containingClassOrObject!!.resolveToDescriptor() as ClassDescriptor).defaultType
                         val parameter = KtPsiFactory(project)
                                 .createParameter("private val $outerInstanceParameterName: ${IdeDescriptorRenderers.SOURCE_CODE.renderType(type)}")
-                        createPrimaryConstructorParameterListIfAbsent().addParameter(parameter)
+                        createPrimaryConstructorParameterListIfAbsent().addParameter(parameter).isToBeShortened = true
                     }
                 }
             }
         }
 
-        override fun preprocessUsages(project: Project, usages: List<UsageInfo>) {
+        override fun preprocessUsages(project: Project, descriptor: MoveDeclarationsDescriptor, usages: List<UsageInfo>) {
             if (outerInstanceParameterName == null) return
             val psiFactory = KtPsiFactory(project)
             val newOuterInstanceRef = psiFactory.createExpression(outerInstanceParameterName)
+            val classToMove = descriptor.elementsToMove.singleOrNull() as? KtClass
 
             for (usage in usages) {
-                val referencedNestedClass = (usage as? MoveRenameUsageInfo)?.referencedElement?.unwrapped as? KtClassOrObject
-                val outerClass = referencedNestedClass?.containingClassOrObject
-                val lightOuterClass = outerClass?.toLightClass()
-                if (lightOuterClass != null) {
-                    MoveInnerClassUsagesHandler.EP_NAME
-                            .forLanguage(usage.element!!.language)
-                            ?.correctInnerClassUsage(usage, lightOuterClass)
+                if (usage is MoveRenameUsageInfo) {
+                    val referencedNestedClass = usage.referencedElement?.unwrapped as? KtClassOrObject
+                    if (referencedNestedClass == classToMove) {
+                        val outerClass = referencedNestedClass?.containingClassOrObject
+                        val lightOuterClass = outerClass?.toLightClass()
+                        if (lightOuterClass != null) {
+                            MoveInnerClassUsagesHandler.EP_NAME
+                                    .forLanguage(usage.element!!.language)
+                                    ?.correctInnerClassUsage(usage, lightOuterClass)
+                        }
+                    }
                 }
 
                 when (usage) {

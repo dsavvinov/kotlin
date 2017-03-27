@@ -60,6 +60,30 @@ public class IdeCompiledLightClassTestGenerated extends AbstractIdeCompiledLight
         doTest(fileName);
     }
 
+    @TestMetadata("JvmNameOnMember.kt")
+    public void testJvmNameOnMember() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/JvmNameOnMember.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("JvmStatic.kt")
+    public void testJvmStatic() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/JvmStatic.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("NestedObjects.kt")
+    public void testNestedObjects() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/NestedObjects.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("PublishedApi.kt")
+    public void testPublishedApi() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/PublishedApi.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("compiler/testData/asJava/lightClasses/delegation")
     @TestDataPath("$PROJECT_ROOT")
     @RunWith(JUnit3RunnerWithInners.class)

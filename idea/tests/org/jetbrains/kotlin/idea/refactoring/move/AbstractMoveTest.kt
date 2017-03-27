@@ -21,17 +21,17 @@ import com.google.gson.JsonParser
 import com.intellij.codeInsight.TargetElementUtilBase
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.module.Module
+import com.intellij.openapi.module.ModuleManager
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
 import com.intellij.refactoring.BaseRefactoringProcessor.ConflictsInTestsException
+import com.intellij.refactoring.MoveDestination
 import com.intellij.refactoring.PackageWrapper
 import com.intellij.refactoring.move.MoveHandler
-import com.intellij.refactoring.move.moveClassesOrPackages.MoveClassToInnerProcessor
-import com.intellij.refactoring.move.moveClassesOrPackages.MoveClassesOrPackagesProcessor
-import com.intellij.refactoring.move.moveClassesOrPackages.MoveDirectoryWithClassesProcessor
-import com.intellij.refactoring.move.moveClassesOrPackages.MultipleRootsMoveDestination
+import com.intellij.refactoring.move.moveClassesOrPackages.*
 import com.intellij.refactoring.move.moveFilesOrDirectories.MoveFilesOrDirectoriesProcessor
 import com.intellij.refactoring.move.moveInner.MoveInnerProcessor
 import com.intellij.refactoring.move.moveMembers.MockMoveMembersOptions
@@ -69,13 +69,29 @@ abstract class AbstractMoveTest : KotlinMultiFileTestCase() {
 
         val conflictFile = File(testDir + "/conflicts.txt")
 
-        val withRuntime = config["withRuntime"]?.asBoolean ?: false
-        if (withRuntime) {
-            ConfigLibraryUtil.configureKotlinRuntimeAndSdk(myModule, PluginTestCaseBase.mockJdk())
-        }
         isMultiModule = config["isMultiModule"]?.asBoolean ?: false
 
-        doTest({ rootDir, rootAfter ->
+        doTest({ rootDir, _ ->
+            val modulesWithJvmRuntime: List<Module>
+            val modulesWithJsRuntime: List<Module>
+
+            val withRuntime = config["withRuntime"]?.asBoolean ?: false
+            if (withRuntime) {
+                val moduleManager = ModuleManager.getInstance(project)
+                modulesWithJvmRuntime =
+                        (config["modulesWithRuntime"]?.asJsonArray?.map { moduleManager.findModuleByName(it.asString!!)!! }
+                         ?: moduleManager.modules.toList())
+                modulesWithJvmRuntime.forEach { ConfigLibraryUtil.configureKotlinRuntimeAndSdk(it, PluginTestCaseBase.mockJdk()) }
+                modulesWithJsRuntime =
+                        (config["modulesWithJsRuntime"]?.asJsonArray?.map { moduleManager.findModuleByName(it.asString!!)!! }
+                         ?: emptyList())
+                modulesWithJsRuntime.forEach { ConfigLibraryUtil.configureKotlinJsRuntimeAndSdk(it, PluginTestCaseBase.mockJdk()) }
+            }
+            else {
+                modulesWithJvmRuntime = emptyList()
+                modulesWithJsRuntime = emptyList()
+            }
+
             val mainFile = rootDir.findFileByRelativePath(mainFilePath)!!
             val mainPsiFile = PsiManager.getInstance(project!!).findFile(mainFile)!!
             val document = FileDocumentManager.getInstance().getDocument(mainFile)!!
@@ -98,15 +114,25 @@ abstract class AbstractMoveTest : KotlinMultiFileTestCase() {
             }
             catch(e: ConflictsInTestsException) {
                 KotlinTestUtils.assertEqualsToFile(conflictFile, e.messages.sorted().joinToString("\n"))
+
+                ConflictsInTestsException.setTestIgnore(true)
+
+                // Run refactoring again with ConflictsInTestsException suppressed
+                action.runRefactoring(rootDir, mainPsiFile, elementAtCaret, config)
             }
             finally {
+                ConflictsInTestsException.setTestIgnore(false)
+
                 PsiDocumentManager.getInstance(project!!).commitAllDocuments()
                 FileDocumentManager.getInstance().saveAllDocuments()
 
                 EditorFactory.getInstance()!!.releaseEditor(editor)
 
-                if (withRuntime) {
-                    ConfigLibraryUtil.unConfigureKotlinRuntimeAndSdk(myModule, PluginTestCaseBase.mockJdk())
+                modulesWithJvmRuntime.forEach {
+                    ConfigLibraryUtil.unConfigureKotlinRuntimeAndSdk(it, PluginTestCaseBase.mockJdk())
+                }
+                modulesWithJsRuntime.forEach {
+                    ConfigLibraryUtil.unConfigureKotlinJsRuntimeAndSdk(it, PluginTestCaseBase.mockJdk())
                 }
             }
         },
@@ -270,15 +296,18 @@ enum class MoveAction {
 
             val moveTarget = config.getNullableString("targetPackage")?.let { packageName ->
                 val targetSourceRootPath = config["targetSourceRoot"]?.asString
-                val moveDestination = MultipleRootsMoveDestination(PackageWrapper(mainFile.getManager(), packageName))
+                val packageWrapper = PackageWrapper(mainFile.getManager(), packageName)
+                val moveDestination: MoveDestination = targetSourceRootPath?.let {
+                    AutocreatingSingleSourceRootMoveDestination(packageWrapper, rootDir.findFileByRelativePath(it)!!)
+                } ?: MultipleRootsMoveDestination(packageWrapper)
                 val targetDir = moveDestination.getTargetIfExists(mainFile)
-                val targetSourceRoot = if (targetSourceRootPath != null) {
+                val targetVirtualFile = if (targetSourceRootPath != null) {
                     rootDir.findFileByRelativePath(targetSourceRootPath)!!
                 } else {
                     targetDir?.virtualFile
                 }
 
-                KotlinMoveTargetForDeferredFile(FqName(packageName), targetDir, targetSourceRoot) {
+                KotlinMoveTargetForDeferredFile(FqName(packageName), targetDir, targetVirtualFile) {
                     createKotlinFile(guessNewFileName(listOf(elementToMove))!!, moveDestination.getTargetDirectory(mainFile))
                 }
             } ?: config.getString("targetFile").let { filePath ->

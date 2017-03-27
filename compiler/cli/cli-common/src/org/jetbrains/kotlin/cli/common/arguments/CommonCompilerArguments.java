@@ -17,8 +17,8 @@
 package org.jetbrains.kotlin.cli.common.arguments;
 
 import com.intellij.util.SmartList;
-import com.sampullara.cli.Argument;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.kotlin.cli.common.parser.com.sampullara.cli.Argument;
 
 import java.io.Serializable;
 import java.util.List;
@@ -98,6 +98,15 @@ public abstract class CommonCompilerArguments implements Serializable {
     public List<String> freeArgs = new SmartList<String>();
 
     public List<String> unknownExtraFlags = new SmartList<String>();
+
+    @NotNull
+    public static CommonCompilerArguments createDefaultInstance() {
+        DummyImpl arguments = new DummyImpl();
+        arguments.coroutinesEnable = false;
+        arguments.coroutinesWarn = true;
+        arguments.coroutinesError = false;
+        return arguments;
+    }
 
     @NotNull
     public String executableScriptFileName() {

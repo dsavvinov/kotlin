@@ -32,9 +32,13 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.ImportPath
+import org.jetbrains.kotlin.resolve.TargetPlatform
 
-fun KtPsiFactory(project: Project?): KtPsiFactory = KtPsiFactory(project!!)
-fun KtPsiFactory(elementForProject: PsiElement): KtPsiFactory = KtPsiFactory(elementForProject.project)
+@JvmOverloads
+fun KtPsiFactory(project: Project?, markGenerated: Boolean = true): KtPsiFactory = KtPsiFactory(project!!, markGenerated)
+
+@JvmOverloads
+fun KtPsiFactory(elementForProject: PsiElement, markGenerated: Boolean = true): KtPsiFactory = KtPsiFactory(elementForProject.project, markGenerated)
 
 private val DO_NOT_ANALYZE_NOTIFICATION = "This file was created by KtPsiFactory and should not be analyzed\n" +
                                           "Use createAnalyzableFile to create file that can be analyzed\n"
@@ -42,8 +46,14 @@ private val DO_NOT_ANALYZE_NOTIFICATION = "This file was created by KtPsiFactory
 var KtFile.doNotAnalyze: String? by UserDataProperty(Key.create("DO_NOT_ANALYZE"))
 var KtFile.analysisContext: PsiElement? by UserDataProperty(Key.create("ANALYSIS_CONTEXT"))
 var PsiFile.moduleInfo: ModuleInfo? by UserDataProperty(Key.create("MODULE_INFO"))
+var KtFile.targetPlatform: TargetPlatform? by UserDataProperty(Key.create("TARGET_PLATFORM"))
 
-class KtPsiFactory(private val project: Project) {
+/**
+ * @param markGenerated This needs to be set to true if the `KtPsiFactory` is going to be used for creating elements that are going
+ * to be inserted in the user source code (this ensures that the elements will be formatted correctly). In other cases, `markGenerated`
+ * should be false, which saves time and memory.
+ */
+class KtPsiFactory @JvmOverloads constructor(private val project: Project, val markGenerated: Boolean = true) {
 
     fun createValKeyword(): PsiElement {
         val property = createProperty("val x = 1")
@@ -197,7 +207,7 @@ class KtPsiFactory(private val project: Project) {
     }
 
     private fun doCreateFile(fileName: String, text: String): KtFile {
-        return PsiFileFactory.getInstance(project).createFileFromText(fileName, KotlinFileType.INSTANCE, text, LocalTimeCounter.currentTime(), false) as KtFile
+        return PsiFileFactory.getInstance(project).createFileFromText(fileName, KotlinFileType.INSTANCE, text, LocalTimeCounter.currentTime(), false, markGenerated) as KtFile
     }
 
     fun createFile(fileName: String, text: String): KtFile {
@@ -337,8 +347,10 @@ class KtPsiFactory(private val project: Project) {
 
     fun createTypeParameter(text: String) = createTypeParameterList("<$text>").parameters.first()!!
 
-    fun createLambdaParameterList(text: String) =
-            createLambdaExpression(text, "0").functionLiteral.valueParameterList!!
+    fun createLambdaParameterListIfAny(text: String) =
+            createLambdaExpression(text, "0").functionLiteral.valueParameterList
+
+    fun createLambdaParameterList(text: String) = createLambdaParameterListIfAny(text)!!
 
     fun createLambdaExpression(parameters: String, body: String): KtLambdaExpression =
             (if (parameters.isNotEmpty()) createExpression("{ $parameters -> $body }")
@@ -384,7 +396,7 @@ class KtPsiFactory(private val project: Project) {
     }
 
     fun createImportDirective(importPath: ImportPath): KtImportDirective {
-        if (importPath.fqnPart().isRoot) {
+        if (importPath.fqName.isRoot) {
             throw IllegalArgumentException("import path must not be empty")
         }
 

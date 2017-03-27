@@ -51,7 +51,6 @@ import org.jetbrains.kotlin.resolve.lazy.BodyResolveMode
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindExclude
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.util.supertypesWithAny
-import org.jetbrains.kotlin.utils.addToStdlib.check
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
 import java.util.*
 
@@ -151,7 +150,6 @@ class BasicCompletionSession(
             val smartCompletionInBasicWeigher = SmartCompletionInBasicWeigher(smartCompletion, callTypeAndReceiver, resolutionFacade, bindingContext)
             sorter = sorter.weighBefore(KindWeigher.toString(),
                                         smartCompletionInBasicWeigher,
-                                        SmartCompletionPriorityWeigher,
                                         CallableReferenceWeigher(callTypeAndReceiver.callType))
         }
 
@@ -347,8 +345,8 @@ class BasicCompletionSession(
             if (userType != typeRef.typeElement) return null
             val parent = typeRef.parent
             return when (parent) {
-                is KtNamedFunction -> parent.check { typeRef == it.receiverTypeReference }
-                is KtProperty -> parent.check { typeRef == it.receiverTypeReference }
+                is KtNamedFunction -> parent.takeIf { typeRef == it.receiverTypeReference }
+                is KtProperty -> parent.takeIf { typeRef == it.receiverTypeReference }
                 else -> null
             }
         }
@@ -619,9 +617,16 @@ class BasicCompletionSession(
     }
 
     private fun addReferenceVariantElements(lookupElementFactory: LookupElementFactory, descriptorKindFilter: DescriptorKindFilter) {
-        val (imported, notImported) = referenceVariantsCollector!!.collectReferenceVariants(descriptorKindFilter).excludeNonInitializedVariable()
-        collector.addDescriptorElements(imported, lookupElementFactory)
-        collector.addDescriptorElements(notImported, lookupElementFactory, notImported = true)
+        fun addReferenceVariants(referenceVariants: ReferenceVariants) {
+            collector.addDescriptorElements(referenceVariantsHelper.excludeNonInitializedVariable(referenceVariants.imported, position), lookupElementFactory)
+            collector.addDescriptorElements(referenceVariants.notImportedExtensions, lookupElementFactory, notImported = true)
+        }
+
+        val referenceVariantsCollector = referenceVariantsCollector!!
+        referenceVariantsCollector.collectReferenceVariants(descriptorKindFilter) { referenceVariants ->
+            addReferenceVariants(referenceVariants)
+            flushToResultSet()
+        }
     }
 }
 

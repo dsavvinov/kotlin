@@ -49,6 +49,10 @@ class KotlinGradleModelBuilder : ModelBuilderService {
         val kotlinCompileTaskClasses = listOf("org.jetbrains.kotlin.gradle.tasks.KotlinCompile_Decorated",
                                               "org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile_Decorated")
         val platformPluginIds = listOf("kotlin-platform-jvm", "kotlin-platform-js", "kotlin-platform-common")
+        val pluginToPlatform = linkedMapOf(
+                "kotlin" to "kotlin-platform-jvm",
+                "kotlin2js" to "kotlin-platform-js"
+        )
     }
 
     override fun getErrorMessageBuilder(project: Project, e: Exception): ErrorMessageBuilder {
@@ -84,7 +88,7 @@ class KotlinGradleModelBuilder : ModelBuilderService {
             methodName: String,
             argumentsBySourceSet: MutableMap<String, List<String>>
     ) {
-        val taskClass = compileTask.javaClass
+        val taskClass = compileTask::class.java
         val sourceSetName = try {
             taskClass.findGetterMethod("getSourceSetName\$kotlin_gradle_plugin")?.invoke(compileTask) as? String
         } catch (e : InvocationTargetException) {
@@ -101,14 +105,14 @@ class KotlinGradleModelBuilder : ModelBuilderService {
     private fun getCoroutines(project: Project): String? {
         val kotlinExtension = project.extensions.findByName("kotlin") ?: return null
         val experimentalExtension = try {
-            kotlinExtension.javaClass.getMethod("getExperimental").invoke(kotlinExtension)
+            kotlinExtension::class.java.getMethod("getExperimental").invoke(kotlinExtension)
         }
         catch(e: NoSuchMethodException) {
             return null
         }
 
         return try {
-            experimentalExtension.javaClass.getMethod("getCoroutines").invoke(experimentalExtension)?.toString()
+            experimentalExtension::class.java.getMethod("getCoroutines").invoke(experimentalExtension)?.toString()
         }
         catch(e: NoSuchMethodException) {
             null
@@ -126,12 +130,15 @@ class KotlinGradleModelBuilder : ModelBuilderService {
             collectCompilerArguments(compileTask, "getDefaultSerializedCompilerArguments", defaultCompilerArgumentsBySourceSet)
         }
 
+        val platform = platformPluginIds.singleOrNull { project.plugins.findPlugin(it) != null }
+                       ?: pluginToPlatform.entries.singleOrNull { project.plugins.findPlugin(it.key) != null }?.value
+
         return KotlinGradleModelImpl(
                 getImplements(project),
                 currentCompilerArgumentsBySourceSet,
                 defaultCompilerArgumentsBySourceSet,
                 getCoroutines(project),
-                platformPluginIds.singleOrNull { project.plugins.findPlugin(it) != null }
+                platform
         )
     }
 }

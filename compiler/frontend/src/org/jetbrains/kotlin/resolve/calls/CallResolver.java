@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -233,6 +233,21 @@ public class CallResolver {
                 binaryExpression.getOperationReference(),
                 name
         );
+    }
+
+    @NotNull
+    public OverloadResolutionResults<FunctionDescriptor> resolveCollectionLiteralCallWithGivenDescriptor(
+            @NotNull ExpressionTypingContext context,
+            @NotNull KtCollectionLiteralExpression expression,
+            @NotNull Call call,
+            @NotNull FunctionDescriptor functionDescriptor
+    ) {
+        BasicCallResolutionContext callResolutionContext = BasicCallResolutionContext.create(context, call, CheckArgumentTypesMode.CHECK_VALUE_ARGUMENTS);
+        ResolutionCandidate<FunctionDescriptor> candidate = ResolutionCandidate.create(
+                call, functionDescriptor, null, ExplicitReceiverKind.NO_EXPLICIT_RECEIVER, null);
+
+        return computeTasksFromCandidatesAndResolvedCall(
+                callResolutionContext, Collections.singleton(candidate), TracingStrategyImpl.create(expression, call));
     }
 
     @NotNull

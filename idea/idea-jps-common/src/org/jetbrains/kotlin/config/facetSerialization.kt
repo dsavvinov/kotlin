@@ -23,7 +23,7 @@ import org.jdom.Element
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 
-private fun Element.getOption(name: String) = getChildren("option").firstOrNull { it.getAttribute("name").value == name }
+fun Element.getOption(name: String) = getChildren("option").firstOrNull { it.getAttribute("name").value == name }
 
 private fun Element.getOptionValue(name: String) = getOption(name)?.getAttribute("value")?.value
 
@@ -33,7 +33,10 @@ private fun readV1Config(element: Element): KotlinFacetSettings {
     return KotlinFacetSettings().apply {
         val useProjectSettings = element.getOptionValue("useProjectSettings")?.toBoolean()
 
-        val targetPlatformName = element.getOptionBody("versionInfo")?.getOptionValue("targetPlatformName")
+        val versionInfoElement = element.getOptionBody("versionInfo")
+        val targetPlatformName = versionInfoElement?.getOptionValue("targetPlatformName")
+        val languageLevel = versionInfoElement?.getOptionValue("languageLevel")
+        val apiLevel = versionInfoElement?.getOptionValue("apiLevel")
         val targetPlatform = TargetPlatformKind.ALL_PLATFORMS.firstOrNull { it.description == targetPlatformName }
                              ?: TargetPlatformKind.Jvm[JvmTarget.DEFAULT]
 
@@ -55,6 +58,14 @@ private fun readV1Config(element: Element): KotlinFacetSettings {
         when (compilerArguments) {
             is K2JVMCompilerArguments -> jvmArgumentsElement?.let { XmlSerializer.deserializeInto(compilerArguments, it) }
             is K2JSCompilerArguments -> jsArgumentsElement?.let { XmlSerializer.deserializeInto(compilerArguments, it) }
+        }
+
+        if (languageLevel != null) {
+            compilerArguments.languageVersion = languageLevel
+        }
+
+        if (apiLevel != null) {
+            compilerArguments.apiVersion = apiLevel
         }
 
         if (useProjectSettings != null) {

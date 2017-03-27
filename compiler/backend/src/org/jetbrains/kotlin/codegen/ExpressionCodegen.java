@@ -1919,11 +1919,6 @@ public class ExpressionCodegen extends KtVisitor<StackValue, StackValue> impleme
         return asmType(varType);
     }
 
-    private static boolean isSharedVarType(@NotNull Type type) {
-        return type.getSort() == Type.OBJECT && type.getInternalName().startsWith(REF_TYPE_PREFIX);
-    }
-
-
     private void putDescriptorIntoFrameMap(@NotNull KtElement statement) {
         if (statement instanceof KtDestructuringDeclaration) {
             KtDestructuringDeclaration multiDeclaration = (KtDestructuringDeclaration) statement;
@@ -2677,6 +2672,15 @@ public class ExpressionCodegen extends KtVisitor<StackValue, StackValue> impleme
         return invokeFunction(resolvedCall, receiver);
     }
 
+    @Override
+    public StackValue visitCollectionLiteralExpression(
+            @NotNull KtCollectionLiteralExpression expression, StackValue data
+    ) {
+        ResolvedCall<FunctionDescriptor> resolvedCall = bindingContext.get(COLLECTION_LITERAL_CALL, expression);
+        assert resolvedCall != null : "No resolved call for " + PsiUtilsKt.getTextWithLocation(expression);
+        return invokeFunction(resolvedCall, data);
+    }
+
     @Nullable
     private StackValue genSamInterfaceValue(
             @NotNull KtExpression probablyParenthesizedExpression,
@@ -3361,7 +3365,8 @@ public class ExpressionCodegen extends KtVisitor<StackValue, StackValue> impleme
 
         KotlinType receiverExpressionType = expressionJetType(expression.getReceiverExpression());
         Type receiverAsmType = receiverExpressionType != null ? asmType(receiverExpressionType) : null;
-        StackValue receiverValue = receiverExpressionType != null ? gen(expression.getReceiverExpression()) : null;
+        StackValue receiverValue =
+                receiverExpressionType != null ? StackValue.coercion(gen(expression.getReceiverExpression()), receiverAsmType) : null;
 
         FunctionDescriptor functionDescriptor = bindingContext.get(FUNCTION, expression);
         if (functionDescriptor != null) {
@@ -4890,7 +4895,7 @@ The "returned" value of try expression with no finally is either the last expres
     }
 
     private Call makeFakeCall(ReceiverValue initializerAsReceiver) {
-        KtSimpleNameExpression fake = KtPsiFactoryKt.KtPsiFactory(state.getProject()).createSimpleName("fake");
+        KtSimpleNameExpression fake = KtPsiFactoryKt.KtPsiFactory(state.getProject(), false).createSimpleName("fake");
         return CallMaker.makeCall(fake, initializerAsReceiver);
     }
 

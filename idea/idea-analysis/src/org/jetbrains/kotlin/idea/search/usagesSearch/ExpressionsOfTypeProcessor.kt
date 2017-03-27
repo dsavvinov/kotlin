@@ -203,9 +203,7 @@ class ExpressionsOfTypeProcessor(
     }
 
     private enum class ReferenceProcessor(val handler: (ExpressionsOfTypeProcessor, PsiReference) -> Boolean) {
-        CallableOfOurType({ processor, reference ->
-                              processor.processReferenceToCallableOfOurType(reference)
-                          }),
+        CallableOfOurType(ExpressionsOfTypeProcessor::processReferenceToCallableOfOurType),
 
         ProcessLambdasInCalls({ processor, reference ->
                                   (reference.element as? KtReferenceExpression)?.let { processor.processLambdasForCallableReference(it) }
@@ -603,7 +601,7 @@ class ExpressionsOfTypeProcessor(
         runReadAction {
             if (!scope.isValid) return@runReadAction
 
-            val file = scope.getContainingKtFile()
+            val file = scope.containingKtFile
             val restricted = LocalSearchScope(scope).intersectWith(searchScope)
             if (restricted is LocalSearchScope) {
                 ScopeLoop@

@@ -133,7 +133,7 @@ fun PsiElement.deleteElementAndCleanParent() {
     val parent = parent
 
     deleteElementWithDelimiters(this)
-    deleteChildlessElement(parent, this.javaClass)
+    deleteChildlessElement(parent, this::class.java)
 }
 
 // Delete element if it doesn't contain children of a given type
@@ -170,7 +170,7 @@ fun PsiElement.deleteSingle() {
 }
 
 fun KtClass.getOrCreateCompanionObject() : KtObjectDeclaration {
-    getCompanionObjects().firstOrNull()?.let { return it }
+    companionObjects.firstOrNull()?.let { return it }
     return addDeclaration(KtPsiFactory(this).createCompanionObject())
 }
 

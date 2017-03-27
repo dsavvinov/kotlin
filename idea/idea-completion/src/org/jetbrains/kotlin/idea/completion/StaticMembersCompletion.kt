@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.resolve.ImportedFromObjectCallableDescriptor
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindExclude
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
-import org.jetbrains.kotlin.utils.addToStdlib.singletonOrEmptyList
 import java.util.*
 
 class StaticMembersCompletion(
@@ -56,7 +55,7 @@ class StaticMembersCompletion(
                         .decorateAsStaticMember(descriptor, classNameAsLookupString = false)
                         ?.assignPriority(itemPriority)
                         ?.suppressAutoInsertion()
-                        .singletonOrEmptyList()
+                        .let(::listOfNotNull)
             }
 
             override fun createLookupElement(descriptor: DeclarationDescriptor, useReceiverTypes: Boolean,

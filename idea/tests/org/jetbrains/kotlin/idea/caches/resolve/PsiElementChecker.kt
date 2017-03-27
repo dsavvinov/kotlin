@@ -29,14 +29,14 @@ object PsiElementChecker {
     fun checkPsiElementStructure(lightClass: PsiClass) {
         checkPsiElement(lightClass)
 
-        lightClass.innerClasses.forEach { checkPsiElementStructure(it) }
-
         lightClass.methods.forEach {
             it.parameterList.parameters.forEach { checkPsiElement(it) }
             checkPsiElement(it)
         }
 
         lightClass.fields.forEach { checkPsiElement(it) }
+
+        lightClass.innerClasses.forEach { checkPsiElementStructure(it) }
     }
 
     private fun checkPsiElement(element: PsiElement) {
@@ -88,7 +88,7 @@ object PsiElementChecker {
                 acceptChildren(PsiElementVisitor.EMPTY_VISITOR)
 
                 val copy = copy()
-                Assert.assertTrue(copy == null || copy.javaClass == this.javaClass)
+                Assert.assertTrue(copy == null || copy::class.java == this::class.java)
 
                 // Modify methods:
                 // add(this)
@@ -123,7 +123,7 @@ object PsiElementChecker {
                 Assert.assertTrue(isEquivalentTo(this))
             }
             catch (t: Throwable) {
-                throw AssertionErrorWithCause("Failed for ${this.javaClass} ${this}", t)
+                throw AssertionErrorWithCause("Failed for ${this::class.java} ${this}", t)
             }
         }
     }

@@ -36,7 +36,7 @@ import org.junit.Assert
 
 abstract class AbstractParameterInfoTest : LightCodeInsightFixtureTestCase() {
     override fun getProjectDescriptor(): LightProjectDescriptor {
-        val root = KotlinTestUtils.getTestsRoot(this.javaClass)
+        val root = KotlinTestUtils.getTestsRoot(this::class.java)
         if (root.contains("Lib")) {
             return JdkAndMockLibraryProjectDescriptor(
                     "$root/sharedLib", true, true, false, false
@@ -63,7 +63,7 @@ abstract class AbstractParameterInfoTest : LightCodeInsightFixtureTestCase() {
             else -> error("Unexpected last file child")
         }
 
-        val context = ShowParameterInfoContext(editor, project, file, editor.caretModel.offset, -1)
+        val context = ShowParameterInfoContext(editor, project, file, editor.caretModel.offset, -1, true)
 
         val handlers = ShowParameterInfoHandler.getHandlers(project, KotlinLanguage.INSTANCE)!!
         val handler = handlers.firstOrNull { it.findElementForParameterInfo(context) != null }

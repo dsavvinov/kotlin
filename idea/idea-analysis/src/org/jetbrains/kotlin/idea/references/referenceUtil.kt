@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getAssignmentByLHS
 import org.jetbrains.kotlin.psi.psiUtil.getNonStrictParentOfType
+import org.jetbrains.kotlin.psi.psiUtil.getParentOfTypeAndBranch
 import org.jetbrains.kotlin.psi.psiUtil.getQualifiedExpressionForSelectorOrThis
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.isReallySuccess
@@ -39,7 +40,6 @@ import org.jetbrains.kotlin.types.expressions.OperatorConventions
 import org.jetbrains.kotlin.utils.addToStdlib.constant
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstance
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
-import org.jetbrains.kotlin.utils.emptyOrSingletonList
 import java.util.*
 
 // Navigation element of the resolved reference
@@ -56,7 +56,7 @@ val PsiReference.unwrappedTargets: Set<PsiElement>
 
         return when (this) {
             is PsiPolyVariantReference -> multiResolve(false).mapNotNullTo(HashSet<PsiElement>()) { it.element?.adjust() }
-            else -> emptyOrSingletonList(resolve()?.adjust()).toSet()
+            else -> listOfNotNull(resolve()?.adjust()).toSet()
         }
     }
 
@@ -84,6 +84,16 @@ fun PsiReference.matchesTarget(candidateTarget: PsiElement): Boolean {
 
     val targets = unwrappedTargets
     if (unwrappedCandidate in targets) return true
+
+    if (element is KtLabelReferenceExpression && (element.parent as? KtContainerNode)?.parent is KtReturnExpression) {
+        targets.forEach {
+            if (it !is KtFunctionLiteral && !(it is KtNamedFunction && it.name.isNullOrEmpty())) return@forEach
+
+            val calleeReference = (it as KtFunction).getCalleeByLambdaArgument()?.mainReference ?: return@forEach
+            if (calleeReference.matchesTarget(candidateTarget)) return true
+        }
+    }
+
     // TODO: Investigate why PsiCompiledElement identity changes
     if (unwrappedCandidate is PsiCompiledElement && targets.any { it.isEquivalentTo(unwrappedCandidate) }) return true
 
@@ -103,7 +113,7 @@ fun PsiReference.matchesTarget(candidateTarget: PsiElement): Boolean {
     }
     if (this is PsiJavaCodeReferenceElement && candidateTarget is KtObjectDeclaration && unwrappedTargets.size == 1) {
         val referredClass = unwrappedTargets.first()
-        if (referredClass is KtClass && candidateTarget in referredClass.getCompanionObjects()) {
+        if (referredClass is KtClass && candidateTarget in referredClass.companionObjects) {
             if (parent is PsiImportStaticStatement) return true
 
             return parent.reference?.unwrappedTargets?.any {
@@ -145,6 +155,11 @@ val KtElement.mainReference: KtReference?
             else -> references.firstIsInstanceOrNull<KtReference>()
         }
     }
+
+fun KtElement.resolveMainReferenceToDescriptors(): Collection<DeclarationDescriptor> {
+    val bindingContext = analyze(BodyResolveMode.PARTIAL)
+    return mainReference?.resolveToDescriptors(bindingContext) ?: emptyList()
+}
 
 // ----------- Read/write access -----------------------------------------------------------------------------------------------------------------------
 
@@ -198,4 +213,13 @@ fun KtReference.canBeResolvedViaImport(target: DeclarationDescriptor): Boolean {
     if (CallTypeAndReceiver.detect(referenceExpression).receiver != null) return false
     if (element.parent is KtThisExpression || element.parent is KtSuperExpression) return false // TODO: it's a bad design of PSI tree, we should change it
     return true
+}
+
+fun KtFunction.getCalleeByLambdaArgument(): KtSimpleNameExpression? {
+    val argument = getParentOfTypeAndBranch<KtValueArgument> { getArgumentExpression() } ?: return null
+    val callExpression = when (argument) {
+                             is KtLambdaArgument -> argument.parent as? KtCallExpression
+                             else -> (argument.parent as? KtValueArgumentList)?.parent as? KtCallExpression
+                         } ?: return null
+    return callExpression.calleeExpression as? KtSimpleNameExpression
 }

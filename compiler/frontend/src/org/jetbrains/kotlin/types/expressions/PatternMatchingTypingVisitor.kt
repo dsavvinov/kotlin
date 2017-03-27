@@ -373,7 +373,7 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
             }
 
             override fun visitKtElement(element: KtElement) {
-                context.trace.report(UNSUPPORTED.on(element, javaClass.canonicalName))
+                context.trace.report(UNSUPPORTED.on(element, this::class.java.canonicalName))
             }
         })
         return newDataFlowInfo
@@ -407,8 +407,8 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
         val result = noChange(newContext)
         return ConditionalDataFlowInfo(
                 result.thenInfo.equate(subjectDataFlowValue, expressionDataFlowValue,
-                                       DataFlowAnalyzer.typeHasEqualsFromAny(subjectType, expression),
-                                       components.languageVersionSettings),
+                                       identityEquals = DataFlowAnalyzer.typeHasEqualsFromAny(subjectType, expression),
+                                       languageVersionSettings = components.languageVersionSettings),
                 result.elseInfo.disequate(subjectDataFlowValue,
                                           expressionDataFlowValue,
                                           components.languageVersionSettings)

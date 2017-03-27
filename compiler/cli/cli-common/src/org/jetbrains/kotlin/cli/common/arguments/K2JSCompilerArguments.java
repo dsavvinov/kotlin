@@ -16,9 +16,9 @@
 
 package org.jetbrains.kotlin.cli.common.arguments;
 
-import com.sampullara.cli.Argument;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.cli.common.parser.com.sampullara.cli.Argument;
 
 import static org.jetbrains.kotlin.cli.common.arguments.K2JsArgumentConstants.CALL;
 import static org.jetbrains.kotlin.cli.common.arguments.K2JsArgumentConstants.NO_CALL;
@@ -70,6 +70,13 @@ public class K2JSCompilerArguments extends CommonCompilerArguments {
     @Argument(value = "output-postfix", description = "Path to file which will be added to the end of output file")
     @ValueDescription("<path>")
     public String outputPostfix;
+
+    @NotNull
+    public static K2JSCompilerArguments createDefaultInstance() {
+        K2JSCompilerArguments arguments = new K2JSCompilerArguments();
+        arguments.moduleKind = K2JsArgumentConstants.MODULE_PLAIN;
+        return arguments;
+    }
 
     @Override
     @NotNull

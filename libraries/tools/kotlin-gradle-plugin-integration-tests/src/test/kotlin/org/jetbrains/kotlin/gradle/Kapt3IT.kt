@@ -44,6 +44,21 @@ class Kapt3IT : BaseGradleIT() {
     }
 
     @Test
+    fun testAnnotationProcessorAsFqName() {
+        val project = Project("annotationProcessorAsFqName", GRADLE_VERSION, directoryPrefix = "kapt2")
+
+        project.build("build") {
+            assertSuccessful()
+            assertKaptSuccessful()
+            assertContains(":compileKotlin")
+            assertContains(":compileJava")
+            assertFileExists("build/generated/source/kapt/main/example/TestClassGenerated.java")
+            assertFileExists("build/classes/main/example/TestClass.class")
+            assertFileExists("build/classes/main/example/TestClassGenerated.class")
+        }
+    }
+
+    @Test
     fun testSimple() {
         val project = Project("simple", GRADLE_VERSION, directoryPrefix = "kapt2")
 
@@ -316,6 +331,18 @@ class Kapt3IT : BaseGradleIT() {
             val regex = "(?m)^.*Kotlin compiler args.*-P plugin:org\\.jetbrains\\.kotlin\\.kapt3.*$".toRegex()
             val kaptArgs = regex.find(output)?.value ?: error("Kapt compiler arguments are not found!")
             assert(kaptArgs.contains(arg)) { "Kapt compiler arguments should contain '$arg'" }
+        }
+    }
+
+    @Test
+    fun testOutputKotlinCode() {
+        Project("kaptOutputKotlinCode", GRADLE_VERSION, directoryPrefix = "kapt2").build("build") {
+            assertSuccessful()
+            assertKaptSuccessful()
+            assertFileExists("build/generated/source/kapt/main/example/TestClassCustomized.java")
+            assertFileExists("build/generated/source/kaptKotlin/main/TestClass.kt")
+            assertFileExists("build/classes/main/example/TestClass.class")
+            assertFileExists("build/classes/main/example/TestClassCustomized.class")
         }
     }
 }

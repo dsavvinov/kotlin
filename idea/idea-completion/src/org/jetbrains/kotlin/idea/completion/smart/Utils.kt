@@ -42,7 +42,6 @@ import org.jetbrains.kotlin.types.typeUtil.TypeNullability
 import org.jetbrains.kotlin.types.typeUtil.isNothing
 import org.jetbrains.kotlin.types.typeUtil.isNullableNothing
 import org.jetbrains.kotlin.util.descriptorsEqualWithSubstitution
-import org.jetbrains.kotlin.utils.addToStdlib.singletonOrEmptyList
 import java.util.*
 
 class ArtificialElementInsertHandler(
@@ -263,6 +262,8 @@ fun CallableDescriptor.callableReferenceType(resolutionFacade: ResolutionFacade,
 
 enum class SmartCompletionItemPriority {
     MULTIPLE_ARGUMENTS_ITEM,
+    LAMBDA_SIGNATURE,
+    LAMBDA_SIGNATURE_EXPLICIT_PARAMETER_TYPES,
     IT,
     TRUE,
     FALSE,
@@ -299,7 +300,7 @@ fun DeclarationDescriptor.fuzzyTypesForSmartCompletion(
 ): Collection<FuzzyType> {
     if (callTypeAndReceiver is CallTypeAndReceiver.CALLABLE_REFERENCE) {
         val lhs = callTypeAndReceiver.receiver?.let { bindingContext[BindingContext.DOUBLE_COLON_LHS, it] }
-        return (this as? CallableDescriptor)?.callableReferenceType(resolutionFacade, lhs).singletonOrEmptyList()
+        return listOfNotNull((this as? CallableDescriptor)?.callableReferenceType(resolutionFacade, lhs))
     }
 
     if (this is CallableDescriptor) {

@@ -20,8 +20,6 @@ import com.google.common.base.Predicates;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.SystemInfo;
-import com.intellij.util.concurrency.AppExecutorUtil;
-import com.intellij.util.concurrency.AppScheduledExecutorService;
 import kotlin.collections.ArraysKt;
 import kotlin.jvm.functions.Function1;
 import org.fusesource.jansi.AnsiConsole;
@@ -40,24 +38,14 @@ import org.jetbrains.kotlin.progress.ProgressIndicatorAndCompilationCanceledStat
 import org.jetbrains.kotlin.utils.StringsKt;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 
 import static org.jetbrains.kotlin.cli.common.ExitCode.*;
+import static org.jetbrains.kotlin.cli.common.environment.UtilKt.setIdeaIoUseFallback;
 
 public abstract class CLICompiler<A extends CommonCompilerArguments> {
-    static private void setIdeaIoUseFallback() {
-        if (SystemInfo.isWindows) {
-            Properties properties = System.getProperties();
-
-            properties.setProperty("idea.io.use.nio2", Boolean.TRUE.toString());
-
-            if (!(SystemInfo.isJavaVersionAtLeast("1.7") && !"1.7.0-ea".equals(SystemInfo.JAVA_VERSION))) {
-                properties.setProperty("idea.io.use.fallback", Boolean.TRUE.toString());
-            }
-        }
-    }
 
     @NotNull
     public ExitCode exec(@NotNull PrintStream errStream, @NotNull String... args) {
@@ -233,8 +221,6 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
             configuration.put(CLIConfigurationKeys.COMPILER_JAR_LOCATOR, locator);
         }
 
-        configuration.put(CommonConfigurationKeys.SKIP_METADATA_VERSION_CHECK, arguments.skipMetadataVersionCheck);
-
         setupLanguageVersionSettings(configuration, arguments);
     }
 
@@ -248,10 +234,14 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
             // If only "-api-version" is specified, language version is assumed to be the latest
             languageVersion = LanguageVersion.LATEST;
         }
+
         if (apiVersion == null) {
             // If only "-language-version" is specified, API version is assumed to be equal to the language version
             // (API version cannot be greater than the language version)
             apiVersion = languageVersion;
+        }
+        else {
+            configuration.put(CLIConfigurationKeys.IS_API_VERSION_EXPLICIT, true);
         }
 
         if (apiVersion.compareTo(languageVersion) > 0) {
@@ -263,40 +253,33 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
             );
         }
 
-        List<LanguageFeature> extraLanguageFeatures = new ArrayList<LanguageFeature>(0);
+        Map<LanguageFeature, LanguageFeature.State> extraLanguageFeatures = new HashMap<LanguageFeature, LanguageFeature.State>(0);
         if (arguments.multiPlatform) {
-            extraLanguageFeatures.add(LanguageFeature.MultiPlatformProjects);
-        }
-        if (arguments.noCheckImpl) {
-            extraLanguageFeatures.add(LanguageFeature.MultiPlatformDoNotCheckImpl);
+            extraLanguageFeatures.put(LanguageFeature.MultiPlatformProjects, LanguageFeature.State.ENABLED);
         }
 
-        LanguageFeature coroutinesApplicabilityLevel = chooseCoroutinesApplicabilityLevel(configuration, arguments);
-        if (coroutinesApplicabilityLevel != null) {
-            extraLanguageFeatures.add(coroutinesApplicabilityLevel);
+        LanguageFeature.State coroutinesState = chooseCoroutinesApplicabilityLevel(configuration, arguments);
+        if (coroutinesState != null) {
+            extraLanguageFeatures.put(LanguageFeature.Coroutines, coroutinesState);
         }
 
-        CommonConfigurationKeysKt.setLanguageVersionSettings(
-                configuration,
-                new LanguageVersionSettingsImpl(
-                        languageVersion,
-                        ApiVersion.createByLanguageVersion(apiVersion),
-                        extraLanguageFeatures,
-                        arguments.apiVersion != null
-                )
-        );
+        LanguageVersionSettingsImpl settings =
+                new LanguageVersionSettingsImpl(languageVersion, ApiVersion.createByLanguageVersion(apiVersion), extraLanguageFeatures);
+        settings.switchFlag(AnalysisFlags.getSkipMetadataVersionCheck(), arguments.skipMetadataVersionCheck);
+        settings.switchFlag(AnalysisFlags.getMultiPlatformDoNotCheckImpl(), arguments.noCheckImpl);
+        CommonConfigurationKeysKt.setLanguageVersionSettings(configuration, settings);
     }
 
     @Nullable
-    private static LanguageFeature chooseCoroutinesApplicabilityLevel(
+    private static LanguageFeature.State chooseCoroutinesApplicabilityLevel(
             @NotNull CompilerConfiguration configuration,
             @NotNull CommonCompilerArguments arguments
     ) {
         if (arguments.coroutinesError && !arguments.coroutinesWarn && !arguments.coroutinesEnable) {
-            return LanguageFeature.ErrorOnCoroutines;
+            return LanguageFeature.State.ENABLED_WITH_ERROR;
         }
         else if (arguments.coroutinesEnable && !arguments.coroutinesWarn && !arguments.coroutinesError) {
-            return LanguageFeature.DoNotWarnOnCoroutines;
+            return LanguageFeature.State.ENABLED;
         }
         else if (!arguments.coroutinesEnable && !arguments.coroutinesError) {
             return null;
@@ -383,16 +366,9 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
         // We depend on swing (indirectly through PSI or something), so we want to declare headless mode,
         // to avoid accidentally starting the UI thread
         System.setProperty("java.awt.headless", "true");
-        try {
-            ExitCode exitCode = doMainNoExit(compiler, args);
-
-            if (exitCode != OK) {
-                System.exit(exitCode.getCode());
-            }
-        }
-        finally {
-            AppScheduledExecutorService service = (AppScheduledExecutorService) AppExecutorUtil.getAppScheduledExecutorService();
-            service.shutdownAppScheduledExecutorService();
+        ExitCode exitCode = doMainNoExit(compiler, args);
+        if (exitCode != OK) {
+            System.exit(exitCode.getCode());
         }
     }
 

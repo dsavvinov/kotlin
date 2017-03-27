@@ -17,6 +17,7 @@
 package templates
 
 import templates.Family.*
+import templates.SequenceClass.*
 
 fun filtering(): List<GenericFunction> {
     val templates = arrayListOf<GenericFunction>()
@@ -762,6 +763,16 @@ fun filtering(): List<GenericFunction> {
             """
         }
     }
+
+
+    val terminalOperationPattern = Regex("^\\w+To")
+    templates.forEach { with (it) {
+        if (terminalOperationPattern in signature)
+            sequenceClassification(terminal)
+        else
+            sequenceClassification(intermediate, stateless)
+    } }
+
 
     return templates
 }

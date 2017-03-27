@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.name.isSubpackageOf
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 import org.jetbrains.kotlin.resolve.*
+import org.jetbrains.kotlin.resolve.BindingContext.COLLECTION_LITERAL_CALL
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedValueArgument
@@ -125,12 +126,10 @@ class ConstantExpressionEvaluator(
 
         // array(1, <!>null<!>, 3) - error should be reported on inner expression
         if (argumentExpression is KtCallExpression) {
-            val arrayArgument = getArgumentExpressionsForArrayCall(argumentExpression, trace)
-            if (arrayArgument != null) {
-                for (expression in arrayArgument.first) {
-                    checkCompileTimeConstant(expression, arrayArgument.second!!, trace)
-                }
-            }
+            getArgumentExpressionsForArrayCall(argumentExpression, trace)?.let { checkArgumentsAreCompileTimeConstants(it, trace) }
+        }
+        if (argumentExpression is KtCollectionLiteralExpression) {
+            getArgumentExpressionsForCollectionLiteralCall(argumentExpression, trace)?.let { checkArgumentsAreCompileTimeConstants(it, trace) }
         }
 
         val constant = ConstantExpressionEvaluator.getConstant(argumentExpression, trace.bindingContext)
@@ -164,12 +163,30 @@ class ConstantExpressionEvaluator(
         }
     }
 
+    private fun checkArgumentsAreCompileTimeConstants(argumentsWithComponentType: Pair<List<KtExpression>, KotlinType?>, trace: BindingTrace) {
+        val (arguments, componentType) = argumentsWithComponentType
+        for (expression in arguments) {
+            checkCompileTimeConstant(expression, componentType!!, trace)
+        }
+    }
+
     private fun getArgumentExpressionsForArrayCall(
             expression: KtCallExpression,
             trace: BindingTrace
     ): Pair<List<KtExpression>, KotlinType?>? {
-        val resolvedCall = expression.getResolvedCall(trace.bindingContext)
-        if (resolvedCall == null || !CompileTimeConstantUtils.isArrayFunctionCall(resolvedCall)) {
+        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
+        return getArgumentExpressionsForArrayLikeCall(resolvedCall)
+    }
+
+    fun getArgumentExpressionsForCollectionLiteralCall(
+            expression: KtCollectionLiteralExpression,
+            trace: BindingTrace): Pair<List<KtExpression>, KotlinType?>? {
+        val resolvedCall = trace[COLLECTION_LITERAL_CALL, expression] ?: return null
+        return getArgumentExpressionsForArrayLikeCall(resolvedCall)
+    }
+
+    private fun getArgumentExpressionsForArrayLikeCall(resolvedCall: ResolvedCall<*>): Pair<List<KtExpression>, KotlinType>? {
+        if (!CompileTimeConstantUtils.isArrayFunctionCall(resolvedCall)) {
             return null
         }
 
@@ -401,7 +418,7 @@ private class ConstantExpressionEvaluatorVisitor(
                     is IntegerValueTypeConstant ->
                         compileTimeConstant.getType(expectedType)
                     else ->
-                            throw IllegalStateException("Unexpected compileTimeConstant class: ${compileTimeConstant.javaClass.canonicalName}")
+                            throw IllegalStateException("Unexpected compileTimeConstant class: ${compileTimeConstant::class.java.canonicalName}")
 
                 }
                 if (!constantType.isSubtypeOf(expectedType)) return null
@@ -446,6 +463,11 @@ private class ConstantExpressionEvaluatorVisitor(
         else {
             return evaluateCall(expression.operationReference, leftExpression, expectedType)
         }
+    }
+
+    override fun visitCollectionLiteralExpression(expression: KtCollectionLiteralExpression, expectedType: KotlinType?): CompileTimeConstant<*>? {
+        val resolvedCall = trace.bindingContext[COLLECTION_LITERAL_CALL, expression] ?: return null
+        return createConstantValueForArrayFunctionCall(resolvedCall)
     }
 
     private fun evaluateCall(callExpression: KtExpression, receiverExpression: KtExpression, expectedType: KotlinType?): CompileTimeConstant<*>? {
@@ -673,16 +695,7 @@ private class ConstantExpressionEvaluatorVisitor(
 
         // arrayOf() or emptyArray()
         if (CompileTimeConstantUtils.isArrayFunctionCall(call)) {
-            val returnType = resultingDescriptor.returnType ?: return null
-            val componentType = constantExpressionEvaluator.builtIns.getArrayElementType(returnType)
-
-            val arguments = call.valueArguments.values.flatMap { resolveArguments(it.arguments, componentType) }
-
-            return factory.createArrayValue(arguments.map { it.toConstantValue(componentType) }, resultingDescriptor.returnType!!).
-                    wrap(
-                            usesVariableAsConstant = arguments.any { it.usesVariableAsConstant },
-                            usesNonConstValAsConstant = arguments.any { it.usesNonConstValAsConstant }
-                    )
+            return createConstantValueForArrayFunctionCall(call)
         }
 
         // Ann()
@@ -701,21 +714,36 @@ private class ConstantExpressionEvaluatorVisitor(
         return null
     }
 
+    private fun createConstantValueForArrayFunctionCall(
+            call: ResolvedCall<*>
+    ): TypedCompileTimeConstant<List<ConstantValue<*>>>? {
+        val returnType = call.resultingDescriptor.returnType ?: return null
+        val componentType = constantExpressionEvaluator.builtIns.getArrayElementType(returnType)
+
+        val arguments = call.valueArguments.values.flatMap { resolveArguments(it.arguments, componentType) }
+
+        // not evaluated arguments are not constants: function-calls, properties with custom getter...
+        val evaluatedArguments = arguments.filterNotNull()
+
+        return factory.createArrayValue(evaluatedArguments.map { it.toConstantValue(componentType) }, returnType)
+                .wrap(
+                        usesVariableAsConstant = evaluatedArguments.any { it.usesVariableAsConstant },
+                        usesNonConstValAsConstant = arguments.any { it == null || it.usesNonConstValAsConstant }
+                )
+    }
+
     override fun visitClassLiteralExpression(expression: KtClassLiteralExpression, expectedType: KotlinType?): CompileTimeConstant<*>? {
         val jetType = trace.getType(expression)!!
         if (jetType.isError) return null
         return KClassValue(jetType).wrap()
     }
 
-    private fun resolveArguments(valueArguments: List<ValueArgument>, expectedType: KotlinType): List<CompileTimeConstant<*>> {
-        val constants = arrayListOf<CompileTimeConstant<*>>()
+    private fun resolveArguments(valueArguments: List<ValueArgument>, expectedType: KotlinType): List<CompileTimeConstant<*>?> {
+        val constants = arrayListOf<CompileTimeConstant<*>?>()
         for (argument in valueArguments) {
             val argumentExpression = argument.getArgumentExpression()
             if (argumentExpression != null) {
-                val compileTimeConstant = evaluate(argumentExpression, expectedType)
-                if (compileTimeConstant != null) {
-                    constants.add(compileTimeConstant)
-                }
+                constants.add(evaluate(argumentExpression, expectedType))
             }
         }
         return constants

@@ -65,7 +65,7 @@ sealed class EnableUnsupportedFeatureFix(
                runtimeVersion < feature.sinceApiVersion
             } ?: false
 
-            val facetSettings = KotlinFacetSettingsProvider.getInstance(project).getSettings(module)
+            val facetSettings = KotlinFacetSettingsProvider.getInstance(project).getInitializedSettings(module)
             val targetApiLevel = facetSettings.apiLevel?.let { apiLevel ->
                 if (ApiVersion.createByLanguageVersion(apiLevel) < feature.sinceApiVersion)
                     feature.sinceApiVersion.versionString
@@ -123,10 +123,10 @@ sealed class EnableUnsupportedFeatureFix(
         override fun invoke(project: Project, editor: Editor?, file: KtFile) {
             val targetVersion = feature.sinceVersion!!
 
-            with(KotlinCommonCompilerArgumentsHolder.getInstance(project).settings) {
+            KotlinCommonCompilerArgumentsHolder.getInstance(project).update {
                 val parsedApiVersion = ApiVersion.parse(apiVersion)
                 if (parsedApiVersion != null && feature.sinceApiVersion > parsedApiVersion) {
-                    if (!checkUpdateRuntime(project, feature.sinceApiVersion)) return
+                    if (!checkUpdateRuntime(project, feature.sinceApiVersion)) return@update
                     apiVersion = feature.sinceApiVersion.versionString
                 }
 

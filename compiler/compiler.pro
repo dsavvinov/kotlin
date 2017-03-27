@@ -45,6 +45,10 @@ messages/**)
 -dontwarn com.google.j2objc.annotations.Weak
 -dontwarn org.iq80.snappy.HadoopSnappyCodec$SnappyCompressionInputStream
 -dontwarn org.iq80.snappy.HadoopSnappyCodec$SnappyCompressionOutputStream
+-dontwarn com.google.common.util.concurrent.*
+-dontwarn org.apache.xerces.dom.**
+-dontwarn org.apache.xerces.util.**
+-dontwarn org.w3c.dom.ElementTraversal
 
 -libraryjars '<rtjar>'
 -libraryjars '<jssejar>'
@@ -53,7 +57,6 @@ messages/**)
 -libraryjars '<bootstrap.script.runtime>'
 -libraryjars '<antlr-4-official.jar>'
 
--target 1.6
 -dontoptimize
 -dontobfuscate
 
@@ -116,15 +119,19 @@ messages/**)
     public protected *;
 }
 
+# This is needed so that the platform code which parses XML wouldn't fail, see KT-16968
+# Note that these directives probably keep too much in the compiler JAR, we might not need all classes in these packages
+-keep class org.apache.xerces.impl.** { public *; }
+-keep class org.apache.xerces.jaxp.** { public *; }
+-keep class org.apache.xerces.parsers.** { public *; }
+-keep class org.apache.xml.** { public *; }
+
 # for kdoc & dokka
 -keep class com.intellij.openapi.util.TextRange { *; }
 -keep class com.intellij.lang.impl.PsiBuilderImpl* {
     public protected *;
 }
 -keep class com.intellij.openapi.util.text.StringHash { *; }
-
-# for gradle plugin and other server tools
--keep class com.intellij.openapi.util.io.ZipFileCache { public *; }
 
 # for j2k
 -keep class com.intellij.codeInsight.NullableNotNullManager { public protected *; }
@@ -181,6 +188,7 @@ messages/**)
 
 -keepclassmembers class org.jetbrains.org.objectweb.asm.Type {
     *** ARRAY;
+    *** OBJECT;
 }
 
 -keepclassmembers class org.jetbrains.org.objectweb.asm.ClassReader {

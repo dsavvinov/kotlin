@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
+import org.jetbrains.kotlin.config.TargetPlatformVersion
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ModuleContext
 import org.jetbrains.kotlin.context.ProjectContext
@@ -37,8 +38,6 @@ import org.jetbrains.kotlin.resolve.CompilerEnvironment
 import org.jetbrains.kotlin.resolve.MultiTargetPlatform
 import org.jetbrains.kotlin.resolve.TargetEnvironment
 import org.jetbrains.kotlin.resolve.TargetPlatform
-import org.jetbrains.kotlin.utils.DescriptionAware
-import org.jetbrains.kotlin.utils.singletonOrEmptyList
 import java.util.*
 
 class ResolverForModule(
@@ -128,7 +127,7 @@ interface ModuleInfo {
     fun modulesWhoseInternalsAreVisible(): Collection<ModuleInfo> = listOf()
     fun dependencyOnBuiltIns(): DependencyOnBuiltIns = DependenciesOnBuiltIns.LAST
     val capabilities: Map<ModuleDescriptor.Capability<*>, Any?>
-        get() = emptyMap()
+        get() = mapOf(Capability to this)
 
     //TODO: (module refactoring) provide dependency on builtins after runtime in IDEA
     interface DependencyOnBuiltIns {
@@ -146,6 +145,10 @@ interface ModuleInfo {
                 dependencies.add(builtinsModule)
             }
         };
+    }
+
+    companion object {
+        val Capability = ModuleDescriptor.Capability<ModuleInfo>("ModuleInfo")
     }
 }
 
@@ -179,7 +182,7 @@ abstract class AnalyzerFacade<in P : PlatformAnalysisParameters> {
         val resolverForProject = createResolverForProject()
 
         fun computeDependencyDescriptors(module: M): List<ModuleDescriptorImpl> {
-            val orderedDependencies = firstDependency.singletonOrEmptyList() + module.dependencies()
+            val orderedDependencies = listOfNotNull(firstDependency) + module.dependencies()
             val dependenciesDescriptors = orderedDependencies.mapTo(ArrayList<ModuleDescriptorImpl>()) {
                 dependencyInfo ->
                 resolverForProject.descriptorForModule(dependencyInfo as M)
@@ -261,12 +264,12 @@ private class DelegatingPackageFragmentProvider(
 interface LanguageSettingsProvider {
     fun getLanguageVersionSettings(moduleInfo: ModuleInfo, project: Project): LanguageVersionSettings
 
-    fun getTargetPlatform(moduleInfo: ModuleInfo): DescriptionAware
+    fun getTargetPlatform(moduleInfo: ModuleInfo): TargetPlatformVersion
 
     object Default : LanguageSettingsProvider {
         override fun getLanguageVersionSettings(moduleInfo: ModuleInfo, project: Project) = LanguageVersionSettingsImpl.DEFAULT
 
-        override fun getTargetPlatform(moduleInfo: ModuleInfo): DescriptionAware = DescriptionAware.NoVersion
+        override fun getTargetPlatform(moduleInfo: ModuleInfo): TargetPlatformVersion = TargetPlatformVersion.NoVersion
     }
 
     companion object {
