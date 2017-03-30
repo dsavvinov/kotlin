@@ -769,6 +769,10 @@ public interface Errors {
 
     DiagnosticFactory0<KtIfExpression> INVALID_IF_AS_EXPRESSION = DiagnosticFactory0.create(ERROR);
 
+    // Effects
+
+    DiagnosticFactory1<KtAnnotationEntry, String> EFFECTS_PARSING_ERROR = DiagnosticFactory1.create(ERROR);
+
     // Nullability
 
     DiagnosticFactory1<PsiElement, KotlinType> UNSAFE_CALL = DiagnosticFactory1.create(ERROR);

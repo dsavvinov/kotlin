@@ -16,20 +16,32 @@
 
 package org.jetbrains.kotlin.effects.structure.effects
 
-import org.jetbrains.kotlin.effects.structure.general.EsFunction
+import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.Effect
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 
-data class EsCalls(val callCounts: MutableMap<EsFunction, Int>) : Effect {
+data class EsCalls(val callCounts: MutableMap<EsVariable, Int>) : Effect {
+    private var sourceCall : ResolvedCall<*>? = null
+
+    private constructor(callCounts: MutableMap<EsVariable, Int>, sourceCall: ResolvedCall<*>?) : this(callCounts) {
+        this.sourceCall = sourceCall
+    }
+
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
 
+    fun bindToCall(sourceCall: ResolvedCall<*>) = EsCalls(callCounts, sourceCall)
+
     override fun merge(other: Effect): EsCalls {
-        val resultCalls = mutableMapOf<EsFunction, Int>()
+        // Prevent from combining with itself, thus erroneously doubling amount of side-effects
+        if (other !is EsCalls || other.sourceCall == this.sourceCall) return this
+
+        val resultCalls = mutableMapOf<EsVariable, Int>()
         resultCalls.putAll(callCounts)
-        for ((function, calls) in (other as EsCalls).callCounts) {
+        for ((function, calls) in other.callCounts) {
             resultCalls.merge(function, calls, Int::plus)
         }
 
-        return EsCalls(resultCalls)
+        return EsCalls(resultCalls, sourceCall)
     }
 }

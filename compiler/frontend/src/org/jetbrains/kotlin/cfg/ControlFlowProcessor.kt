@@ -45,6 +45,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingContextUtils
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.CompileTimeConstantUtils
+import org.jetbrains.kotlin.resolve.calls.callUtil.getCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ArgumentMatch
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
@@ -164,6 +165,7 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
             if (element == null) return
             element.accept(this)
             checkNothingType(element)
+            checkNonReturningCall(element)
         }
 
         private fun checkNothingType(element: KtElement) {
@@ -179,6 +181,19 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
             val type = trace.bindingContext.getType(expression)
             if (type != null && KotlinBuiltIns.isNothing(type)) {
                 builder.jumpToError(expression)
+            }
+        }
+
+        private fun checkNonReturningCall(element: KtElement) {
+            if (element !is KtExpression) return
+
+            val callExpression = KtPsiUtil.deparenthesize(element) as? KtCallExpression ?: return
+
+            val call = callExpression.getCall(trace.bindingContext) ?: return
+
+            val callEffectsInfo = trace.bindingContext.get(BindingContext.CALL_EFFECTS_INFO, call) ?: return
+            if (!callEffectsInfo.finishes) {
+                builder.jumpToError(callExpression)
             }
         }
 

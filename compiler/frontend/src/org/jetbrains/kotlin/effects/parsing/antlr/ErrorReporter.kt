@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effects.facade
+package org.jetbrains.kotlin.effects.parsing.antlr
 
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.types.KotlinType
+import org.antlr.v4.runtime.BaseErrorListener
+import org.antlr.v4.runtime.RecognitionException
+import org.antlr.v4.runtime.Recognizer
+import org.antlr.v4.runtime.misc.ParseCancellationException
 
-/**
- * Another part of interface between compiler and effect system.
- * EsInfoHolder contains some knowledge about context variables and
- * functions, and can respond to compilers questions.
- */
-interface EsInfoHolder {
-    fun getVariableType(variable: EsVariable): KotlinType?
-    fun getVariableValue(variable: EsVariable): EsConstant?
+object ErrorReporter : BaseErrorListener() {
+    override fun syntaxError(recognizer: Recognizer<*, *>?, offendingSymbol: Any?, line: Int, charPositionInLine: Int, msg: String?, e: RecognitionException?) {
+        throw ParseCancellationException("line $line:$charPositionInLine $msg")
+    }
 }

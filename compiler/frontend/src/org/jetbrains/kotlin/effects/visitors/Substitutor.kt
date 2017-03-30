@@ -17,12 +17,13 @@
 package org.jetbrains.kotlin.effects.visitors
 
 import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
+import org.jetbrains.kotlin.effects.structure.effects.EsCalls
 import org.jetbrains.kotlin.effects.structure.general.EsFunction
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
-import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
+import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
+import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
@@ -38,11 +39,11 @@ import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
  *
  * Generally, used to bind call-arguments to formal arguments.
  */
-class Substitutor(val substs: Map<DataFlowValue, EsNode>) : SchemaVisitor<EsNode> {
+class Substitutor(val substs: Map<DataFlowValue, EsNode>, val correspondingCall : ResolvedCall<*>) : SchemaVisitor<EsNode> {
     override fun visit(node: EsNode): EsNode = node
 
     override fun visit(schema: EffectSchema): EsNode {
-        val substitutedEffects = schema.clauses.map { it.accept(this) as org.jetbrains.kotlin.effects.structure.schema.operators.Imply }
+        val substitutedEffects = schema.clauses.map { it.accept(this) as Imply }
         return EffectSchema(substitutedEffects)
     }
 
@@ -53,6 +54,17 @@ class Substitutor(val substs: Map<DataFlowValue, EsNode>) : SchemaVisitor<EsNode
             unaryOperator.newInstance(unaryOperator.arg.accept(this))
 
     override fun visit(variable: EsVariable): EsNode = substs[variable.value] ?: variable
+
+    override fun visit(cons: Cons): Cons {
+        val head = cons.head.accept(this)
+        val tail = cons.tail.accept(this) as NodeSequence
+
+        return Cons(head, tail)
+    }
+
+    override fun visit(nil: Nil): Nil = Nil
+
+    override fun visit(esCalls: EsCalls): EsCalls = esCalls.bindToCall(correspondingCall)
 }
 
 fun (EffectSchema).bind(resolvedCall: ResolvedCall<*>, args: List<EsNode>) : EffectSchema {
@@ -64,6 +76,6 @@ fun (EffectSchema).bind(resolvedCall: ResolvedCall<*>, args: List<EsNode>) : Eff
 
     val substs = dataFlowValues.zip(args).toMap()
 
-    val substitutor = Substitutor(substs)
+    val substitutor = Substitutor(substs, resolvedCall)
     return substitutor.visit(this) as EffectSchema
 }

@@ -126,7 +126,7 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     override fun visitMultiplicativeExpression(ctx: EffectSystemParser.MultiplicativeExpressionContext): EsNode {
         val unaryExpressions = ctx.prefixUnaryExpression().map(this::visitPrefixUnaryExpression)
         val operators = ctx.multiplicativeOperator().map {
-            when((it.getChild(0) as TerminalNode).symbol.type) {
+            when ((it.getChild(0) as TerminalNode).symbol.type) {
                 EffectSystemParser.MUL -> TODO()
                 EffectSystemParser.DIV -> TODO()
                 EffectSystemParser.PERC -> TODO()
@@ -140,7 +140,7 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     override fun visitPrefixUnaryExpression(ctx: EffectSystemParser.PrefixUnaryExpressionContext): EsNode {
         val postfixExpr = visitPostfixUnaryExpression(ctx.postfixUnaryExpression())
         val prefixOps = ctx.prefixUnaryOperation().map {
-            when((it.getChild(0) as TerminalNode).symbol.type) {
+            when ((it.getChild(0) as TerminalNode).symbol.type) {
                 EffectSystemParser.PLUS -> TODO()
                 EffectSystemParser.MINUS -> TODO()
                 EffectSystemParser.NOT -> ::EsNot
@@ -150,13 +150,13 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
             }
         }
 
-        return prefixOps.foldRight(postfixExpr, {op, acc -> op(acc) })
+        return prefixOps.foldRight(postfixExpr, { op, acc -> op(acc) })
     }
 
     override fun visitPostfixUnaryExpression(ctx: EffectSystemParser.PostfixUnaryExpressionContext): EsNode {
         val atom = visitAtomicExpression(ctx.atomicExpression())
         val postfixOps = ctx.postfixUnaryOperation().map {
-            when((it.getChild(0) as TerminalNode).symbol.type) {
+            when ((it.getChild(0) as TerminalNode).symbol.type) {
                 EffectSystemParser.PLUSPLUS -> TODO()
                 EffectSystemParser.MINUSMINUS -> TODO()
                 EffectSystemParser.EXCLEXCL -> TODO()
@@ -164,7 +164,7 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
             }
         }
 
-        return postfixOps.foldRight<UnaryOperatorT<EsNode>, EsNode>(atom, {op, acc -> op(acc) })
+        return postfixOps.foldRight<UnaryOperatorT<EsNode>, EsNode>(atom, { op, acc -> op(acc) })
     }
 
     override fun visitAtomicExpression(ctx: EffectSystemParser.AtomicExpressionContext): EsNode {
@@ -172,9 +172,9 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
             return resolveVariable(ctx.SimpleName())
         }
 
-         if (ctx.literalConstant() != null) {
-             return visitLiteralConstant(ctx.literalConstant())
-         }
+        if (ctx.literalConstant() != null) {
+            return visitLiteralConstant(ctx.literalConstant())
+        }
 
         return visitExpression(ctx.expression()!!)
     }
@@ -205,7 +205,7 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     }
 
     override fun visitCallsEffect(ctx: EffectSystemParser.CallsEffectContext): EsCalls {
-        val callable = resolveCallable(ctx.SimpleName())
+        val callable = resolveVariable(ctx.SimpleName())
         val times = ctx.IntegerLiteral().text.toInt()
 
         return EsCalls(mutableMapOf(callable to times))
@@ -219,18 +219,28 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
         if (ctx.BooleanLiteral() != null) {
             value = ctx.BooleanLiteral().text.toBoolean()
             type = DefaultBuiltIns.Instance.booleanType
-        } else if (ctx.IntegerLiteral() != null) {
+        }
+        else if (ctx.IntegerLiteral() != null) {
             value = ctx.IntegerLiteral().text.toInt()
             type = DefaultBuiltIns.Instance.intType
-        } else if (ctx.NullLiteral() != null) {
+        }
+        else if (ctx.NullLiteral() != null) {
             value = null
             type = DefaultBuiltIns.Instance.nullableNothingType
-        } else {
+        }
+        else if (ctx.StringLiteral() != null) {
             value = ctx.StringLiteral().text.trim('"')
             type = DefaultBuiltIns.Instance.stringType
         }
+        else if (ctx.UnitLiteral() != null) {
+            value = Unit
+            type = DefaultBuiltIns.Instance.unitType
+        }
+        else {
+            throw IllegalStateException("Unknown Literal Constant: ${(ctx.getChild(0) as TerminalNode).text}")
+        }
 
-        val dataFlowValue = DataFlowValueFactory.createDataFlowValue(ktExpression, type, esResolutionUtils.resolutionContext)
+        val dataFlowValue = DataFlowValueFactory.createDataFlowValue(ktExpression, type, esResolutionUtils.context, esResolutionUtils.moduleDescriptor)
         return EsConstant(value, type, dataFlowValue)
     }
 
@@ -240,7 +250,7 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
      *
      * Example: `[1, 2, 3, 4].intercalate([*, +, -]) results in `((1 * 2) + 3) - 4 = 1`
      */
-    private fun <T> List<T>.intercalate(joiners: List< BinaryOperatorT<T> >): T {
+    private fun <T> List<T>.intercalate(joiners: List<BinaryOperatorT<T>>): T {
         if (isEmpty()) throw IllegalArgumentException("Can't intercalate empty list")
         if (size != (joiners.size + 1)) throw IllegalArgumentException("Size of intercalated list is not equal to size of joiners + 1")
 
@@ -269,14 +279,10 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
         val name = Name.identifier(simpleName.text)
 
         val parameterDescriptor = ownerDescriptor.valueParameters.find { it.name == name }
-                                  ?: throw IllegalStateException("Can't find value parameter with a given name")
+                                  ?: throw IllegalStateException("Can't find value parameter with a given name $name")
         val idInfo = IdentifierInfo.Variable(parameterDescriptor, DataFlowValue.Kind.STABLE_VALUE, null)
         val dfv = DataFlowValue(idInfo, parameterDescriptor.type)
 
         return EsVariable(dfv)
-    }
-
-    private fun resolveCallable(simpleName: TerminalNode): EsFunction {
-        throw IllegalStateException("Callables are not supported in Effect Schemas")
     }
 }

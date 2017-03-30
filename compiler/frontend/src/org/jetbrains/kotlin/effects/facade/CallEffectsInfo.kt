@@ -16,21 +16,4 @@
 
 package org.jetbrains.kotlin.effects.facade
 
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.types.KotlinType
-
-data class EsInfoHolderImpl(
-        val varsValues: Map<EsVariable, EsConstant>,
-        val varsTypes: Map<EsVariable, KotlinType>
-) : EsInfoHolder {
-    // TODO: We need some kind of iterator over statements about terms
-
-    override fun getVariableType(variable: EsVariable): KotlinType? {
-        return varsTypes[variable]
-    }
-
-    override fun getVariableValue(variable: EsVariable): EsConstant? {
-        return varsValues[variable]
-    }
-}
+class CallEffectsInfo(val finishes: Boolean)

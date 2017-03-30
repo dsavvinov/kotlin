@@ -18,33 +18,57 @@ package org.jetbrains.kotlin.effects.facade
 
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.effects.parsing.EsSignatureBuilder
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemLexer
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemParser
+import org.jetbrains.kotlin.effects.parsing.antlr.ErrorReporter
 import org.jetbrains.kotlin.effects.structure.general.EsFunction
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyAnnotationDescriptor
 
 object EffectSchemasResolver {
     fun getEffectSchema(descriptor: CallableDescriptor, esResolutionUtils: EsResolutionUtils): EffectSchema? {
-        val effectsAnnotationString = descriptor.getEffectsAnnotation() ?: return null
+        val effectsAnnotationString = descriptor.getEffectsAnnotation()?.getEffectsString() ?: return null
         return effectsAnnotationString.parseES(descriptor, esResolutionUtils) ?: return null
     }
 
-    private fun CallableDescriptor.getEffectsAnnotation(): String? {
-        val annotation = annotations.findAnnotation(FqName("kotlin.Effects"))
-        return annotation?.allValueArguments?.toList()?.let { it[0].second.value as String? }
-    }
+    private fun CallableDescriptor.getEffectsAnnotation(): AnnotationDescriptor? = annotations.findAnnotation(FqName("kotlin.Effects"))
+
+    private fun AnnotationDescriptor.getEffectsString(): String? = this.allValueArguments.toList()[0].second.value as String?
 
     private fun String.parseES(descriptor: CallableDescriptor, esResolutionUtils: EsResolutionUtils): EffectSchema? {
-        val input = ANTLRInputStream(this)
+        try {
+            val input = ANTLRInputStream(this)
 
-        val tokens = CommonTokenStream(EffectSystemLexer(input))
+            val lexer = EffectSystemLexer(input)
+            lexer.removeErrorListeners()
+            lexer.addErrorListener(ErrorReporter)
 
-        // EffectSchema should be the one and the only top-level node
-        val effectSchemaCtx = EffectSystemParser(tokens).effectSchema()
+            val tokens = CommonTokenStream(lexer)
 
-        return EsSignatureBuilder(descriptor, esResolutionUtils).visitEffectSchema(effectSchemaCtx)
+            val parser = EffectSystemParser(tokens)
+            parser.removeErrorListeners()
+            parser.addErrorListener(ErrorReporter)
+
+            // EffectSchema should be the one and the only top-level node
+            val effectSchemaCtx = parser.effectSchema()
+
+            return EsSignatureBuilder(descriptor, esResolutionUtils).visitEffectSchema(effectSchemaCtx)
+        } catch (e: Exception) {
+            reportErrorWhileParsing(descriptor, esResolutionUtils.trace, e.message ?: e.toString())
+            return null
+        }
+    }
+
+    private fun reportErrorWhileParsing(descriptor: CallableDescriptor, bindingTrace: BindingTrace, message: String) {
+        val annotationEntry = (descriptor.getEffectsAnnotation() as? LazyAnnotationDescriptor)?.annotationEntry ?: return
+        bindingTrace.report(Errors.EFFECTS_PARSING_ERROR.on(annotationEntry, message))
     }
 }

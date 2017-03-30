@@ -12,8 +12,6 @@ clause
     ;
 
 
-
-
 // Expressions
 
 /**
@@ -142,6 +140,7 @@ literalConstant
     | IntegerLiteral
     | StringLiteral
     | NullLiteral
+    | UnitLiteral
     ;
 
 BooleanLiteral
@@ -151,7 +150,7 @@ BooleanLiteral
 
 NullLiteral : 'null';
 
-
+UnitLiteral : 'unit';
 
 /**
  *  Everything below is proudly stolen from the Java grammar:

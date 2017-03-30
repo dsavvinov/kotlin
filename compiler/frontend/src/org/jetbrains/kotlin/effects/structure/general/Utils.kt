@@ -19,7 +19,3 @@ package org.jetbrains.kotlin.effects.structure.general
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 
 fun (Boolean).lift(): EsConstant = EsConstant(this, DefaultBuiltIns.Instance.boolean.defaultType, null)
-
-fun (Int).lift(): EsConstant = EsConstant(this, DefaultBuiltIns.Instance.intType, null)
-
-fun (String).lift() : EsConstant = EsConstant(this, DefaultBuiltIns.Instance.stringType, null)

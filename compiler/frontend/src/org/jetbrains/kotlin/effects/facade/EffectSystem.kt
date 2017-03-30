@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.effects.facade
 
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.effects.facade.adapters.CallTreeBuilder
 import org.jetbrains.kotlin.effects.facade.adapters.buildCallTree
 import org.jetbrains.kotlin.effects.structure.call.CtCall
@@ -27,7 +28,7 @@ import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
-import org.jetbrains.kotlin.effects.visitors.collect
+import org.jetbrains.kotlin.effects.visitors.collectDataFlowInfo
 import org.jetbrains.kotlin.effects.visitors.evaluate
 import org.jetbrains.kotlin.effects.visitors.flatten
 import org.jetbrains.kotlin.effects.visitors.generateEffectSchema
@@ -35,6 +36,7 @@ import org.jetbrains.kotlin.effects.visitors.helpers.getOutcome
 import org.jetbrains.kotlin.effects.visitors.helpers.print
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.psi.ValueArgument
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.TypeResolver
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
@@ -71,7 +73,7 @@ object EffectSystem {
                 .buildCallTree(resolutionUtils)
                 ?.evaluateEffectSchema(resolutionUtils) ?: return resolutionResults
 
-        val effectsDFInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown), languageVersionSettings)
+        val effectsDFInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown), languageVersionSettings, resolutionContext, resultingCall)
 
         val newDFInfo = object : MutableDataFlowInfoForArguments(resultingCall.dataFlowInfoForArguments.resultInfo) {
             override fun updateInfo(valueArgument: ValueArgument, dataFlowInfo: DataFlowInfo)
@@ -85,11 +87,33 @@ object EffectSystem {
                     = resultingCall.dataFlowInfoForArguments.resultInfo.and(effectsDFInfo)
         }
 
-        val resolvedCallWithAdditionalInfo = object : MutableResolvedCall<D> by resultingCall {
-            override fun getDataFlowInfoForArguments(): MutableDataFlowInfoForArguments = newDFInfo
+
+
+        when (resultingCall) {
+            is VariableAsFunctionResolvedCallImpl -> {
+                val mutableResolvedCallWithEffectsInfo = object : MutableResolvedCall<FunctionDescriptor> by resultingCall.functionCall {
+                    override fun getDataFlowInfoForArguments(): MutableDataFlowInfoForArguments = newDFInfo
+                }
+
+                val varAsFunctionCallWithEffectsInfo = VariableAsFunctionResolvedCallImpl(
+                        mutableResolvedCallWithEffectsInfo,
+                        resultingCall.variableCall
+                )
+
+                return OverloadResolutionResultsImpl.success(varAsFunctionCallWithEffectsInfo) as OverloadResolutionResultsImpl<D>
+            }
+
+
+            is MutableResolvedCall -> {
+                val mutableResolvedCallWithEffectsInfo = object : MutableResolvedCall<D> by resultingCall {
+                    override fun getDataFlowInfoForArguments(): MutableDataFlowInfoForArguments = newDFInfo
+                }
+
+                return OverloadResolutionResultsImpl.success(mutableResolvedCallWithEffectsInfo)
+            }
         }
 
-        return OverloadResolutionResultsImpl.success<D>(resolvedCallWithAdditionalInfo)
+        return resolutionResults
     }
 
 
@@ -114,21 +138,26 @@ object EffectSystem {
     private fun CtCall.evaluateEffectSchema(resolutionUtils: EsResolutionUtils): EffectSchema?
             = this.generateEffectSchema(resolutionUtils)?.flatten()?.evaluate()
 
-    private fun EffectSchema.extractDataFlowInfoAt(outcome: Outcome, languageVersionSettings: LanguageVersionSettings) : DataFlowInfo {
+    private fun EffectSchema.extractDataFlowInfoAt(
+            outcome: Outcome,
+            languageVersionSettings: LanguageVersionSettings,
+            resolutionContext: BasicCallResolutionContext,
+            resultingCall: MutableResolvedCall<*>
+    ) : DataFlowInfo {
         var dataFlowInfo: DataFlowInfo = DelegatingDataFlowInfo()
-
-        val varValues = mutableMapOf<EsVariable, EsConstant>()
-        val varTypes = mutableMapOf<EsVariable, KotlinType>()
 
         var isOutcomeFeasible = false
         for (clause in clauses) {
             val clauseOutcome = clause.getOutcome()
             if (clauseOutcome == null || outcome.followsFrom(clauseOutcome)) {
                 isOutcomeFeasible = true
-                dataFlowInfo = dataFlowInfo.and(clause.left.collect(dataFlowInfo, languageVersionSettings))
+                dataFlowInfo = dataFlowInfo.and(clause.left.collectDataFlowInfo(dataFlowInfo, languageVersionSettings))
             }
         }
 
+        if (!isOutcomeFeasible) {
+            resolutionContext.trace.record(BindingContext.CALL_EFFECTS_INFO, resultingCall.call, CallEffectsInfo(false))
+        }
         return dataFlowInfo
     }
 }

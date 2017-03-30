@@ -19,9 +19,10 @@ public class EffectSystemParser extends Parser {
 	public static final int
 		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, T__6=7, T__7=8, T__8=9, 
 		T__9=10, T__10=11, T__11=12, T__12=13, BooleanLiteral=14, NullLiteral=15, 
-		StringLiteral=16, IntegerLiteral=17, SimpleName=18, WS=19, EOL=20, SEMI=21, 
-		LT=22, GT=23, LEQ=24, GEQ=25, PLUS=26, MINUS=27, MUL=28, DIV=29, PERC=30, 
-		PLUSPLUS=31, MINUSMINUS=32, NOT=33, EXCLEXCL=34, EQEQ=35, EXCLEQ=36;
+		UnitLiteral=16, StringLiteral=17, IntegerLiteral=18, SimpleName=19, WS=20, 
+		EOL=21, SEMI=22, LT=23, GT=24, LEQ=25, GEQ=26, PLUS=27, MINUS=28, MUL=29, 
+		DIV=30, PERC=31, PLUSPLUS=32, MINUSMINUS=33, NOT=34, EXCLEXCL=35, EQEQ=36, 
+		EXCLEQ=37;
 	public static final int
 		RULE_effectSchema = 0, RULE_clause = 1, RULE_expression = 2, RULE_conjunction = 3, 
 		RULE_equalityComparison = 4, RULE_comparison = 5, RULE_namedInfix = 6, 
@@ -44,16 +45,16 @@ public class EffectSystemParser extends Parser {
 
 	private static final String[] _LITERAL_NAMES = {
 		null, "'->'", "'('", "')'", "'||'", "'&&'", "'in'", "'!in'", "'is'", "'!is'", 
-		"','", "'Throws'", "'Returns'", "'Calls'", null, "'null'", null, null, 
-		null, null, null, "';'", "'<'", "'>'", "'<='", "'>='", "'+'", "'-'", "'*'", 
-		"'/'", "'%'", "'++'", "'--'", "'!'", "'!!'", "'=='", "'!='"
+		"','", "'Throws'", "'Returns'", "'Calls'", null, "'null'", "'unit'", null, 
+		null, null, null, null, "';'", "'<'", "'>'", "'<='", "'>='", "'+'", "'-'", 
+		"'*'", "'/'", "'%'", "'++'", "'--'", "'!'", "'!!'", "'=='", "'!='"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
 		null, null, null, null, null, null, null, null, null, null, null, null, 
-		null, null, "BooleanLiteral", "NullLiteral", "StringLiteral", "IntegerLiteral", 
-		"SimpleName", "WS", "EOL", "SEMI", "LT", "GT", "LEQ", "GEQ", "PLUS", "MINUS", 
-		"MUL", "DIV", "PERC", "PLUSPLUS", "MINUSMINUS", "NOT", "EXCLEXCL", "EQEQ", 
-		"EXCLEQ"
+		null, null, "BooleanLiteral", "NullLiteral", "UnitLiteral", "StringLiteral", 
+		"IntegerLiteral", "SimpleName", "WS", "EOL", "SEMI", "LT", "GT", "LEQ", 
+		"GEQ", "PLUS", "MINUS", "MUL", "DIV", "PERC", "PLUSPLUS", "MINUSMINUS", 
+		"NOT", "EXCLEXCL", "EQEQ", "EXCLEQ"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -148,6 +149,7 @@ public class EffectSystemParser extends Parser {
 			case T__1:
 			case BooleanLiteral:
 			case NullLiteral:
+			case UnitLiteral:
 			case StringLiteral:
 			case IntegerLiteral:
 			case SimpleName:
@@ -887,6 +889,7 @@ public class EffectSystemParser extends Parser {
 				break;
 			case BooleanLiteral:
 			case NullLiteral:
+			case UnitLiteral:
 			case StringLiteral:
 			case IntegerLiteral:
 				enterOuterAlt(_localctx, 2);
@@ -1565,6 +1568,7 @@ public class EffectSystemParser extends Parser {
 			switch (_input.LA(1)) {
 			case BooleanLiteral:
 			case NullLiteral:
+			case UnitLiteral:
 			case StringLiteral:
 			case IntegerLiteral:
 				{
@@ -1684,6 +1688,7 @@ public class EffectSystemParser extends Parser {
 		public TerminalNode IntegerLiteral() { return getToken(EffectSystemParser.IntegerLiteral, 0); }
 		public TerminalNode StringLiteral() { return getToken(EffectSystemParser.StringLiteral, 0); }
 		public TerminalNode NullLiteral() { return getToken(EffectSystemParser.NullLiteral, 0); }
+		public TerminalNode UnitLiteral() { return getToken(EffectSystemParser.UnitLiteral, 0); }
 		public LiteralConstantContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1707,7 +1712,7 @@ public class EffectSystemParser extends Parser {
 			{
 			setState(217);
 			_la = _input.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << BooleanLiteral) | (1L << NullLiteral) | (1L << StringLiteral) | (1L << IntegerLiteral))) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << BooleanLiteral) | (1L << NullLiteral) | (1L << UnitLiteral) | (1L << StringLiteral) | (1L << IntegerLiteral))) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -1729,7 +1734,7 @@ public class EffectSystemParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3&\u00de\4\2\t\2\4"+
+		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\'\u00de\4\2\t\2\4"+
 		"\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t"+
 		"\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
@@ -1746,38 +1751,38 @@ public class EffectSystemParser extends Parser {
 		"\7\30\u00c1\n\30\f\30\16\30\u00c4\13\30\3\31\3\31\3\31\5\31\u00c9\n\31"+
 		"\3\32\3\32\3\32\3\33\3\33\3\33\5\33\u00d1\n\33\3\34\3\34\3\34\3\34\3\34"+
 		"\3\34\3\34\3\35\3\35\3\36\3\36\3\36\2\2\37\2\4\6\b\n\f\16\20\22\24\26"+
-		"\30\32\34\36 \"$&(*,.\60\62\64\668:\2\13\3\2%&\3\2\30\33\3\2\34\35\3\2"+
-		"\36 \4\2\34\35!#\4\2!\"$$\3\2\b\t\3\2\n\13\3\2\20\23\u00d3\2E\3\2\2\2"+
-		"\4G\3\2\2\2\6K\3\2\2\2\bT\3\2\2\2\n]\3\2\2\2\ff\3\2\2\2\16~\3\2\2\2\20"+
-		"\u0080\3\2\2\2\22\u0089\3\2\2\2\24\u0095\3\2\2\2\26\u009a\3\2\2\2\30\u00a7"+
-		"\3\2\2\2\32\u00a9\3\2\2\2\34\u00ab\3\2\2\2\36\u00ad\3\2\2\2 \u00af\3\2"+
-		"\2\2\"\u00b1\3\2\2\2$\u00b3\3\2\2\2&\u00b5\3\2\2\2(\u00b7\3\2\2\2*\u00b9"+
-		"\3\2\2\2,\u00bb\3\2\2\2.\u00bd\3\2\2\2\60\u00c8\3\2\2\2\62\u00ca\3\2\2"+
-		"\2\64\u00cd\3\2\2\2\66\u00d2\3\2\2\28\u00d9\3\2\2\2:\u00db\3\2\2\2<F\7"+
-		"\2\2\3=B\5\4\3\2>?\7\27\2\2?A\5\4\3\2@>\3\2\2\2AD\3\2\2\2B@\3\2\2\2BC"+
-		"\3\2\2\2CF\3\2\2\2DB\3\2\2\2E<\3\2\2\2E=\3\2\2\2F\3\3\2\2\2GH\5\6\4\2"+
-		"HI\7\3\2\2IJ\5.\30\2J\5\3\2\2\2KQ\5\b\5\2LM\5\32\16\2MN\5\b\5\2NP\3\2"+
-		"\2\2OL\3\2\2\2PS\3\2\2\2QO\3\2\2\2QR\3\2\2\2R\7\3\2\2\2SQ\3\2\2\2TZ\5"+
-		"\n\6\2UV\5\34\17\2VW\5\n\6\2WY\3\2\2\2XU\3\2\2\2Y\\\3\2\2\2ZX\3\2\2\2"+
-		"Z[\3\2\2\2[\t\3\2\2\2\\Z\3\2\2\2]c\5\f\7\2^_\5\36\20\2_`\5\f\7\2`b\3\2"+
-		"\2\2a^\3\2\2\2be\3\2\2\2ca\3\2\2\2cd\3\2\2\2d\13\3\2\2\2ec\3\2\2\2fl\5"+
-		"\16\b\2gh\5 \21\2hi\5\16\b\2ik\3\2\2\2jg\3\2\2\2kn\3\2\2\2lj\3\2\2\2l"+
-		"m\3\2\2\2m\r\3\2\2\2nl\3\2\2\2ou\5\20\t\2pq\5*\26\2qr\5\20\t\2rt\3\2\2"+
-		"\2sp\3\2\2\2tw\3\2\2\2us\3\2\2\2uv\3\2\2\2v\177\3\2\2\2wu\3\2\2\2x|\5"+
-		"\20\t\2yz\5,\27\2z{\58\35\2{}\3\2\2\2|y\3\2\2\2|}\3\2\2\2}\177\3\2\2\2"+
-		"~o\3\2\2\2~x\3\2\2\2\177\17\3\2\2\2\u0080\u0086\5\22\n\2\u0081\u0082\5"+
-		"\"\22\2\u0082\u0083\5\22\n\2\u0083\u0085\3\2\2\2\u0084\u0081\3\2\2\2\u0085"+
-		"\u0088\3\2\2\2\u0086\u0084\3\2\2\2\u0086\u0087\3\2\2\2\u0087\21\3\2\2"+
-		"\2\u0088\u0086\3\2\2\2\u0089\u008f\5\24\13\2\u008a\u008b\5$\23\2\u008b"+
-		"\u008c\5\24\13\2\u008c\u008e\3\2\2\2\u008d\u008a\3\2\2\2\u008e\u0091\3"+
-		"\2\2\2\u008f\u008d\3\2\2\2\u008f\u0090\3\2\2\2\u0090\23\3\2\2\2\u0091"+
+		"\30\32\34\36 \"$&(*,.\60\62\64\668:\2\13\3\2&\'\3\2\31\34\3\2\35\36\3"+
+		"\2\37!\4\2\35\36\"$\4\2\"#%%\3\2\b\t\3\2\n\13\3\2\20\24\u00d3\2E\3\2\2"+
+		"\2\4G\3\2\2\2\6K\3\2\2\2\bT\3\2\2\2\n]\3\2\2\2\ff\3\2\2\2\16~\3\2\2\2"+
+		"\20\u0080\3\2\2\2\22\u0089\3\2\2\2\24\u0095\3\2\2\2\26\u009a\3\2\2\2\30"+
+		"\u00a7\3\2\2\2\32\u00a9\3\2\2\2\34\u00ab\3\2\2\2\36\u00ad\3\2\2\2 \u00af"+
+		"\3\2\2\2\"\u00b1\3\2\2\2$\u00b3\3\2\2\2&\u00b5\3\2\2\2(\u00b7\3\2\2\2"+
+		"*\u00b9\3\2\2\2,\u00bb\3\2\2\2.\u00bd\3\2\2\2\60\u00c8\3\2\2\2\62\u00ca"+
+		"\3\2\2\2\64\u00cd\3\2\2\2\66\u00d2\3\2\2\28\u00d9\3\2\2\2:\u00db\3\2\2"+
+		"\2<F\7\2\2\3=B\5\4\3\2>?\7\30\2\2?A\5\4\3\2@>\3\2\2\2AD\3\2\2\2B@\3\2"+
+		"\2\2BC\3\2\2\2CF\3\2\2\2DB\3\2\2\2E<\3\2\2\2E=\3\2\2\2F\3\3\2\2\2GH\5"+
+		"\6\4\2HI\7\3\2\2IJ\5.\30\2J\5\3\2\2\2KQ\5\b\5\2LM\5\32\16\2MN\5\b\5\2"+
+		"NP\3\2\2\2OL\3\2\2\2PS\3\2\2\2QO\3\2\2\2QR\3\2\2\2R\7\3\2\2\2SQ\3\2\2"+
+		"\2TZ\5\n\6\2UV\5\34\17\2VW\5\n\6\2WY\3\2\2\2XU\3\2\2\2Y\\\3\2\2\2ZX\3"+
+		"\2\2\2Z[\3\2\2\2[\t\3\2\2\2\\Z\3\2\2\2]c\5\f\7\2^_\5\36\20\2_`\5\f\7\2"+
+		"`b\3\2\2\2a^\3\2\2\2be\3\2\2\2ca\3\2\2\2cd\3\2\2\2d\13\3\2\2\2ec\3\2\2"+
+		"\2fl\5\16\b\2gh\5 \21\2hi\5\16\b\2ik\3\2\2\2jg\3\2\2\2kn\3\2\2\2lj\3\2"+
+		"\2\2lm\3\2\2\2m\r\3\2\2\2nl\3\2\2\2ou\5\20\t\2pq\5*\26\2qr\5\20\t\2rt"+
+		"\3\2\2\2sp\3\2\2\2tw\3\2\2\2us\3\2\2\2uv\3\2\2\2v\177\3\2\2\2wu\3\2\2"+
+		"\2x|\5\20\t\2yz\5,\27\2z{\58\35\2{}\3\2\2\2|y\3\2\2\2|}\3\2\2\2}\177\3"+
+		"\2\2\2~o\3\2\2\2~x\3\2\2\2\177\17\3\2\2\2\u0080\u0086\5\22\n\2\u0081\u0082"+
+		"\5\"\22\2\u0082\u0083\5\22\n\2\u0083\u0085\3\2\2\2\u0084\u0081\3\2\2\2"+
+		"\u0085\u0088\3\2\2\2\u0086\u0084\3\2\2\2\u0086\u0087\3\2\2\2\u0087\21"+
+		"\3\2\2\2\u0088\u0086\3\2\2\2\u0089\u008f\5\24\13\2\u008a\u008b\5$\23\2"+
+		"\u008b\u008c\5\24\13\2\u008c\u008e\3\2\2\2\u008d\u008a\3\2\2\2\u008e\u0091"+
+		"\3\2\2\2\u008f\u008d\3\2\2\2\u008f\u0090\3\2\2\2\u0090\23\3\2\2\2\u0091"+
 		"\u008f\3\2\2\2\u0092\u0094\5&\24\2\u0093\u0092\3\2\2\2\u0094\u0097\3\2"+
 		"\2\2\u0095\u0093\3\2\2\2\u0095\u0096\3\2\2\2\u0096\u0098\3\2\2\2\u0097"+
 		"\u0095\3\2\2\2\u0098\u0099\5\26\f\2\u0099\25\3\2\2\2\u009a\u009e\5\30"+
 		"\r\2\u009b\u009d\5(\25\2\u009c\u009b\3\2\2\2\u009d\u00a0\3\2\2\2\u009e"+
 		"\u009c\3\2\2\2\u009e\u009f\3\2\2\2\u009f\27\3\2\2\2\u00a0\u009e\3\2\2"+
 		"\2\u00a1\u00a2\7\4\2\2\u00a2\u00a3\5\6\4\2\u00a3\u00a4\7\5\2\2\u00a4\u00a8"+
-		"\3\2\2\2\u00a5\u00a8\5:\36\2\u00a6\u00a8\7\24\2\2\u00a7\u00a1\3\2\2\2"+
+		"\3\2\2\2\u00a5\u00a8\5:\36\2\u00a6\u00a8\7\25\2\2\u00a7\u00a1\3\2\2\2"+
 		"\u00a7\u00a5\3\2\2\2\u00a7\u00a6\3\2\2\2\u00a8\31\3\2\2\2\u00a9\u00aa"+
 		"\7\6\2\2\u00aa\33\3\2\2\2\u00ab\u00ac\7\7\2\2\u00ac\35\3\2\2\2\u00ad\u00ae"+
 		"\t\2\2\2\u00ae\37\3\2\2\2\u00af\u00b0\t\3\2\2\u00b0!\3\2\2\2\u00b1\u00b2"+
@@ -1788,12 +1793,12 @@ public class EffectSystemParser extends Parser {
 		"\2\u00c1\u00c4\3\2\2\2\u00c2\u00c0\3\2\2\2\u00c2\u00c3\3\2\2\2\u00c3/"+
 		"\3\2\2\2\u00c4\u00c2\3\2\2\2\u00c5\u00c9\5\62\32\2\u00c6\u00c9\5\64\33"+
 		"\2\u00c7\u00c9\5\66\34\2\u00c8\u00c5\3\2\2\2\u00c8\u00c6\3\2\2\2\u00c8"+
-		"\u00c7\3\2\2\2\u00c9\61\3\2\2\2\u00ca\u00cb\7\r\2\2\u00cb\u00cc\7\24\2"+
+		"\u00c7\3\2\2\2\u00c9\61\3\2\2\2\u00ca\u00cb\7\r\2\2\u00cb\u00cc\7\25\2"+
 		"\2\u00cc\63\3\2\2\2\u00cd\u00d0\7\16\2\2\u00ce\u00d1\5:\36\2\u00cf\u00d1"+
-		"\7\24\2\2\u00d0\u00ce\3\2\2\2\u00d0\u00cf\3\2\2\2\u00d1\65\3\2\2\2\u00d2"+
-		"\u00d3\7\17\2\2\u00d3\u00d4\7\4\2\2\u00d4\u00d5\7\24\2\2\u00d5\u00d6\7"+
-		"\f\2\2\u00d6\u00d7\7\23\2\2\u00d7\u00d8\7\5\2\2\u00d8\67\3\2\2\2\u00d9"+
-		"\u00da\7\24\2\2\u00da9\3\2\2\2\u00db\u00dc\t\n\2\2\u00dc;\3\2\2\2\23B"+
+		"\7\25\2\2\u00d0\u00ce\3\2\2\2\u00d0\u00cf\3\2\2\2\u00d1\65\3\2\2\2\u00d2"+
+		"\u00d3\7\17\2\2\u00d3\u00d4\7\4\2\2\u00d4\u00d5\7\25\2\2\u00d5\u00d6\7"+
+		"\f\2\2\u00d6\u00d7\7\24\2\2\u00d7\u00d8\7\5\2\2\u00d8\67\3\2\2\2\u00d9"+
+		"\u00da\7\25\2\2\u00da9\3\2\2\2\u00db\u00dc\t\n\2\2\u00dc;\3\2\2\2\23B"+
 		"EQZclu|~\u0086\u008f\u0095\u009e\u00a7\u00c2\u00c8\u00d0";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());

@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effects.facade.adapters
 
+import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
 import org.jetbrains.kotlin.effects.structure.call.*
@@ -42,7 +43,7 @@ class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNo
     }
 
     override fun visitConstantExpression(expression: KtConstantExpression, data: Nothing?): CtNode? {
-        val bindingContext = esResolutionUtils.resolutionContext.trace.bindingContext
+        val bindingContext = esResolutionUtils.context
         val type: KotlinType = bindingContext.getType(expression) ?: return null
         val compileTimeConstant: CompileTimeConstant<*>
                 = bindingContext.get(BindingContext.COMPILE_TIME_VALUE, expression) ?: return null
@@ -91,8 +92,18 @@ class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNo
     }
 
     override fun visitStringTemplateExpression(expression: KtStringTemplateExpression, data: Nothing?): CtNode {
-        return expression.entries.map { it.text }.ifEmpty { listOf("") }.reduce { s, acc -> s + acc }.lift()
+        val concatenatedString = expression.entries.map { it.text }.ifEmpty { listOf("") }.reduce { s, acc -> s + acc }
+        val dataFlowValue = DataFlowValueFactory.createDataFlowValue(
+                expression,
+                DefaultBuiltIns.Instance.stringType,
+                esResolutionUtils.context,
+                esResolutionUtils.moduleDescriptor
+        )
+        return EsConstant(concatenatedString, DefaultBuiltIns.Instance.stringType, dataFlowValue)
     }
+
+    override fun visitLambdaExpression(expression: KtLambdaExpression, data: Nothing?): CtNode? =
+        expression.createDataFlowValue()?.let(::EsVariable)
 
     fun KtExpression.createDataFlowValue() : DataFlowValue? {
         return DataFlowValueFactory.createDataFlowValue(
