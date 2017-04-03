@@ -17,7 +17,7 @@
 package org.jetbrains.kotlin.effects.visitors
 
 import org.jetbrains.kotlin.effects.facade.EffectSchemasResolver
-import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
+import org.jetbrains.kotlin.effects.facade.EsResolutionContext
 import org.jetbrains.kotlin.effects.structure.call.*
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
@@ -30,10 +30,10 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.EsNot
 /**
  * Generates tree of effect schemas given a call-tree
  */
-class EffectSchemaGenerator(val esResolutionUtils: EsResolutionUtils) : CallTreeVisitor<EsNode?> {
+class EffectSchemaGenerator(val esResolutionContext: EsResolutionContext) : CallTreeVisitor<EsNode?> {
     override fun visit(call: CtCall): EffectSchema? {
         val substitutedArgs = call.childs.map { it.accept(this) ?: return null}
-        val basicSchema = EffectSchemasResolver.getEffectSchema(call.resolvedCall.resultingDescriptor, esResolutionUtils)
+        val basicSchema = EffectSchemasResolver.getEffectSchema(call.resolvedCall.resultingDescriptor, esResolutionContext)
         val boundSchema = basicSchema?.bind(call.resolvedCall, substitutedArgs)
         return boundSchema
     }
@@ -59,8 +59,8 @@ class EffectSchemaGenerator(val esResolutionUtils: EsResolutionUtils) : CallTree
     override fun visit(constant: EsConstant): EsNode = constant
 }
 
-fun (CtCall).generateEffectSchema(utils: EsResolutionUtils) : EffectSchema? {
-    val generator = EffectSchemaGenerator(utils)
+fun (CtCall).generateEffectSchema(context: EsResolutionContext) : EffectSchema? {
+    val generator = EffectSchemaGenerator(context)
 
     return accept(generator) as EffectSchema?
 }

@@ -18,7 +18,7 @@ package org.jetbrains.kotlin.effects.facade.adapters
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
+import org.jetbrains.kotlin.effects.facade.EsResolutionContext
 import org.jetbrains.kotlin.effects.structure.call.*
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
@@ -36,14 +36,14 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.ifEmpty
 
 
-class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNode, Nothing?>() {
+class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<CtNode, Nothing?>() {
 
     fun buildCallTree(call: ResolvedCall<*>): CtCall? {
             return call.call.callElement.accept(this, null) as? CtCall
     }
 
     override fun visitConstantExpression(expression: KtConstantExpression, data: Nothing?): CtNode? {
-        val bindingContext = esResolutionUtils.context
+        val bindingContext = esResolutionContext.context
         val type: KotlinType = bindingContext.getType(expression) ?: return null
         val compileTimeConstant: CompileTimeConstant<*>
                 = bindingContext.get(BindingContext.COMPILE_TIME_VALUE, expression) ?: return null
@@ -75,7 +75,7 @@ class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNo
     }
 
     override fun visitCallExpression(expression: KtCallExpression, data: Nothing?): CtNode? {
-        val resolvedCall = expression.getResolvedCall(esResolutionUtils.context) ?: return null
+        val resolvedCall = expression.getResolvedCall(esResolutionContext.context) ?: return null
 
         // TODO: varargs and default args
         val argNodes = resolvedCall.valueArgumentsByIndex?.map {
@@ -87,7 +87,7 @@ class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNo
 
     override fun visitIsExpression(expression: KtIsExpression, data: Nothing?): CtNode? {
         val leftNode: CtNode = expression.leftHandSide.accept(this, data)
-        val rightType: KotlinType = esResolutionUtils.context.get(BindingContext.TYPE, expression.typeReference) ?: return null
+        val rightType: KotlinType = esResolutionContext.context.get(BindingContext.TYPE, expression.typeReference) ?: return null
         return if (expression.isNegated) CtNot(CtIs(leftNode, rightType)) else CtIs(leftNode, rightType)
     }
 
@@ -96,8 +96,8 @@ class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNo
         val dataFlowValue = DataFlowValueFactory.createDataFlowValue(
                 expression,
                 DefaultBuiltIns.Instance.stringType,
-                esResolutionUtils.context,
-                esResolutionUtils.moduleDescriptor
+                esResolutionContext.context,
+                esResolutionContext.moduleDescriptor
         )
         return EsConstant(concatenatedString, DefaultBuiltIns.Instance.stringType, dataFlowValue)
     }
@@ -108,12 +108,12 @@ class CallTreeBuilder(val esResolutionUtils: EsResolutionUtils) : KtVisitor<CtNo
     fun KtExpression.createDataFlowValue() : DataFlowValue? {
         return DataFlowValueFactory.createDataFlowValue(
                 expression = this,
-                type = esResolutionUtils.context.getType(this) ?: return null,
-                bindingContext = esResolutionUtils.context,
-                containingDeclarationOrModule = esResolutionUtils.moduleDescriptor
+                type = esResolutionContext.context.getType(this) ?: return null,
+                bindingContext = esResolutionContext.context,
+                containingDeclarationOrModule = esResolutionContext.moduleDescriptor
         )
     }
 }
 
-fun <D : CallableDescriptor> ResolvedCall<D>.buildCallTree(resolutionUtils: EsResolutionUtils)
-        = CallTreeBuilder(resolutionUtils).buildCallTree(this)
+fun <D : CallableDescriptor> ResolvedCall<D>.buildCallTree(resolutionContext: EsResolutionContext)
+        = CallTreeBuilder(resolutionContext).buildCallTree(this)

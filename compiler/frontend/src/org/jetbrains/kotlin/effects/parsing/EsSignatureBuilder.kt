@@ -19,7 +19,7 @@ package org.jetbrains.kotlin.effects.parsing
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
-import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
+import org.jetbrains.kotlin.effects.facade.EsResolutionContext
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemBaseVisitor
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemParser
 import org.jetbrains.kotlin.effects.structure.effects.EsCalls
@@ -48,7 +48,7 @@ typealias BinaryOperatorT<T> = (T, T) -> T
 typealias UnaryOperatorT<T> = (T) -> T
 
 
-class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResolutionUtils: EsResolutionUtils) : EffectSystemBaseVisitor<EsNode?>() {
+class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResolutionContext: EsResolutionContext) : EffectSystemBaseVisitor<EsNode?>() {
     override fun visitEffectSchema(ctx: EffectSystemParser.EffectSchemaContext): EffectSchema {
         val esClauses = ctx.clause().map(this::visitClause)
 
@@ -212,7 +212,7 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     }
 
     override fun visitLiteralConstant(ctx: EffectSystemParser.LiteralConstantContext): EsConstant {
-        val ktExpression = esResolutionUtils.psiFactory.createExpression(ctx.text)
+        val ktExpression = esResolutionContext.psiFactory.createExpression(ctx.text)
         val value: Any?
         val type: KotlinType
 
@@ -240,7 +240,7 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
             throw IllegalStateException("Unknown Literal Constant: ${(ctx.getChild(0) as TerminalNode).text}")
         }
 
-        val dataFlowValue = DataFlowValueFactory.createDataFlowValue(ktExpression, type, esResolutionUtils.context, esResolutionUtils.moduleDescriptor)
+        val dataFlowValue = DataFlowValueFactory.createDataFlowValue(ktExpression, type, esResolutionContext.context, esResolutionContext.moduleDescriptor)
         return EsConstant(value, type, dataFlowValue)
     }
 
@@ -265,14 +265,14 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     }
 
     private fun resolveType(simpleName: TerminalNode): KotlinType {
-        val ktTypeReference = esResolutionUtils.psiFactory.createType(simpleName.text)
-        val type = esResolutionUtils.typeResolver?.resolveType(
-                esResolutionUtils.resolutionContext.scope,
+        val ktTypeReference = esResolutionContext.psiFactory.createType(simpleName.text)
+        val type = esResolutionContext.typeResolver.resolveType(
+                esResolutionContext.lexicalScope,
                 ktTypeReference,
-                TemporaryBindingTrace.create(esResolutionUtils.resolutionContext.trace, "ES-resolving"),
+                TemporaryBindingTrace.create(DelegatingBindingTrace(esResolutionContext.context, "ES-resolving"), "ES-resolving"),
                 /* checkBounds = */ false
         )
-        return type!!
+        return type
     }
 
     private fun resolveVariable(simpleName: TerminalNode): EsVariable {

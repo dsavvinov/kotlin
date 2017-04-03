@@ -18,8 +18,9 @@ package org.jetbrains.kotlin.effects.structure.effects
 
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
+import org.jetbrains.kotlin.types.KotlinType
 
-data class EsThrows(val exception: Any?) : Outcome {
+data class EsThrows(val exception: KotlinType) : Outcome {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
 
     override fun isSuccessfull(): Boolean = false

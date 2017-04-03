@@ -32,7 +32,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.Alarm
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.effects.facade.EffectSystem
-import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
+import org.jetbrains.kotlin.effects.facade.EsResolutionContext
 import org.jetbrains.kotlin.effects.facade.adapters.CallTreeBuilder
 import org.jetbrains.kotlin.effects.structure.call.CtCall
 import org.jetbrains.kotlin.effects.structure.call.CtNode
@@ -44,6 +44,7 @@ import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.TypeResolver
 import org.jetbrains.kotlin.resolve.calls.callUtil.*
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 
@@ -54,7 +55,7 @@ class KotlinEffectToolWindow(private val myProject: Project, private val toolWin
     private val LOG = Logger.getInstance(KotlinEffectToolWindow::class.java)
 
     private inner class UpdateEffectsToolWindowTask : LongRunningReadTask<ResolvedCall<out CallableDescriptor>, String>() {
-        lateinit private var esResolutionUtils: EsResolutionUtils
+        lateinit private var esResolutionContext: EsResolutionContext
 
         override fun prepareRequestInfo(): ResolvedCall<out CallableDescriptor>? {
             if (!toolWindow.isVisible) return null
@@ -68,18 +69,20 @@ class KotlinEffectToolWindow(private val myProject: Project, private val toolWin
             val call = PsiTreeUtil.getParentOfType(element, KtCallExpression::class.java) ?: return null
 
             val context = call.analyze()
-            val resolvedCall = call.getResolvedCall(context) ?: return null
             val moduleDescriptor = call.findModuleDescriptor()
+            val typeResolver = call.getResolutionFacade().getFrontendService(TypeResolver::class.java)
+            val scope = context.get(BindingContext.LEXICAL_SCOPE, call) ?: return null
 
-            esResolutionUtils = EsResolutionUtils(context, KtPsiFactory(element.project), null, moduleDescriptor)
+            esResolutionContext = EsResolutionContext(context, KtPsiFactory(element.project), typeResolver, scope, moduleDescriptor)
 
+            val resolvedCall = call.getResolvedCall(context) ?: return null
             return resolvedCall
         }
 
         override fun processRequest(call: ResolvedCall<out CallableDescriptor>): String? {
-            val node = CallTreeBuilder(esResolutionUtils).buildCallTree(call) ?: return null
+            val node = CallTreeBuilder(esResolutionContext).buildCallTree(call) ?: return null
 
-            return EffectSystem.printES(node, esResolutionUtils)
+            return EffectSystem.printES(node, esResolutionContext)
         }
 
         override fun onResultReady(call: ResolvedCall<out CallableDescriptor>, resultText: String?) {

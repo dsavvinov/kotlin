@@ -62,11 +62,13 @@ object EffectSystem {
 
         val resultingCall: MutableResolvedCall<D> = resolutionResults.resultingCall
 
-        val resolutionUtils = EsResolutionUtils(
-                resolutionContext,
+        val resolutionUtils = EsResolutionContext(
+                resolutionContext.trace.bindingContext,
                 KtPsiFactory(resultingCall.call.callElement),
                 typeResolver,
-                DescriptorUtils.getContainingModule(resultingCall.candidateDescriptor)
+                resolutionContext.scope,
+                DescriptorUtils.getContainingModule(resultingCall.candidateDescriptor),
+                resolutionContext.trace
         )
 
         val resultingEs = resultingCall
@@ -117,8 +119,8 @@ object EffectSystem {
     }
 
 
-    fun printES(call: CtCall, utils: EsResolutionUtils): String {
-        val baseES = call.generateEffectSchema(utils) ?: return "Can't build effect schema"
+    fun printES(call: CtCall, context: EsResolutionContext): String {
+        val baseES = call.generateEffectSchema(context) ?: return "Can't build effect schema"
 
         val flatES = baseES.flatten()
 
@@ -135,8 +137,8 @@ object EffectSystem {
                evES.print()
     }
 
-    private fun CtCall.evaluateEffectSchema(resolutionUtils: EsResolutionUtils): EffectSchema?
-            = this.generateEffectSchema(resolutionUtils)?.flatten()?.evaluate()
+    private fun CtCall.evaluateEffectSchema(resolutionContext: EsResolutionContext): EffectSchema?
+            = this.generateEffectSchema(resolutionContext)?.flatten()?.evaluate()
 
     private fun EffectSchema.extractDataFlowInfoAt(
             outcome: Outcome,

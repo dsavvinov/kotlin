@@ -16,7 +16,7 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
-import org.jetbrains.kotlin.effects.facade.EsResolutionUtils
+import org.jetbrains.kotlin.effects.facade.EsResolutionContext
 import org.jetbrains.kotlin.effects.structure.effects.EsCalls
 import org.jetbrains.kotlin.effects.structure.general.EsFunction
 import org.jetbrains.kotlin.effects.structure.general.EsNode

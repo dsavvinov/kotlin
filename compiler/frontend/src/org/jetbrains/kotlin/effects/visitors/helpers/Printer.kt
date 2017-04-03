@@ -76,7 +76,7 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
 
     override fun visit(esIsOperator: EsIs): Unit {
         esIsOperator.arg.accept(this)
-        sb.append(" is ${esIsOperator.type}")
+        sb.append(" is ${esIsOperator.type.unwrap()}")
     }
 
     override fun visit(esEqualOperator: EsEqual): Unit {
@@ -96,7 +96,7 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
     }
 
     override fun visit(throws: EsThrows): Unit {
-        sb.append("Throws ${throws.exception}")
+        sb.append("Throws ${throws.exception.unwrap()}")
     }
 
     override fun visit(esOr: EsOr): Unit {
