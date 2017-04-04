@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.effects.visitors
 
 import org.jetbrains.kotlin.config.LanguageVersionSettings
+import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
@@ -32,23 +33,14 @@ import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 /**
  * Builds data flow info, contained in the given Effect Schema/
  */
-class EffectsInfoCollector : SchemaVisitor<Unit>
+class EffectsInfoCollector(val effectsInfo: MutableEffectsInfo) : SchemaVisitor<Unit>
 {
-    private val types: MutableMap<DataFlowValue, KotlinType> = mutableMapOf()
-    private val equalValues: MutableMap<DataFlowValue, DataFlowValue > = mutableMapOf()
-    private val notEqualValues: MutableMap<DataFlowValue, MutableList<DataFlowValue>> = mutableMapOf()
     private var isInverted : Boolean = false
 
-    fun getTypesInfo() : Map<DataFlowValue, KotlinType> = types
-
-    fun getEqualInfo() : Map<DataFlowValue, DataFlowValue> = equalValues
-
-    fun getNotEqualInfo() : Map<DataFlowValue, List<DataFlowValue>> = notEqualValues
-
     fun inverted(body: () -> Unit) {
-        isInverted.xor(true)
+        isInverted = isInverted.xor(true)
         body()
-        isInverted.xor(true)
+        isInverted = isInverted.xor(true)
     }
 
     override fun visit(node: EsNode) = Unit
@@ -64,13 +56,10 @@ class EffectsInfoCollector : SchemaVisitor<Unit>
 
     override fun visit(esIsOperator: EsIs) {
         if (esIsOperator.arg is EsVariable) {
-            val dataFlowValue = esIsOperator.arg.value
-            val newType = esIsOperator.type
-            val oldType = types[esIsOperator.arg.value]
-
-            // We rewrite old type if there was no old type, or new type is more specific than old
-            if (oldType == null || esIsOperator.type.isSubtypeOf(oldType)) {
-                types[esIsOperator.arg.value] = esIsOperator.type
+            if (isInverted) {
+                effectsInfo.notSubtype(esIsOperator.arg.value, esIsOperator.type)
+            } else {
+                effectsInfo.subtype(esIsOperator.arg.value, esIsOperator.type)
             }
         }
     }
@@ -92,9 +81,9 @@ class EffectsInfoCollector : SchemaVisitor<Unit>
         }
 
         if (isInverted) {
-            notEqualValues.compute(leftDFV, { leftDFV, list -> list?.also { it.add(rightDFV) } ?: mutableListOf(rightDFV) } )
+            effectsInfo.disequate(leftDFV, rightDFV)
         } else {
-            equalValues[leftDFV] = rightDFV
+            effectsInfo.equate(leftDFV, rightDFV)
         }
     }
 
@@ -111,30 +100,9 @@ class EffectsInfoCollector : SchemaVisitor<Unit>
 
 }
 
-fun (EsNode).collectDataFlowInfo(initialDataFlow: DataFlowInfo, languageVersionSettings: LanguageVersionSettings) : DataFlowInfo {
-    val collector = EffectsInfoCollector()
+fun EsNode.collectDataFlowInfo(effectsInfo: MutableEffectsInfo): MutableEffectsInfo {
+    val collector = EffectsInfoCollector(effectsInfo)
     this.accept(collector)
 
-    val types = collector.getTypesInfo()
-    val equalInfo = collector.getEqualInfo()
-    val notEqualInfo = collector.getNotEqualInfo()
-
-    val allValues = mutableSetOf<DataFlowValue>()
-    allValues.addAll(types.keys)
-    allValues.addAll(equalInfo.keys)
-    allValues.addAll(notEqualInfo.keys)
-
-    var resultingDataFlow = initialDataFlow
-    for (dataFlowValue in allValues) {
-        types[dataFlowValue]?.let { resultingDataFlow = resultingDataFlow.establishSubtyping(dataFlowValue, it, languageVersionSettings) }
-
-        equalInfo[dataFlowValue]?.let { resultingDataFlow = resultingDataFlow.equate(dataFlowValue, it, false, languageVersionSettings) }
-
-        notEqualInfo[dataFlowValue]?.let { listOfNotEqualValues ->
-            listOfNotEqualValues.forEach {
-                resultingDataFlow = resultingDataFlow.disequate(dataFlowValue, it, languageVersionSettings) }
-        }
-    }
-
-    return resultingDataFlow
+    return effectsInfo
 }

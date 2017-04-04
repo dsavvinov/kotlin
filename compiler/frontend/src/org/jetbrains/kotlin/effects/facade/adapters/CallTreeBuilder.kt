@@ -42,6 +42,10 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
             return call.call.callElement.accept(this, null) as? CtCall
     }
 
+    fun buildCallTree(expression: KtExpression): CtNode? {
+        return expression.accept(this, null)
+    }
+
     override fun visitConstantExpression(expression: KtConstantExpression, data: Nothing?): CtNode? {
         val bindingContext = esResolutionContext.context
         val type: KotlinType = bindingContext.getType(expression) ?: return null
@@ -70,6 +74,8 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
         return when (expression.operationToken) {
             KtTokens.EQEQ -> CtEqual(leftNode, rightNode)
             KtTokens.EXCLEQ -> CtNot(CtEqual(leftNode, rightNode))
+            KtTokens.ANDAND -> CtAnd(leftNode, rightNode)
+            KtTokens.OROR -> CtAnd(leftNode, rightNode)
             else -> return null // TODO: other binary and throw?
         }
     }
@@ -116,4 +122,7 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
 }
 
 fun <D : CallableDescriptor> ResolvedCall<D>.buildCallTree(resolutionContext: EsResolutionContext)
+        = CallTreeBuilder(resolutionContext).buildCallTree(this)
+
+fun KtExpression.buildCallTree(resolutionContext: EsResolutionContext)
         = CallTreeBuilder(resolutionContext).buildCallTree(this)

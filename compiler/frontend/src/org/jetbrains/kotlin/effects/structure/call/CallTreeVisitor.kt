@@ -34,4 +34,8 @@ interface CallTreeVisitor<out T> {
     fun visit(ctEqual: CtEqual): T = visit(ctEqual as CtNode)
 
     fun visit(ctNot: CtNot): T = visit(ctNot as CtNode)
+
+    fun visit(ctAnd: CtAnd): T = visit(ctAnd as CtNode)
+
+    fun visit(ctOr: CtOr): T = visit(ctOr as CtNode)
 }

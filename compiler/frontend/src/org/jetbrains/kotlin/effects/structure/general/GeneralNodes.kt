@@ -42,24 +42,32 @@ data class EsVariable(val value: DataFlowValue) : EsNode, CtNode, Term {
     override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), EsReturns(this).toNodeSequence())))
 }
 
-data class EsConstant(val value: Any?, val type: KotlinType, val dataFlowValue: DataFlowValue?) : EsNode, CtNode, Term {
+class EsConstant(val value: Any?, val type: KotlinType, val dataFlowValue: DataFlowValue?) : EsNode, CtNode, Term {
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
+
+    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), EsReturns(this).toNodeSequence())))
 
     override fun toString(): String {
         return value.toString()
     }
 
-    override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), EsReturns(this).toNodeSequence())))
+    override fun hashCode(): Int {
+        return super.hashCode()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other?.javaClass != javaClass) return false
+
+        other as EsConstant
+
+        if (value != other.value) return false
+
+        return true
+    }
 }
 
-class EsFunction(val name: String, val formalArgs: List<ValueParameterDescriptor>, val returnType: KotlinType, val descriptor: CallableDescriptor? = null) {
-    constructor(descriptor: CallableDescriptor) : this(
-            descriptor.name.identifier,
-            descriptor.valueParameters,
-            descriptor.returnType!!, // TODO: a bit unsafe?
-            descriptor
-    )
-
+class EsFunction(val name: String, val returnType: KotlinType, val descriptor: CallableDescriptor? = null) {
     var schema: EffectSchema? = null
 }

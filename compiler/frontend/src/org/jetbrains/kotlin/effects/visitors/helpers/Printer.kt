@@ -151,8 +151,10 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
     }
 }
 
-fun (EffectSchema).print() : String {
+fun EsNode?.print() : String {
+    this ?: return "null"
+
     val printer = EffectSchemaPrinter()
-    printer.visit(this)
+    this.accept(printer)
     return printer.toString()
 }

@@ -20,9 +20,12 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.TypeResolver
+import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.context.CallResolutionContext
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
+import org.jetbrains.kotlin.types.expressions.ExpressionTypingContext
 
 class EsResolutionContext(
         val context: BindingContext,
@@ -31,4 +34,26 @@ class EsResolutionContext(
         val lexicalScope: LexicalScope,
         val moduleDescriptor: ModuleDescriptor,
         val trace: BindingTrace? = null
-)
+) {
+    companion object {
+        fun create(basicCallResolutionContext: BasicCallResolutionContext, ktPsiFactory: KtPsiFactory, typeResolver: TypeResolver): EsResolutionContext =
+            EsResolutionContext(
+                    basicCallResolutionContext.trace.bindingContext,
+                    ktPsiFactory,
+                    typeResolver,
+                    basicCallResolutionContext.scope,
+                    DescriptorUtils.getContainingModule(basicCallResolutionContext.scope.ownerDescriptor),
+                    basicCallResolutionContext.trace
+            )
+
+        fun create(expressionTypingContext: ExpressionTypingContext, ktPsiFactory: KtPsiFactory, typeResolver: TypeResolver, scope: LexicalScope): EsResolutionContext
+                = EsResolutionContext(
+                expressionTypingContext.trace.bindingContext,
+                ktPsiFactory,
+                typeResolver,
+                scope,
+                DescriptorUtils.getContainingModule(scope.ownerDescriptor),
+                expressionTypingContext.trace
+        )
+    }
+}

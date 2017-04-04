@@ -56,7 +56,7 @@ class Evaluator : SchemaVisitor<EsNode> {
 
     override fun visit(throws: EsThrows): EsNode = throws
 
-    override fun visit(esReturns: EsReturns): EsNode = esReturns
+    override fun visit(esReturns: EsReturns): EsNode = EsReturns(esReturns.value.accept(this))
 
     override fun visit(cons: Cons): EsNode {
         val evaluatedHead = cons.head.accept(this)
@@ -67,6 +67,7 @@ class Evaluator : SchemaVisitor<EsNode> {
     override fun visit(nil: Nil): EsNode = nil
 }
 
-fun (EsNode).evaluate() : EsNode = Evaluator().let { this.accept(it) }
-
-fun (EffectSchema).evaluate() = Evaluator().let { this.accept(it) } as EffectSchema
+fun (EsNode).evaluate() : EffectSchema?  {
+    val result = Evaluator().let { this.accept(it) } as? Term
+    return result?.castToSchema()
+}

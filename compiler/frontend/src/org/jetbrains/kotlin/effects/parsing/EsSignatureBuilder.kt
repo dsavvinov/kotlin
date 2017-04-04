@@ -99,7 +99,7 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
         if (ctx.isOperation != null) {
             val rhsType = resolveType(ctx.type().SimpleName())
             assert(additiveExpressions.size == 1, { "IsExpression: Expected 1 additive expression, got ${additiveExpressions.size}" })
-            return EsIs(additiveExpressions[0], rhsType)
+            return if (ctx.isOperation.text == "is") EsIs(additiveExpressions[0], rhsType) else EsNot(EsIs(additiveExpressions[0], rhsType))
         }
 
         if (ctx.inOperation().isNotEmpty()) {

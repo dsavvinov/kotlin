@@ -23,11 +23,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.*;
+import org.jetbrains.kotlin.effects.facade.EffectSystem;
 import org.jetbrains.kotlin.psi.*;
-import org.jetbrains.kotlin.resolve.BindingContext;
-import org.jetbrains.kotlin.resolve.BindingContextUtils;
-import org.jetbrains.kotlin.resolve.ModifierCheckerCore;
-import org.jetbrains.kotlin.resolve.ModifiersChecker;
+import org.jetbrains.kotlin.resolve.*;
 import org.jetbrains.kotlin.resolve.calls.model.MutableDataFlowInfoForArguments;
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall;
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo;
@@ -38,6 +36,7 @@ import org.jetbrains.kotlin.resolve.inline.InlineUtil;
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope;
 import org.jetbrains.kotlin.resolve.scopes.LexicalScopeKind;
 import org.jetbrains.kotlin.resolve.scopes.LexicalWritableScope;
+import org.jetbrains.kotlin.resolve.scopes.ScopeUtils;
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver;
 import org.jetbrains.kotlin.resolve.scopes.receivers.TransientReceiver;
 import org.jetbrains.kotlin.types.CommonSupertypes;
@@ -101,8 +100,18 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
 
         LexicalWritableScope thenScope = newWritableScopeImpl(context, LexicalScopeKind.THEN, components.overloadChecker);
         LexicalWritableScope elseScope = newWritableScopeImpl(context, LexicalScopeKind.ELSE, components.overloadChecker);
-        DataFlowInfo thenInfo = components.dataFlowAnalyzer.extractDataFlowInfoFromCondition(condition, true, context).and(conditionDataFlowInfo);
-        DataFlowInfo elseInfo = components.dataFlowAnalyzer.extractDataFlowInfoFromCondition(condition, false, context).and(conditionDataFlowInfo);
+
+        DataFlowInfo thenEffectsInfo = EffectSystem.INSTANCE.getConditionalEffectsInfo(condition, context, components.typeResolver, thenScope, true, components.languageVersionSettings);
+        DataFlowInfo thenInfo = components.dataFlowAnalyzer
+                .extractDataFlowInfoFromCondition(condition, true, context)
+                .and(conditionDataFlowInfo)
+                .and(thenEffectsInfo);
+
+        DataFlowInfo elseEffectsInfo = EffectSystem.INSTANCE.getConditionalEffectsInfo(condition, context, components.typeResolver, elseScope, false, components.languageVersionSettings);
+        DataFlowInfo elseInfo = components.dataFlowAnalyzer
+                .extractDataFlowInfoFromCondition(condition, false, context)
+                .and(conditionDataFlowInfo)
+                .and(elseEffectsInfo);
 
         if (elseBranch == null) {
             if (thenBranch != null) {

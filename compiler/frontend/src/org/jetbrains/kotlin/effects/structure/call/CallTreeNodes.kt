@@ -43,3 +43,11 @@ data class CtEqual(val left: CtNode, val right: CtNode) : CtNode {
 data class CtNot(val arg: CtNode) : CtNode {
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 }
+
+data class CtAnd(val left: CtNode, val right: CtNode) : CtNode {
+    override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
+}
+
+data class CtOr(val left: CtNode, val right: CtNode) : CtNode {
+    override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
+}
