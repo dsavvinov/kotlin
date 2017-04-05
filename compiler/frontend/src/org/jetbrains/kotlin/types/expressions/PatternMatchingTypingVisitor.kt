@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Errors.*
+import org.jetbrains.kotlin.effects.facade.EffectSystem
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.checkers.RttiExpressionInformation
@@ -342,13 +343,13 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
                 }
                 val typeReference = condition.typeReference
                 if (typeReference != null) {
-                    val result = checkTypeForIs(context, subjectType, typeReference, subjectDataFlowValue)
-                    if (condition.isNegated) {
-                        newDataFlowInfo = ConditionalDataFlowInfo(result.elseInfo, result.thenInfo)
-                    }
-                    else {
-                        newDataFlowInfo = result
-                    }
+                    val basicDataFlow = checkTypeForIs(context, subjectType, typeReference, subjectDataFlowValue)
+                    val effectsDataFlow = EffectSystem.getWhenEntryEffects(subjectExpression, condition, context,
+                                                                               components.typeResolver, components.languageVersionSettings)
+                    val resultingDataFlow = basicDataFlow.and(effectsDataFlow)
+
+                    newDataFlowInfo = if (condition.isNegated) resultingDataFlow.inverted() else resultingDataFlow
+
                     val rhsType = context.trace[BindingContext.TYPE, typeReference]
                     if (subjectExpression != null) {
                         val rttiInformation = RttiExpressionInformation(
@@ -367,8 +368,11 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
             override fun visitWhenConditionWithExpression(condition: KtWhenConditionWithExpression) {
                 val expression = condition.expression
                 if (expression != null) {
-                    newDataFlowInfo = checkTypeForExpressionCondition(
+                    val basicDataFlow = checkTypeForExpressionCondition(
                             context, expression, subjectType, subjectExpression == null, subjectDataFlowValue)
+                    val effectsDataFlow = EffectSystem.getWhenEntryEffects(subjectExpression, condition, context, components.typeResolver, components.languageVersionSettings)
+
+                    newDataFlowInfo = basicDataFlow.and(effectsDataFlow)
                 }
             }
 
@@ -379,7 +383,18 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
         return newDataFlowInfo
     }
 
-    private class ConditionalDataFlowInfo(val thenInfo: DataFlowInfo, val elseInfo: DataFlowInfo = thenInfo)
+    class ConditionalDataFlowInfo(val thenInfo: DataFlowInfo, val elseInfo: DataFlowInfo = thenInfo) {
+
+        fun and(other: ConditionalDataFlowInfo): ConditionalDataFlowInfo {
+            return ConditionalDataFlowInfo(thenInfo.and(other.thenInfo), elseInfo.and(other.elseInfo))
+        }
+
+        fun inverted(): ConditionalDataFlowInfo = ConditionalDataFlowInfo(elseInfo, thenInfo)
+
+        companion object {
+            val EMPTY = ConditionalDataFlowInfo(DataFlowInfo.EMPTY)
+        }
+    }
 
     private fun checkTypeForExpressionCondition(
             context: ExpressionTypingContext,

@@ -37,6 +37,7 @@ class MutableEffectsInfo(val languageVersionSettings: LanguageVersionSettings) {
 
     fun disequate(lhs: DataFlowValue, rhs: DataFlowValue): Unit { notEquals.put(lhs, rhs) }
 
+
     fun toDataFlowInfo(): DataFlowInfo {
         val allValues = mutableSetOf<DataFlowValue>()
         allValues.addAll(subtypes.keys)
@@ -50,9 +51,11 @@ class MutableEffectsInfo(val languageVersionSettings: LanguageVersionSettings) {
             val consistentSubtypes = getConsistentSubtypes(dataFlowValue)
             consistentSubtypes.forEach { resultingDataFlow = resultingDataFlow.establishSubtyping(dataFlowValue, it, languageVersionSettings) }
 
-            equals[dataFlowValue]?.forEach { resultingDataFlow = resultingDataFlow.equate(dataFlowValue, it, false, languageVersionSettings) }
+            val consistentEquals = getConsistentEqualValues(dataFlowValue)
+            consistentEquals.forEach { resultingDataFlow = resultingDataFlow.equate(dataFlowValue, it, false, languageVersionSettings) }
 
-            notEquals[dataFlowValue]?.forEach { resultingDataFlow = resultingDataFlow.disequate(dataFlowValue, it, languageVersionSettings) }
+            val consistentNotEqualValues = getConsistentNotEqualValues(dataFlowValue)
+            consistentNotEqualValues.forEach { resultingDataFlow = resultingDataFlow.disequate(dataFlowValue, it, languageVersionSettings) }
         }
 
         return resultingDataFlow
@@ -72,6 +75,25 @@ class MutableEffectsInfo(val languageVersionSettings: LanguageVersionSettings) {
         }
 
         return result
+    }
+
+    private fun getConsistentEqualValues(dataFlowValue: DataFlowValue): List<DataFlowValue> {
+        val recordedValues = equals[dataFlowValue] ?: setOf<DataFlowValue>()
+        val recordedNotEquals = notEquals[dataFlowValue] ?: setOf<DataFlowValue>()
+
+        return if (recordedValues.size > 1) listOf() else (recordedValues - recordedNotEquals).toList()
+    }
+
+    private fun getConsistentNotEqualValues(dataFlowValue: DataFlowValue): List<DataFlowValue> {
+        val recordedValues = equals[dataFlowValue] ?: setOf<DataFlowValue>()
+        val recordedNotEquals = notEquals[dataFlowValue] ?: setOf<DataFlowValue>()
+
+        if (recordedValues.size > 1) return listOf()    // at least two equals - impossible
+
+        if (recordedValues.size == 1 && recordedValues.minus(recordedNotEquals).isEmpty())
+            return listOf()  // value is equal and not equal to the one and the same value - impossible
+
+        return recordedNotEquals.minus(recordedValues).toList()
     }
 
     private fun <D> MutableMap<DataFlowValue, MutableSet<D>>.put(key: DataFlowValue, value: D)

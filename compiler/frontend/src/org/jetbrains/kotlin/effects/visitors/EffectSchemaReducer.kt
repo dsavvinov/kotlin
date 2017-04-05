@@ -28,9 +28,12 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
 
 /**
- * Tries to advance evaluation in a given EffectSchema-tree.
+ * Reduces (if possible) given EffectSchema-tree.
+ *
+ * Currently it works as a simple constant-expression evaluator,
+ * using operators-defined virtual `reduce()` call.
  */
-class Evaluator : SchemaVisitor<EsNode> {
+class EffectSchemaReducer : SchemaVisitor<EsNode> {
     override fun visit(schema: EffectSchema): EsNode {
         val effects = schema.clauses.map { it.accept(this) }
         val filteredEffects = effects.filterIsInstance<Imply>().filter { it.left != false.lift() }
@@ -67,7 +70,7 @@ class Evaluator : SchemaVisitor<EsNode> {
     override fun visit(nil: Nil): EsNode = nil
 }
 
-fun (EsNode).evaluate() : EffectSchema?  {
-    val result = Evaluator().let { this.accept(it) } as? Term
+fun EsNode.reduce() : EffectSchema?  {
+    val result = EffectSchemaReducer().let { this.accept(it) } as? Term
     return result?.castToSchema()
 }

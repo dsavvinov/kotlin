@@ -27,18 +27,19 @@ import org.jetbrains.kotlin.effects.structure.effects.Outcome
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
+import org.jetbrains.kotlin.effects.structure.schema.Term
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsEqual
+import org.jetbrains.kotlin.effects.structure.schema.operators.EsIs
 import org.jetbrains.kotlin.effects.visitors.collectDataFlowInfo
-import org.jetbrains.kotlin.effects.visitors.evaluate
+import org.jetbrains.kotlin.effects.visitors.reduce
 import org.jetbrains.kotlin.effects.visitors.flatten
 import org.jetbrains.kotlin.effects.visitors.generateEffectSchema
 import org.jetbrains.kotlin.effects.visitors.helpers.getOutcome
 import org.jetbrains.kotlin.effects.visitors.helpers.print
-import org.jetbrains.kotlin.psi.Call
-import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtPsiFactory
-import org.jetbrains.kotlin.psi.ValueArgument
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.TypeResolutionContext
 import org.jetbrains.kotlin.resolve.TypeResolver
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.MutableDataFlowInfoForArguments
@@ -47,12 +48,13 @@ import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCallIm
 import org.jetbrains.kotlin.resolve.calls.results.OverloadResolutionResultsImpl
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfoFactory
-import org.jetbrains.kotlin.resolve.calls.smartcasts.DelegatingDataFlowInfo
-import org.jetbrains.kotlin.resolve.scopes.LexicalScope
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingContext
+import org.jetbrains.kotlin.types.expressions.PatternMatchingTypingVisitor
+import org.jetbrains.kotlin.types.expressions.PatternMatchingTypingVisitor.ConditionalDataFlowInfo
 
 /**
- * Entry-point of EffectSystem. Provides simple interface for compiler.
+ * Entry-point of EffectSystem
  */
 object EffectSystem {
 
@@ -60,7 +62,6 @@ object EffectSystem {
             expression: KtExpression?,
             expressionTypingContext: ExpressionTypingContext,
             typeResolver: TypeResolver,
-            scope: LexicalScope,
             result: Boolean,
             languageVersionSettings: LanguageVersionSettings
     ): DataFlowInfo {
@@ -69,13 +70,12 @@ object EffectSystem {
         val resolutionContext = EsResolutionContext.create(
                 expressionTypingContext,
                 KtPsiFactory(expression),
-                typeResolver,
-                scope
+                typeResolver
         )
 
         val resultingEs = expression
                 .buildCallTree(resolutionContext)
-                ?.evaluateEffectSchema(resolutionContext) as? EffectSchema ?: return DataFlowInfoFactory.EMPTY
+                ?.computeEffectSchema(resolutionContext) as? EffectSchema ?: return DataFlowInfoFactory.EMPTY
 
         val effectsDataFlowInfo = resultingEs.extractDataFlowInfoAt(EsReturns(result.lift()), languageVersionSettings)
 
@@ -96,7 +96,7 @@ object EffectSystem {
 
         val resultingEs = resultingCall
                 .buildCallTree(resolutionUtils)
-                ?.evaluateEffectSchema(resolutionUtils)
+                ?.computeEffectSchema(resolutionUtils)
                           ?: return resolutionResults
 
         val effectsDFInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown), languageVersionSettings)
@@ -149,7 +149,7 @@ object EffectSystem {
 
         val flatES = baseES.flatten()
 
-        val evES = flatES.evaluate()
+        val evES = flatES.reduce()
 
         val name = call.resolvedCall.resultingDescriptor.name
         return "Base es of $name: \n" +
@@ -162,9 +162,11 @@ object EffectSystem {
                evES.print()
     }
 
-    private fun CtNode.evaluateEffectSchema(resolutionContext: EsResolutionContext): EffectSchema?
-            = this.generateEffectSchema(resolutionContext)?.flatten()?.evaluate()
+    private fun CtNode.computeEffectSchema(resolutionContext: EsResolutionContext): EffectSchema?
+            = this.generateEffectSchema(resolutionContext)?.flatten()?.reduce()
 
+    private fun Term.evaluate(resolutionContext: EsResolutionContext): EffectSchema?
+            = this.castToSchema().flatten().reduce()
 
     private fun EffectSchema.checkAndRecordFeasibilty(
             outcome: Outcome,
@@ -196,6 +198,52 @@ object EffectSystem {
 
         return effectsInfo.toDataFlowInfo()
     }
+
+    fun getWhenEntryEffects(subjectExpression: KtExpression?, condition: KtWhenConditionIsPattern,
+                            typingContext: ExpressionTypingContext, typeResolver: TypeResolver,
+                            languageVersionSettings: LanguageVersionSettings): ConditionalDataFlowInfo {
+        subjectExpression ?: return ConditionalDataFlowInfo.EMPTY
+
+        val esResolutionContext = EsResolutionContext.create(typingContext, KtPsiFactory(subjectExpression), typeResolver)
+
+        val typeResolutionContext = TypeResolutionContext(typingContext.scope, typingContext.trace,
+                                                          true, /*allowBareTypes=*/ true, typingContext.isDebuggerContext)
+        val possiblyBareType = typeResolver.resolvePossiblyBareType(typeResolutionContext, condition.typeReference ?: return ConditionalDataFlowInfo.EMPTY)
+        val typeAfterIs = possiblyBareType.actualType
+
+        val subjectSchema = subjectExpression.buildCallTree(esResolutionContext)?.computeEffectSchema(esResolutionContext)
+                            ?: return ConditionalDataFlowInfo.EMPTY
+
+        // Effects of Is-entry equivalent to effects of expression `subjectExpression is typeAfterIs`
+        val entrySchema = EsIs(subjectSchema, typeAfterIs).flatten().reduce() ?: return ConditionalDataFlowInfo.EMPTY
+
+        val trueDFI = entrySchema.extractDataFlowInfoAt(EsReturns(true.lift()), languageVersionSettings)
+        val falseDFI = entrySchema.extractDataFlowInfoAt(EsReturns(false.lift()), languageVersionSettings)
+
+        return ConditionalDataFlowInfo(trueDFI, falseDFI)
+    }
+
+    fun getWhenEntryEffects(subjectExpression: KtExpression?, condition: KtWhenConditionWithExpression,
+                            typingContext: ExpressionTypingContext, typeResolver: TypeResolver,
+                            languageVersionSettings: LanguageVersionSettings): ConditionalDataFlowInfo {
+        subjectExpression ?: return ConditionalDataFlowInfo.EMPTY
+
+        val esResolutionContext = EsResolutionContext.create(typingContext, KtPsiFactory(subjectExpression), typeResolver)
+
+        val subjectSchema = subjectExpression.buildCallTree(esResolutionContext)?.computeEffectSchema(esResolutionContext)
+                            ?: return ConditionalDataFlowInfo.EMPTY
+        val conditionSchema = condition.expression?.buildCallTree(esResolutionContext)?.computeEffectSchema(esResolutionContext)
+                              ?: return ConditionalDataFlowInfo.EMPTY
+
+        // Effects of when-condition with expression equivalent to effects of `subjectExpression == condition.expression`
+        val entrySchema = EsEqual(subjectSchema, conditionSchema).flatten().reduce() ?: return ConditionalDataFlowInfo.EMPTY
+
+        val trueDFI = entrySchema.extractDataFlowInfoAt(EsReturns(true.lift()), languageVersionSettings)
+        val falseDFI = entrySchema.extractDataFlowInfoAt(EsReturns(false.lift()), languageVersionSettings)
+
+        return ConditionalDataFlowInfo(trueDFI, falseDFI)
+    }
+
 }
 
 

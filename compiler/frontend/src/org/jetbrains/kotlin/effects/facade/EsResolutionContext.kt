@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.TypeResolver
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.context.CallResolutionContext
+import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingContext
 
@@ -36,23 +37,23 @@ class EsResolutionContext(
         val trace: BindingTrace? = null
 ) {
     companion object {
-        fun create(basicCallResolutionContext: BasicCallResolutionContext, ktPsiFactory: KtPsiFactory, typeResolver: TypeResolver): EsResolutionContext =
+        fun create(resolutionContext: ResolutionContext<*>, ktPsiFactory: KtPsiFactory, typeResolver: TypeResolver): EsResolutionContext =
             EsResolutionContext(
-                    basicCallResolutionContext.trace.bindingContext,
+                    resolutionContext.trace.bindingContext,
                     ktPsiFactory,
                     typeResolver,
-                    basicCallResolutionContext.scope,
-                    DescriptorUtils.getContainingModule(basicCallResolutionContext.scope.ownerDescriptor),
-                    basicCallResolutionContext.trace
+                    resolutionContext.scope,
+                    DescriptorUtils.getContainingModule(resolutionContext.scope.ownerDescriptor),
+                    resolutionContext.trace
             )
 
-        fun create(expressionTypingContext: ExpressionTypingContext, ktPsiFactory: KtPsiFactory, typeResolver: TypeResolver, scope: LexicalScope): EsResolutionContext
+        fun create(expressionTypingContext: ExpressionTypingContext, ktPsiFactory: KtPsiFactory, typeResolver: TypeResolver): EsResolutionContext
                 = EsResolutionContext(
                 expressionTypingContext.trace.bindingContext,
                 ktPsiFactory,
                 typeResolver,
-                scope,
-                DescriptorUtils.getContainingModule(scope.ownerDescriptor),
+                expressionTypingContext.scope,
+                DescriptorUtils.getContainingModule(expressionTypingContext.scope.ownerDescriptor),
                 expressionTypingContext.trace
         )
     }

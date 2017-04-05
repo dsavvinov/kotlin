@@ -41,7 +41,7 @@ object EffectSchemasResolver {
 
     private fun CallableDescriptor.getEffectsAnnotation(): AnnotationDescriptor? = annotations.findAnnotation(FqName("kotlin.Effects"))
 
-    private fun AnnotationDescriptor.getEffectsString(): String? = this.allValueArguments.toList()[0].second.value as String?
+    private fun AnnotationDescriptor.getEffectsString(): String? = this.allValueArguments.toList().getOrNull(0)?.second?.value as String?
 
     private fun String.parseES(descriptor: CallableDescriptor, esResolutionContext: EsResolutionContext): EffectSchema? {
         try {
