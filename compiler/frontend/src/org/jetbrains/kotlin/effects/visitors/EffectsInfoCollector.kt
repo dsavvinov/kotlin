@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.effects.visitors
 
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo
+import org.jetbrains.kotlin.effects.structure.effects.EsCalls
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
@@ -94,6 +95,10 @@ class EffectsInfoCollector(val effectsInfo: MutableEffectsInfo) : SchemaVisitor<
     override fun visit(cons: Cons) {
         cons.head.accept(this)
         cons.tail.accept(this)
+    }
+
+    override fun visit(esCalls: EsCalls) {
+        esCalls.callCounts.forEach { esVariable, count -> effectsInfo.calls(esVariable.value, count) }
     }
 
     override fun visit(nil: Nil) = Unit

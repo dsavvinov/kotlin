@@ -126,7 +126,7 @@ class PseudocodeVariablesData(val pseudocode: Pseudocode, private val bindingCon
             }
 
             val enterInitState = enterInstructionData[variable]
-            val initializationAtThisElement = VariableControlFlowState.create(instruction.element is KtProperty, enterInitState)
+            val initializationAtThisElement = VariableControlFlowState.createInitialized(instruction.element is KtProperty, enterInitState)
             exitInstructionData.put(variable, initializationAtThisElement)
         }
         else {

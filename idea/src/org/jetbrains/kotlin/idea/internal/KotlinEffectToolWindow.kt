@@ -80,7 +80,7 @@ class KotlinEffectToolWindow(private val myProject: Project, private val toolWin
         }
 
         override fun processRequest(call: ResolvedCall<out CallableDescriptor>): String? {
-            val node = CallTreeBuilder(esResolutionContext).buildCallTree(call) ?: return null
+            val node = CallTreeBuilder(esResolutionContext).buildCallTree(call.call.callElement as KtCallExpression) ?: return null
 
             return EffectSystem.printES(node, esResolutionContext)
         }

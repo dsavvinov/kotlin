@@ -25,15 +25,16 @@ import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.Term
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 
 /**
  * Generates tree of effect schemas given a call-tree
  */
-class EffectSchemaGenerator(val esResolutionContext: EsResolutionContext) : CallTreeVisitor<EsNode?> {
+class EffectSchemaGenerator(val esResolutionContext: EsResolutionContext, val mentionedCallables: Set<DataFlowValue>) : CallTreeVisitor<EsNode?> {
     override fun visit(call: CtCall): EffectSchema? {
         val substitutedArgs = call.childs.map { it.accept(this) ?: return null}
         val basicSchema = EffectSchemasResolver.getEffectSchema(call.resolvedCall.resultingDescriptor, esResolutionContext)
-        val boundSchema = basicSchema?.bind(call.resolvedCall, substitutedArgs)
+        val boundSchema = basicSchema?.bind(call.resolvedCall, substitutedArgs, mentionedCallables)
         return boundSchema
     }
 
@@ -70,7 +71,7 @@ class EffectSchemaGenerator(val esResolutionContext: EsResolutionContext) : Call
     override fun visit(constant: EsConstant): EsNode = constant
 }
 
-fun (CtNode).generateEffectSchema(context: EsResolutionContext): EsNode? {
-    val generator = EffectSchemaGenerator(context)
-    return accept(generator)
+fun CallTree.generateEffectSchema(context: EsResolutionContext): EsNode? {
+    val generator = EffectSchemaGenerator(context, mentionedCallables)
+    return root.accept(generator)
 }

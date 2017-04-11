@@ -28,6 +28,18 @@ class MutableEffectsInfo(val languageVersionSettings: LanguageVersionSettings) {
     private val notSubtypes: MutableMap<DataFlowValue, MutableSet<KotlinType>> = mutableMapOf()
     private val equals: MutableMap<DataFlowValue, MutableSet<DataFlowValue>> = mutableMapOf()
     private val notEquals: MutableMap<DataFlowValue, MutableSet<DataFlowValue>> = mutableMapOf()
+    private val invokations: MutableMap<DataFlowValue, MutableSet<Int>> = mutableMapOf()
+
+    val invokationsInfoMap: Map<DataFlowValue, InvokationsInfo> by lazy {
+        getAllValues().map { Pair(it, getConsistentInvokationInfo(it)) }.toMap()
+    }
+
+    enum class InvokationsInfo {
+        UNKNOWN,
+        NOT_INVOKED,
+        EXACTLY_ONCE,
+        AT_LEAST_ONCE;
+    }
 
     fun subtype(lhs: DataFlowValue, type: KotlinType): Unit { subtypes.put(lhs, type) }
 
@@ -37,13 +49,10 @@ class MutableEffectsInfo(val languageVersionSettings: LanguageVersionSettings) {
 
     fun disequate(lhs: DataFlowValue, rhs: DataFlowValue): Unit { notEquals.put(lhs, rhs) }
 
+    fun calls(lhs: DataFlowValue, count: Int): Unit { invokations.put(lhs, count) }
 
     fun toDataFlowInfo(): DataFlowInfo {
-        val allValues = mutableSetOf<DataFlowValue>()
-        allValues.addAll(subtypes.keys)
-        allValues.addAll(notSubtypes.keys)
-        allValues.addAll(equals.keys)
-        allValues.addAll(notEquals.keys)
+        val allValues = getAllValues()
 
         var resultingDataFlow = DataFlowInfoFactory.EMPTY
 
@@ -59,6 +68,20 @@ class MutableEffectsInfo(val languageVersionSettings: LanguageVersionSettings) {
         }
 
         return resultingDataFlow
+    }
+
+    fun getInvokationsInfo(dataFlowValue: DataFlowValue): InvokationsInfo? = invokations.keys.map { Pair(it, getConsistentInvokationInfo(it)) }.toMap()[dataFlowValue]
+
+
+    private fun getAllValues(): Set<DataFlowValue> {
+        val allValues = mutableSetOf<DataFlowValue>()
+
+        allValues.addAll(subtypes.keys)
+        allValues.addAll(notSubtypes.keys)
+        allValues.addAll(equals.keys)
+        allValues.addAll(notEquals.keys)
+
+        return allValues
     }
 
     private fun getConsistentSubtypes(dataFlowValue: DataFlowValue): List<KotlinType> {
@@ -96,8 +119,29 @@ class MutableEffectsInfo(val languageVersionSettings: LanguageVersionSettings) {
         return recordedNotEquals.minus(recordedValues).toList()
     }
 
+    private fun getConsistentInvokationInfo(dataFlowValue: DataFlowValue): InvokationsInfo {
+        val recordedInvokations = invokations[dataFlowValue] ?: return InvokationsInfo.UNKNOWN
+
+        if (recordedInvokations.isEmpty()) return InvokationsInfo.UNKNOWN
+
+        val lowerBound = recordedInvokations.min()!!
+        val upperBound = recordedInvokations.max()!!
+
+        // Check if it is NOT_INVOKED, or EXACTLY_ONCE
+        if (lowerBound == upperBound) {
+            when(lowerBound) {
+                0 -> return InvokationsInfo.NOT_INVOKED
+                1 -> return InvokationsInfo.EXACTLY_ONCE
+            }
+        }
+
+        // Now just decide between AT_LEAST_ONCE and UNKNOWN
+        if (lowerBound >= 1) return InvokationsInfo.AT_LEAST_ONCE
+
+        return InvokationsInfo.UNKNOWN
+    }
+
     private fun <D> MutableMap<DataFlowValue, MutableSet<D>>.put(key: DataFlowValue, value: D)
             = get(key)?.add(value) ?: put(key, mutableSetOf(value))
-
 
 }

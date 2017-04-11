@@ -35,13 +35,15 @@ public class ControlFlowAnalyzer {
     @NotNull private final BindingTrace trace;
     @NotNull private final KotlinBuiltIns builtIns;
     @NotNull private final LanguageVersionSettings languageVersionSettings;
+    @NotNull private final TypeResolver typeResolver;
 
     public ControlFlowAnalyzer(
-            @NotNull BindingTrace trace, @NotNull KotlinBuiltIns builtIns, @NotNull LanguageVersionSettings languageVersionSettings
+            @NotNull BindingTrace trace, @NotNull KotlinBuiltIns builtIns, @NotNull LanguageVersionSettings languageVersionSettings, @NotNull TypeResolver typeResolver
     ) {
         this.trace = trace;
         this.builtIns = builtIns;
         this.languageVersionSettings = languageVersionSettings;
+        this.typeResolver = typeResolver;
     }
 
     public void process(@NotNull BodiesResolveContext c) {
@@ -74,7 +76,7 @@ public class ControlFlowAnalyzer {
 
     private void checkSecondaryConstructor(@NotNull KtSecondaryConstructor constructor) {
         ControlFlowInformationProvider controlFlowInformationProvider =
-                new ControlFlowInformationProvider(constructor, trace, languageVersionSettings);
+                new ControlFlowInformationProvider(constructor, trace, languageVersionSettings, typeResolver);
         controlFlowInformationProvider.checkDeclaration();
         controlFlowInformationProvider.checkFunction(builtIns.getUnitType());
     }
@@ -83,7 +85,7 @@ public class ControlFlowAnalyzer {
         // A pseudocode of class/object initialization corresponds to a class/object
         // or initialization of properties corresponds to a package declared in a file
         ControlFlowInformationProvider controlFlowInformationProvider =
-                new ControlFlowInformationProvider((KtElement) declarationContainer, trace, languageVersionSettings);
+                new ControlFlowInformationProvider((KtElement) declarationContainer, trace, languageVersionSettings, typeResolver);
         if (c.getTopDownAnalysisMode().isLocalDeclarations()) {
             controlFlowInformationProvider.checkForLocalClassOrObjectMode();
             return;
@@ -105,7 +107,7 @@ public class ControlFlowAnalyzer {
     private void checkFunction(@NotNull BodiesResolveContext c, @NotNull KtDeclarationWithBody function, @Nullable KotlinType expectedReturnType) {
         if (!function.hasBody()) return;
         ControlFlowInformationProvider controlFlowInformationProvider =
-                new ControlFlowInformationProvider(function, trace, languageVersionSettings);
+                new ControlFlowInformationProvider(function, trace, languageVersionSettings, typeResolver);
         if (c.getTopDownAnalysisMode().isLocalDeclarations()) {
             controlFlowInformationProvider.checkForLocalClassOrObjectMode();
             return;

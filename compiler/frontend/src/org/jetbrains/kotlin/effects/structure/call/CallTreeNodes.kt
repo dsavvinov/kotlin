@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.effects.structure.call
 
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.types.KotlinType
 
 /**
@@ -24,6 +25,9 @@ import org.jetbrains.kotlin.types.KotlinType
  *
  * Call-Tree is built from AST that represents particular call.
  */
+
+class CallTree(val root: CtNode, val mentionedCallables: Set<DataFlowValue>)
+
 interface CtNode {
     fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 }

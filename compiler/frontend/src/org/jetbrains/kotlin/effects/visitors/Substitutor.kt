@@ -39,7 +39,7 @@ import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
  *
  * Generally, used to bind call-arguments to formal arguments.
  */
-class Substitutor(val substs: Map<DataFlowValue, EsNode>, val correspondingCall : ResolvedCall<*>) : SchemaVisitor<EsNode> {
+class Substitutor(val substs: Map<DataFlowValue, EsNode>, val correspondingCall: ResolvedCall<*>, val mentionedCallables: Set<DataFlowValue>) : SchemaVisitor<EsNode> {
     override fun visit(node: EsNode): EsNode = node
 
     override fun visit(schema: EffectSchema): EsNode {
@@ -64,10 +64,22 @@ class Substitutor(val substs: Map<DataFlowValue, EsNode>, val correspondingCall 
 
     override fun visit(nil: Nil): Nil = Nil
 
-    override fun visit(esCalls: EsCalls): EsCalls = esCalls.bindToCall(correspondingCall)
+    override fun visit(esCalls: EsCalls): EsCalls {
+        substs.forEach { dfv, substitution ->
+            val count = esCalls.callCounts[EsVariable(dfv)]
+            if (count != null) {
+                esCalls.callCounts.remove(EsVariable(dfv))
+                esCalls.callCounts.put(substitution as EsVariable, count)
+            }
+        }
+
+        mentionedCallables.forEach { esCalls.callCounts.putIfAbsent(EsVariable(it), EsCalls.DEFAULT_CALL_COUNT) }
+        esCalls.bindToCall(correspondingCall)
+        return esCalls
+    }
 }
 
-fun (EffectSchema).bind(resolvedCall: ResolvedCall<*>, args: List<EsNode>) : EffectSchema {
+fun EffectSchema.bind(resolvedCall: ResolvedCall<*>, args: List<EsNode>, mentionedCallables: Set<DataFlowValue>) : EffectSchema {
     val parametersDescriptors = resolvedCall.resultingDescriptor.valueParameters
     val idInfos = parametersDescriptors.map { IdentifierInfo.Variable(it, DataFlowValue.Kind.STABLE_VALUE, null) }
     val dataFlowValues = idInfos.zip(parametersDescriptors).map {
@@ -76,6 +88,6 @@ fun (EffectSchema).bind(resolvedCall: ResolvedCall<*>, args: List<EsNode>) : Eff
 
     val substs = dataFlowValues.zip(args).toMap()
 
-    val substitutor = Substitutor(substs, resolvedCall)
+    val substitutor = Substitutor(substs, resolvedCall, mentionedCallables)
     return substitutor.visit(this) as EffectSchema
 }

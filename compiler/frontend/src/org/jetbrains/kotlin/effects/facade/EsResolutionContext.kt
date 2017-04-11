@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.effects.facade
 
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -47,14 +48,28 @@ class EsResolutionContext(
                     resolutionContext.trace
             )
 
-        fun create(expressionTypingContext: ExpressionTypingContext, ktPsiFactory: KtPsiFactory, typeResolver: TypeResolver): EsResolutionContext
-                = EsResolutionContext(
-                expressionTypingContext.trace.bindingContext,
-                ktPsiFactory,
-                typeResolver,
-                expressionTypingContext.scope,
-                DescriptorUtils.getContainingModule(expressionTypingContext.scope.ownerDescriptor),
-                expressionTypingContext.trace
-        )
+        fun create(expressionTypingContext: ExpressionTypingContext, ktPsiFactory: KtPsiFactory, typeResolver: TypeResolver): EsResolutionContext =
+                EsResolutionContext(
+                    expressionTypingContext.trace.bindingContext,
+                    ktPsiFactory,
+                    typeResolver,
+                    expressionTypingContext.scope,
+                    DescriptorUtils.getContainingModule(expressionTypingContext.scope.ownerDescriptor),
+                    expressionTypingContext.trace
+            )
+
+        fun create(bindingTrace: BindingTrace, element: KtElement, typeResolver: TypeResolver): EsResolutionContext? {
+            val scope = bindingTrace.get(BindingContext.LEXICAL_SCOPE, element) ?: return null
+            val containingModule = scope.ownerDescriptor
+
+            return EsResolutionContext(
+                    bindingTrace.bindingContext,
+                    KtPsiFactory(element),
+                    typeResolver,
+                    scope,
+                    DescriptorUtils.getContainingModule(containingModule),
+                    bindingTrace
+            )
+        }
     }
 }

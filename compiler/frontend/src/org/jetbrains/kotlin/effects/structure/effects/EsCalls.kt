@@ -28,9 +28,15 @@ data class EsCalls(val callCounts: MutableMap<EsVariable, Int>) : Effect {
         this.sourceCall = sourceCall
     }
 
+    companion object {
+        val DEFAULT_CALL_COUNT: Int = 0     // assume that any non-mentioned in Calls-annotation callable is not called at all
+    }
+
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
 
-    fun bindToCall(sourceCall: ResolvedCall<*>) = EsCalls(callCounts, sourceCall)
+    fun bindToCall(sourceCall: ResolvedCall<*>): Unit {
+        this.sourceCall = sourceCall
+    }
 
     override fun merge(other: Effect): EsCalls {
         // Prevent from combining with itself, thus erroneously doubling amount of side-effects

@@ -122,7 +122,7 @@ class VariableControlFlowState private constructor(val initState: InitState, val
             return create(if (isInitialized) InitState.INITIALIZED else InitState.NOT_INITIALIZED, isDeclared)
         }
 
-        fun create(isDeclaredHere: Boolean, mergedEdgesData: VariableControlFlowState?): VariableControlFlowState {
+        fun createInitialized(isDeclaredHere: Boolean, mergedEdgesData: VariableControlFlowState?): VariableControlFlowState {
             return create(true, isDeclaredHere || mergedEdgesData != null && mergedEdgesData.isDeclared)
         }
     }

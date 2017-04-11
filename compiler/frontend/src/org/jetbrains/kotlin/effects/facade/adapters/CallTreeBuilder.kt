@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.effects.facade.EsResolutionContext
 import org.jetbrains.kotlin.effects.structure.call.*
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -36,17 +35,14 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.ifEmpty
 
 
-class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<CtNode, Nothing?>() {
+class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<CtNode?, Unit>() {
+    private val callables: MutableSet<DataFlowValue> = mutableSetOf()
 
-    fun buildCallTree(call: ResolvedCall<*>): CtCall? {
-            return call.call.callElement.accept(this, null) as? CtCall
+    fun buildCallTree(expression: KtExpression): CallTree? {
+        return CallTree(expression.accept(this, Unit) ?: return null, callables)
     }
 
-    fun buildCallTree(expression: KtExpression): CtNode? {
-        return expression.accept(this, null)
-    }
-
-    override fun visitConstantExpression(expression: KtConstantExpression, data: Nothing?): CtNode? {
+    override fun visitConstantExpression(expression: KtConstantExpression, data: Unit): CtNode? {
         val bindingContext = esResolutionContext.context
         val type: KotlinType = bindingContext.getType(expression) ?: return null
         val compileTimeConstant: CompileTimeConstant<*>
@@ -54,11 +50,11 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
         return EsConstant(compileTimeConstant.getValue(type) ?: return null, type, expression.createDataFlowValue())
     }
 
-    override fun visitSimpleNameExpression(expression: KtSimpleNameExpression, data: Nothing?): CtNode? =
+    override fun visitSimpleNameExpression(expression: KtSimpleNameExpression, data: Unit): CtNode? =
         expression.createDataFlowValue()?.let(::EsVariable)
 
 
-    override fun visitUnaryExpression(expression: KtUnaryExpression, data: Nothing?): CtNode? {
+    override fun visitUnaryExpression(expression: KtUnaryExpression, data: Unit): CtNode? {
         val argNode = expression.baseExpression?.accept(this, data) ?: return null
         if (expression.operationToken == KtTokens.EXCL) {
             return CtNot(argNode)
@@ -68,7 +64,7 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
         }
     }
 
-    override fun visitBinaryExpression(expression: KtBinaryExpression, data: Nothing?): CtNode? {
+    override fun visitBinaryExpression(expression: KtBinaryExpression, data: Unit): CtNode? {
         val leftNode = expression.left?.accept(this, data) ?: return null
         val rightNode = expression.right?.accept(this, data) ?: return null
         return when (expression.operationToken) {
@@ -80,24 +76,24 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
         }
     }
 
-    override fun visitCallExpression(expression: KtCallExpression, data: Nothing?): CtNode? {
+    override fun visitCallExpression(expression: KtCallExpression, data: Unit): CtNode? {
         val resolvedCall = expression.getResolvedCall(esResolutionContext.context) ?: return null
 
         // TODO: varargs and default args
         val argNodes = resolvedCall.valueArgumentsByIndex?.map {
-            (it as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.accept(this, data) ?: return null
+             (it as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.accept(this, data) ?: return null
         } ?: return null
 
         return CtCall(resolvedCall, argNodes)
     }
 
-    override fun visitIsExpression(expression: KtIsExpression, data: Nothing?): CtNode? {
-        val leftNode: CtNode = expression.leftHandSide.accept(this, data)
+    override fun visitIsExpression(expression: KtIsExpression, data: Unit): CtNode? {
+        val leftNode = expression.leftHandSide.accept(this, data) ?: return null
         val rightType: KotlinType = esResolutionContext.context.get(BindingContext.TYPE, expression.typeReference) ?: return null
         return if (expression.isNegated) CtNot(CtIs(leftNode, rightType)) else CtIs(leftNode, rightType)
     }
 
-    override fun visitStringTemplateExpression(expression: KtStringTemplateExpression, data: Nothing?): CtNode {
+    override fun visitStringTemplateExpression(expression: KtStringTemplateExpression, data: Unit): CtNode {
         val concatenatedString = expression.entries.map { it.text }.ifEmpty { listOf("") }.reduce { s, acc -> s + acc }
         val dataFlowValue = DataFlowValueFactory.createDataFlowValue(
                 expression,
@@ -108,8 +104,8 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
         return EsConstant(concatenatedString, DefaultBuiltIns.Instance.stringType, dataFlowValue)
     }
 
-    override fun visitLambdaExpression(expression: KtLambdaExpression, data: Nothing?): CtNode? =
-        expression.createDataFlowValue()?.let(::EsVariable)
+    override fun visitLambdaExpression(expression: KtLambdaExpression, data: Unit): CtNode? =
+        expression.createDataFlowValue()?.let { callables += it; EsVariable(it) }
 
     fun KtExpression.createDataFlowValue() : DataFlowValue? {
         return DataFlowValueFactory.createDataFlowValue(
@@ -120,9 +116,6 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
         )
     }
 }
-
-fun <D : CallableDescriptor> ResolvedCall<D>.buildCallTree(resolutionContext: EsResolutionContext)
-        = CallTreeBuilder(resolutionContext).buildCallTree(this)
 
 fun KtExpression.buildCallTree(resolutionContext: EsResolutionContext)
         = CallTreeBuilder(resolutionContext).buildCallTree(this)

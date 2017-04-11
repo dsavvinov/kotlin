@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.effects.facade.adapters.buildCallTree
+import org.jetbrains.kotlin.effects.structure.call.CallTree
 import org.jetbrains.kotlin.effects.structure.call.CtCall
 import org.jetbrains.kotlin.effects.structure.call.CtNode
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
@@ -44,10 +45,12 @@ import org.jetbrains.kotlin.resolve.TypeResolver
 import org.jetbrains.kotlin.resolve.calls.context.BasicCallResolutionContext
 import org.jetbrains.kotlin.resolve.calls.model.MutableDataFlowInfoForArguments
 import org.jetbrains.kotlin.resolve.calls.model.MutableResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCallImpl
 import org.jetbrains.kotlin.resolve.calls.results.OverloadResolutionResultsImpl
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfoFactory
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingContext
 import org.jetbrains.kotlin.types.expressions.PatternMatchingTypingVisitor
@@ -79,7 +82,7 @@ object EffectSystem {
 
         val effectsDataFlowInfo = resultingEs.extractDataFlowInfoAt(EsReturns(result.lift()), languageVersionSettings)
 
-        return effectsDataFlowInfo
+        return effectsDataFlowInfo.toDataFlowInfo()
     }
 
     fun <D : CallableDescriptor> computeEffectsForArguments(
@@ -94,13 +97,16 @@ object EffectSystem {
         val resultingCall: MutableResolvedCall<D> = resolutionResults.resultingCall
         val resolutionUtils = EsResolutionContext.create(resolutionContext, KtPsiFactory(resultingCall.call.callElement), typeResolver)
 
-        val resultingEs = resultingCall
+        val resultingEs = (resultingCall.call.callElement as KtExpression)
                 .buildCallTree(resolutionUtils)
                 ?.computeEffectSchema(resolutionUtils)
                           ?: return resolutionResults
 
         val effectsDFInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown), languageVersionSettings)
+
         resultingEs.checkAndRecordFeasibilty(EsReturns(Unknown), resolutionContext.trace, resultingCall.call)
+
+//        effectsDFInfo.recordInvokationsInfoForArguments
 
         val newDFInfo = object : MutableDataFlowInfoForArguments(resultingCall.dataFlowInfoForArguments.resultInfo) {
             override fun updateInfo(valueArgument: ValueArgument, dataFlowInfo: DataFlowInfo)
@@ -111,7 +117,7 @@ object EffectSystem {
                     = resultingCall.dataFlowInfoForArguments.getInfo(valueArgument)
 
             override fun getResultInfo(): DataFlowInfo
-                    = resultingCall.dataFlowInfoForArguments.resultInfo.and(effectsDFInfo)
+                    = resultingCall.dataFlowInfoForArguments.resultInfo.and(effectsDFInfo.toDataFlowInfo())
         }
 
 
@@ -144,14 +150,14 @@ object EffectSystem {
     }
 
 
-    fun printES(call: CtCall, context: EsResolutionContext): String {
+    fun printES(call: CallTree, context: EsResolutionContext): String {
         val baseES = call.generateEffectSchema(context) ?: return "Can't build effect schema"
 
         val flatES = baseES.flatten()
 
         val evES = flatES.reduce()
 
-        val name = call.resolvedCall.resultingDescriptor.name
+        val name = (call.root as? CtCall)?.resolvedCall?.resultingDescriptor?.name ?: "<unnamed>"
         return "Base es of $name: \n" +
                baseES.print() +
                "\n" +
@@ -162,7 +168,18 @@ object EffectSystem {
                evES.print()
     }
 
-    private fun CtNode.computeEffectSchema(resolutionContext: EsResolutionContext): EffectSchema?
+    fun getInvokationsInfo(lambda: KtLambdaExpression, call: KtCallExpression, trace: BindingTrace,
+                           languageVersionSettings: LanguageVersionSettings, typeResolver: TypeResolver): MutableEffectsInfo.InvokationsInfo? {
+        val esResolutionContext = EsResolutionContext.create(trace, call, typeResolver) ?: return null
+
+        val resultingEs = call.buildCallTree(esResolutionContext)?.computeEffectSchema(esResolutionContext) ?: return null
+        val effectsInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown), languageVersionSettings)
+
+        val lambdaDFV = DataFlowValueFactory.createDataFlowValue(lambda, trace.getType(lambda) ?: return null, trace.bindingContext, esResolutionContext.moduleDescriptor)
+        return effectsInfo.getInvokationsInfo(lambdaDFV)
+    }
+
+    private fun CallTree.computeEffectSchema(resolutionContext: EsResolutionContext): EffectSchema?
             = this.generateEffectSchema(resolutionContext)?.flatten()?.reduce()
 
     private fun Term.evaluate(resolutionContext: EsResolutionContext): EffectSchema?
@@ -186,17 +203,17 @@ object EffectSystem {
     private fun EffectSchema.extractDataFlowInfoAt(
             outcome: Outcome,
             languageVersionSettings: LanguageVersionSettings
-    ) : DataFlowInfo {
+    ) : MutableEffectsInfo {
         val effectsInfo = MutableEffectsInfo(languageVersionSettings)
 
         for (clause in clauses) {
             val clauseOutcome = clause.getOutcome()
             if (clauseOutcome == null || outcome.followsFrom(clauseOutcome)) {
-                clause.left.collectDataFlowInfo(effectsInfo)
+                clause.collectDataFlowInfo(effectsInfo)
             }
         }
 
-        return effectsInfo.toDataFlowInfo()
+        return effectsInfo
     }
 
     fun getWhenEntryEffects(subjectExpression: KtExpression?, condition: KtWhenConditionIsPattern,
@@ -217,8 +234,8 @@ object EffectSystem {
         // Effects of Is-entry equivalent to effects of expression `subjectExpression is typeAfterIs`
         val entrySchema = EsIs(subjectSchema, typeAfterIs).flatten().reduce() ?: return ConditionalDataFlowInfo.EMPTY
 
-        val trueDFI = entrySchema.extractDataFlowInfoAt(EsReturns(true.lift()), languageVersionSettings)
-        val falseDFI = entrySchema.extractDataFlowInfoAt(EsReturns(false.lift()), languageVersionSettings)
+        val trueDFI = entrySchema.extractDataFlowInfoAt(EsReturns(true.lift()), languageVersionSettings).toDataFlowInfo()
+        val falseDFI = entrySchema.extractDataFlowInfoAt(EsReturns(false.lift()), languageVersionSettings).toDataFlowInfo()
 
         return ConditionalDataFlowInfo(trueDFI, falseDFI)
     }
@@ -241,7 +258,7 @@ object EffectSystem {
         val trueDFI = entrySchema.extractDataFlowInfoAt(EsReturns(true.lift()), languageVersionSettings)
         val falseDFI = entrySchema.extractDataFlowInfoAt(EsReturns(false.lift()), languageVersionSettings)
 
-        return ConditionalDataFlowInfo(trueDFI, falseDFI)
+        return ConditionalDataFlowInfo(trueDFI.toDataFlowInfo(), falseDFI.toDataFlowInfo())
     }
 
 }

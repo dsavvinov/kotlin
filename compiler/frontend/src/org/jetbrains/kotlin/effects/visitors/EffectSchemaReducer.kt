@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
+import org.jetbrains.kotlin.effects.structure.effects.EsCalls
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
@@ -68,6 +69,8 @@ class EffectSchemaReducer : SchemaVisitor<EsNode> {
     }
 
     override fun visit(nil: Nil): EsNode = nil
+
+    override fun visit(esCalls: EsCalls): EsNode = esCalls
 }
 
 fun EsNode.reduce() : EffectSchema?  {

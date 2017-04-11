@@ -39,6 +39,8 @@ import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Errors.*
+import org.jetbrains.kotlin.effects.facade.EffectSystem
+import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo
 import org.jetbrains.kotlin.idea.MainFunctionDetector
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
@@ -47,6 +49,7 @@ import org.jetbrains.kotlin.resolve.BindingContext.*
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsExpression
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsResultOfLambda
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsStatement
+import org.jetbrains.kotlin.resolve.calls.callUtil.getCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.resolvedCallUtil.getDispatchReceiverWithSmartCast
@@ -64,15 +67,16 @@ class ControlFlowInformationProvider private constructor(
         private val subroutine: KtElement,
         private val trace: BindingTrace,
         private val pseudocode: Pseudocode,
-        private val languageVersionSettings: LanguageVersionSettings
+        private val languageVersionSettings: LanguageVersionSettings,
+        private val typeResolver: TypeResolver
 ) {
 
     private val pseudocodeVariablesData by lazy {
         PseudocodeVariablesData(pseudocode, trace.bindingContext)
     }
 
-    constructor(declaration: KtElement, trace: BindingTrace, languageVersionSettings: LanguageVersionSettings)
-    : this(declaration, trace, ControlFlowProcessor(trace).generatePseudocode(declaration), languageVersionSettings)
+    constructor(declaration: KtElement, trace: BindingTrace, languageVersionSettings: LanguageVersionSettings, typeResolver: TypeResolver)
+    : this(declaration, trace, ControlFlowProcessor(trace).generatePseudocode(declaration), languageVersionSettings, typeResolver)
 
     fun checkForLocalClassOrObjectMode() {
         // Local classes and objects are analyzed twice: when TopDownAnalyzer processes it and as a part of its container.
@@ -178,7 +182,7 @@ class ControlFlowInformationProvider private constructor(
                 val expectedType = functionDescriptor?.returnType
 
                 val providerForLocalDeclaration = ControlFlowInformationProvider(
-                        element, trace, localDeclarationInstruction.body, languageVersionSettings)
+                        element, trace, localDeclarationInstruction.body, languageVersionSettings, typeResolver)
 
                 providerForLocalDeclaration.checkFunction(expectedType)
             }
@@ -376,7 +380,7 @@ class ControlFlowInformationProvider private constructor(
             writeValueInstruction: WriteValueInstruction
     ): Boolean {
         val containingDeclarationDescriptor = variableDescriptor.containingDeclaration
-        // Do not consider member / top-level properties
+        // Do not consider member / top-level properti`es
         if (containingDeclarationDescriptor is ClassOrPackageFragmentDescriptor) return false
         var parentDeclaration = getElementParentDeclaration(writeValueInstruction.element)
         while (true) {
@@ -407,16 +411,12 @@ class ControlFlowInformationProvider private constructor(
             if (accessor != null) {
                 val accessorDescriptor = trace.get(BindingContext.DECLARATION_TO_DESCRIPTOR, accessor)
                 if (propertyDescriptor.getter === accessorDescriptor) {
-                    //val can be reassigned through backing field inside its own getter
+                    // val can be reassigned through backing field inside its own getter
                     return false
                 }
             }
         }
 
-        val mayBeInitializedNotHere = ctxt.enterInitState?.mayBeInitialized() ?: false
-        val hasBackingField = (variableDescriptor as? PropertyDescriptor)?.let {
-            trace.get(BindingContext.BACKING_FIELD_REQUIRED, it)
-        } ?: true
         if (variableDescriptor is PropertyDescriptor && variableDescriptor.isVar) {
             val descriptor = BindingContextUtils.getEnclosingDescriptor(trace.bindingContext, expression)
             val setterDescriptor = variableDescriptor.setter
@@ -431,10 +431,18 @@ class ControlFlowInformationProvider private constructor(
                 return true
             }
         }
+
+        val mayBeInitializedNotHere = ctxt.enterInitState?.mayBeInitialized() ?: false
+        val hasBackingField = (variableDescriptor as? PropertyDescriptor)?.let {
+            trace.get(BindingContext.BACKING_FIELD_REQUIRED, it)
+        } ?: true
         val isThisOrNoDispatchReceiver = PseudocodeUtil.isThisOrNoDispatchReceiver(writeValueInstruction, trace.bindingContext)
         val captured = variableDescriptor?.let { isCapturedWrite(it, writeValueInstruction) } ?: false
+        val tmp = getEnclosingLambdaInvokationsInfo(writeValueInstruction)
+        val capturedInExactlyOnceInvokedLambda = tmp == MutableEffectsInfo.InvokationsInfo.EXACTLY_ONCE
+
         if ((mayBeInitializedNotHere || !hasBackingField || !isThisOrNoDispatchReceiver || captured) &&
-            variableDescriptor != null && !variableDescriptor.isVar) {
+                variableDescriptor != null && !variableDescriptor.isVar) {
             var hasReassignMethodReturningUnit = false
             val parent = expression.parent
             val operationReference =
@@ -459,6 +467,12 @@ class ControlFlowInformationProvider private constructor(
                     }
                 }
             }
+
+            // I.e. if it is local `val` that is captures in exactly-once invoked lambda
+            if (!mayBeInitializedNotHere && captured && capturedInExactlyOnceInvokedLambda) {
+                return false
+            }
+
             if (!hasReassignMethodReturningUnit) {
                 if (!isThisOrNoDispatchReceiver || !varWithValReassignErrorGenerated.contains(variableDescriptor)) {
                     if (captured && !mayBeInitializedNotHere && hasBackingField && isThisOrNoDispatchReceiver) {
@@ -477,6 +491,14 @@ class ControlFlowInformationProvider private constructor(
             }
         }
         return false
+    }
+
+    private fun getEnclosingLambdaInvokationsInfo(instruction: WriteValueInstruction): MutableEffectsInfo.InvokationsInfo? {
+        val lambdaExpression: KtLambdaExpression =
+                getElementParentDeclaration(instruction.element)?.parent as? KtLambdaExpression ?: return null
+        val callee = PsiTreeUtil.getParentOfType(lambdaExpression, KtCallExpression::class.java) ?: return null
+
+        return EffectSystem.getInvokationsInfo(lambdaExpression, callee, trace, languageVersionSettings, typeResolver)
     }
 
     private fun checkAssignmentBeforeDeclaration(ctxt: VariableInitContext, expression: KtExpression) =
