@@ -32,6 +32,8 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
  * nested effect schemas.
  */
 class Combiner : SchemaVisitor<EsNode> {
+    override fun visit(node: EsNode): EsNode = node
+
     override fun visit(schema: EffectSchema): EsNode {
         val evaluatedEffects = schema.clauses.flatMap {
             val res = it.accept(this)
@@ -44,10 +46,6 @@ class Combiner : SchemaVisitor<EsNode> {
 
         return EffectSchema(evaluatedEffects)
     }
-
-    override fun visit(variable: EsVariable): EsNode = variable
-
-    override fun visit(constant: EsConstant): EsNode = constant
 
     override fun visit(binaryOperator: BinaryOperator): EsNode {
         val lhs = binaryOperator.left.accept(this)
@@ -62,22 +60,16 @@ class Combiner : SchemaVisitor<EsNode> {
         return unaryOperator.newInstance(arg).flatten()
     }
 
-    override fun visit(throws: EsThrows) = throws
-
     override fun visit(esReturns: EsReturns): EsNode {
         val arg = esReturns.value.accept(this)
         return EsReturns(arg)
     }
-
-    override fun visit(esCalls: EsCalls): EsNode = esCalls
 
     override fun visit(cons: Cons): EsNode {
         val flatHead = cons.head.accept(this)
         val flatTail = cons.tail.accept(this) as NodeSequence
         return Cons(flatHead, flatTail)
     }
-
-    override fun visit(nil: Nil): EsNode = nil
 }
 
 fun (EsNode).flatten() : EsNode = Combiner().let { accept(it) }

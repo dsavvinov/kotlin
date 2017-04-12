@@ -223,7 +223,14 @@ class CallExpressionResolver(
                 }
             }
 
-            val type = functionDescriptor.returnType
+            var type = functionDescriptor.returnType
+            if (type != null) {
+                val callDfv = DataFlowValueFactory.createDataFlowValue(callExpression, type, context)
+                val moreSpecificType = resolvedCall.dataFlowInfoForArguments.resultInfo.getCollectedTypes(callDfv).let {
+                    if (it.size != 1) null else it.toList().getOrNull(0)
+                }
+                type = moreSpecificType ?: type
+            }
             // Extracting jump out possible and jump point flow info from arguments, if any
             val arguments = callExpression.valueArguments
             val resultFlowInfo = resolvedCall.dataFlowInfoForArguments.resultInfo

@@ -16,10 +16,7 @@
 
 package org.jetbrains.kotlin.effects.structure.schema
 
-import org.jetbrains.kotlin.effects.structure.effects.EsCalls
-import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.effects.Outcome
-import org.jetbrains.kotlin.effects.structure.effects.EsReturns
+import org.jetbrains.kotlin.effects.structure.effects.*
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
@@ -47,12 +44,14 @@ interface SchemaVisitor<out T> {
     fun visit(esEqualOperator: EsEqual): T = visit(esEqualOperator as BinaryOperator)
     fun visit(esOr: EsOr): T = visit(esOr as BinaryOperator)
     fun visit(esAnd: EsAnd): T = visit(esAnd as BinaryOperator)
+    fun visit(esAt: EsAt): T = visit(esAt as BinaryOperator)
     fun visit(esNot: EsNot): T = visit(esNot as UnaryOperator)
     fun visit(esIsOperator: EsIs): T = visit(esIsOperator as UnaryOperator)
 
     // Effects
     fun visit(effect: Effect): T = visit(effect as EsNode)
     fun visit(esCalls: EsCalls): T = visit(esCalls as Effect)
+    fun visit(esHints: EsHints): T = visit(esHints as Effect)
 
     // Outcomes
     fun visit(outcome: Outcome): T = visit(outcome as EsNode)

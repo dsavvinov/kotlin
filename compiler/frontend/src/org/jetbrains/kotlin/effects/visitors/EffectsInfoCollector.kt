@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.effects.structure.effects.EsCalls
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.effects.Outcome
+import org.jetbrains.kotlin.effects.structure.effects.EsHints
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
@@ -124,6 +125,10 @@ class EffectsInfoCollector(val condition: Outcome) : SchemaVisitor<MutableEffect
         val effectsInfo = MutableEffectsInfo()
         esCalls.callCounts.forEach { esVariable, count -> effectsInfo.calls(esVariable.value, count) }
         return effectsInfo
+    }
+
+    override fun visit(esHints: EsHints) {
+        esHints.types.forEach { variable, typesSet -> typesSet.forEach { effectsInfo.subtype(variable.value, it) } }
     }
 
     override fun visit(nil: Nil) = MutableEffectsInfo()

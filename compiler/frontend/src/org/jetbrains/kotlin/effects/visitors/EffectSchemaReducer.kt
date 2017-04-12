@@ -16,12 +16,7 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
-import org.jetbrains.kotlin.effects.structure.effects.EsCalls
-import org.jetbrains.kotlin.effects.structure.effects.EsReturns
-import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
@@ -35,15 +30,13 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
  * using operators-defined virtual `reduce()` call.
  */
 class EffectSchemaReducer : SchemaVisitor<EsNode> {
+    override fun visit(node: EsNode): EsNode = node
+
     override fun visit(schema: EffectSchema): EsNode {
         val effects = schema.clauses.map { it.accept(this) }
-        val filteredEffects = effects.filterIsInstance<Imply>().filter { it.left != false.lift() }
+        val filteredEffects = effects.filterIsInstance<Imply>().filter { it.left != false.lift() && it.right != Nil }
         return EffectSchema(filteredEffects)
     }
-
-    override fun visit(variable: EsVariable): EsNode = variable
-
-    override fun visit(constant: EsConstant): EsNode = constant
 
     override fun visit(binaryOperator: BinaryOperator): EsNode {
         val evaluatedLhs = binaryOperator.left.accept(this)
@@ -58,19 +51,11 @@ class EffectSchemaReducer : SchemaVisitor<EsNode> {
         return unaryOperator.newInstance(evaluatedArg).reduce()
     }
 
-    override fun visit(throws: EsThrows): EsNode = throws
-
-    override fun visit(esReturns: EsReturns): EsNode = EsReturns(esReturns.value.accept(this))
-
     override fun visit(cons: Cons): EsNode {
         val evaluatedHead = cons.head.accept(this)
         val evaluatedTail = cons.tail.accept(this) as NodeSequence
         return Cons(evaluatedHead, evaluatedTail)
     }
-
-    override fun visit(nil: Nil): EsNode = nil
-
-    override fun visit(esCalls: EsCalls): EsNode = esCalls
 }
 
 fun EsNode.reduce() : EffectSchema?  {

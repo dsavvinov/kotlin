@@ -1,4 +1,4 @@
-// Generated from /home/dsavvinov/Repos/kotlin-fork/kotlin/compiler/frontend/src/org/jetbrains/kotlin/effects/parsing/antlr/EffectSystem.g4 by ANTLR 4.6
+// Generated from /home/dsavvinov/Repos/kotlin-fork/kotlin/compiler/frontend/src/org/jetbrains/kotlin/effects/parsing/antlr/EffectSystem.g4 by ANTLR 4.7
 package org.jetbrains.kotlin.effects.parsing.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -287,6 +287,16 @@ public interface EffectSystemListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitCallsRecord(EffectSystemParser.CallsRecordContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectSystemParser#hintsEffect}.
+	 * @param ctx the parse tree
+	 */
+	void enterHintsEffect(EffectSystemParser.HintsEffectContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectSystemParser#hintsEffect}.
+	 * @param ctx the parse tree
+	 */
+	void exitHintsEffect(EffectSystemParser.HintsEffectContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EffectSystemParser#type}.
 	 * @param ctx the parse tree

@@ -22,7 +22,7 @@ import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.effects.parsing.EsSignatureBuilder
+import org.jetbrains.kotlin.effects.parsing.EsParser
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemLexer
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemParser
 import org.jetbrains.kotlin.effects.parsing.antlr.ErrorReporter
@@ -60,7 +60,7 @@ object EffectSchemasResolver {
             // EffectSchema should be the one and the only top-level node
             val effectSchemaCtx = parser.effectSchema()
 
-            return EsSignatureBuilder(descriptor, esResolutionContext).visitEffectSchema(effectSchemaCtx)
+            return EsParser(descriptor, esResolutionContext).visitEffectSchema(effectSchemaCtx)
         } catch (e: Exception) {
             esResolutionContext.trace ?: return null
             reportErrorWhileParsing(descriptor, esResolutionContext.trace, e.message ?: e.toString())

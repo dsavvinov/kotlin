@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.effects.visitors.helpers
 
 import org.jetbrains.kotlin.effects.structure.effects.EsCalls
+import org.jetbrains.kotlin.effects.structure.effects.EsHints
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
@@ -134,10 +135,27 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
         }
     }
 
-    override fun visit(nil: Nil) { }
+    override fun visit(esHints: EsHints) {
+        if (esHints.types.size == 1) {
+            val (variable, types) = esHints.types.toList()[0]
+            if (types.size == 1) {
+                sb.append("Hints($variable, ${types.toList()[0]})")
+                return
+            }
+        }
+        sb.append("Hints(<non-trivial>)")
+    }
 
     override fun visit(esCalls: EsCalls) {
         sb.append("EsCalls(${esCalls.callCounts})")
+    }
+
+    override fun visit(nil: Nil) = Unit
+
+    override fun visit(esAt: EsAt) {
+        esAt.left.accept(this)
+        sb.append(" at ")
+        esAt.right.accept(this)
     }
 
     private fun getPriority(node: EsNode): Int {

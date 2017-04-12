@@ -93,7 +93,8 @@ prefixUnaryOperation
     ;
 
 postfixUnaryOperation
-    : PLUSPLUS | MINUSMINUS | EXCLEXCL
+    : 'at' effect
+    | PLUSPLUS | MINUSMINUS | EXCLEXCL
     ;
 
 inOperation
@@ -117,6 +118,7 @@ effect
     : throwsEffect
     | returnsEffect
     | callsEffect
+    | hintsEffect
     ;
 
 throwsEffect
@@ -133,6 +135,10 @@ callsEffect
 
 callsRecord
     : SimpleName IntegerLiteral;
+
+hintsEffect
+    : 'Hints' '(' SimpleName ',' type ')'
+    ;
 
 type
     : SimpleName
@@ -156,7 +162,7 @@ NullLiteral : 'null';
 UnitLiteral : 'unit';
 
 /**
- *  Everything below is proudly stolen from the Java grammar:
+ *  Proudly stolen from the Java grammar:
  *  https://github.com/antlr/grammars-v4/blob/master/java/Java.g4
  */
 

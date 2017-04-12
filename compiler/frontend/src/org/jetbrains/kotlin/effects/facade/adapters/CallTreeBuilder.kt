@@ -42,7 +42,7 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
         return CallTree(expression.accept(this, Unit) ?: return null, callables)
     }
 
-    override fun visitConstantExpression(expression: KtConstantExpression, data: Unit): CtNode? {
+    override fun visitConstantExpression(expression: KtConstantExpression, data: Unit): EsConstant? {
         val bindingContext = esResolutionContext.context
         val type: KotlinType = bindingContext.getType(expression) ?: return null
         val compileTimeConstant: CompileTimeConstant<*>
@@ -50,7 +50,7 @@ class CallTreeBuilder(val esResolutionContext: EsResolutionContext) : KtVisitor<
         return EsConstant(compileTimeConstant.getValue(type) ?: return null, type, expression.createDataFlowValue())
     }
 
-    override fun visitSimpleNameExpression(expression: KtSimpleNameExpression, data: Unit): CtNode? =
+    override fun visitSimpleNameExpression(expression: KtSimpleNameExpression, data: Unit): EsVariable? =
         expression.createDataFlowValue()?.let(::EsVariable)
 
 

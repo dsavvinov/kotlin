@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.effects.visitors.helpers
 
 import org.jetbrains.kotlin.effects.structure.effects.EsCalls
+import org.jetbrains.kotlin.effects.structure.effects.EsHints
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
@@ -81,6 +82,11 @@ class Filterer(val predicate: (EsNode) -> Boolean) : SchemaVisitor<EsNode?> {
     override fun visit(esCalls: EsCalls): EsNode? {
         if (!predicate(esCalls)) return null
         return esCalls
+    }
+
+    override fun visit(esHints: EsHints): EsNode? {
+        if (!predicate(esHints)) return null
+        return esHints
     }
 }
 

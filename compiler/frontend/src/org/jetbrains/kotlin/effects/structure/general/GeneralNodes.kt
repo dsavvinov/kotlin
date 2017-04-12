@@ -41,6 +41,10 @@ data class EsVariable(val value: DataFlowValue) : EsNode, CtNode, Term {
 
     override fun castToSchema(): EffectSchema = EffectSchema(listOf(Imply(true.lift(), EsReturns(this).toNodeSequence())))
 
+    companion object {
+        val RESULT = EsVariable(DataFlowValue.ERROR)
+    }
+
     override fun toString(): String = value.identifierInfo.toString()
 }
 

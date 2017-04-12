@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.effects.visitors
 
 import org.jetbrains.kotlin.effects.facade.EsResolutionContext
 import org.jetbrains.kotlin.effects.structure.effects.EsCalls
+import org.jetbrains.kotlin.effects.structure.effects.EsHints
 import org.jetbrains.kotlin.effects.structure.general.EsFunction
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
@@ -25,6 +26,7 @@ import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.resolve.calls.model.DefaultValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
@@ -77,16 +79,35 @@ class Substitutor(val substs: Map<DataFlowValue, EsNode>, val correspondingCall:
         esCalls.bindToCall(correspondingCall)
         return esCalls
     }
+
+    override fun visit(esHints: EsHints): EsNode {
+        substs.forEach { dfv, substitution ->
+            val types = esHints.types[EsVariable(dfv)]
+            if (types != null) {
+                esHints.types.remove(EsVariable(dfv))
+                esHints.types.put(substitution as EsVariable, types)
+            }
+        }
+
+        return esHints
+    }
 }
 
-fun EffectSchema.bind(resolvedCall: ResolvedCall<*>, args: List<EsNode>, mentionedCallables: Set<DataFlowValue>) : EffectSchema {
+fun EffectSchema.bind(resolvedCall: ResolvedCall<*>, args: List<EsNode>,
+                      mentionedCallables: Set<DataFlowValue>, esResolutionContext: EsResolutionContext) : EffectSchema? {
     val parametersDescriptors = resolvedCall.resultingDescriptor.valueParameters
     val idInfos = parametersDescriptors.map { IdentifierInfo.Variable(it, DataFlowValue.Kind.STABLE_VALUE, null) }
     val dataFlowValues = idInfos.zip(parametersDescriptors).map {
         (idInfo, parameterDescriptor) -> DataFlowValue(idInfo, parameterDescriptor.type)
     }
 
-    val substs = dataFlowValues.zip(args).toMap()
+    val substs = dataFlowValues.zip(args).toMap().toMutableMap()
+    substs[EsVariable.RESULT.value] = EsVariable(DataFlowValueFactory.createDataFlowValue(
+            resolvedCall.call.callElement as? KtCallExpression ?: return null,
+            resolvedCall.resultingDescriptor.returnType ?: return null,
+            esResolutionContext.context,
+            esResolutionContext.moduleDescriptor
+    ))
 
     val substitutor = Substitutor(substs, resolvedCall, mentionedCallables)
     return substitutor.visit(this) as EffectSchema

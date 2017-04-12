@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.effects.structure.schema
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.operators.Imply
+import org.jetbrains.kotlin.psi.KtExpression
 
 /**
  * General type of any side-effects that any computation may have.
@@ -60,6 +61,8 @@ interface Term : EsNode {
 }
 
 data class EffectSchema(val clauses: List<Imply>) : Term {
+    var boundExpression: KtExpression? = null
+
     override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
     override fun castToSchema(): EffectSchema = this
 }

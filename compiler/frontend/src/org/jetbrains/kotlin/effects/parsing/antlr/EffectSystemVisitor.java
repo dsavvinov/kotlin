@@ -1,4 +1,4 @@
-// Generated from /home/dsavvinov/Repos/kotlin-fork/kotlin/compiler/frontend/src/org/jetbrains/kotlin/effects/parsing/antlr/EffectSystem.g4 by ANTLR 4.6
+// Generated from /home/dsavvinov/Repos/kotlin-fork/kotlin/compiler/frontend/src/org/jetbrains/kotlin/effects/parsing/antlr/EffectSystem.g4 by ANTLR 4.7
 package org.jetbrains.kotlin.effects.parsing.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -178,6 +178,12 @@ public interface EffectSystemVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitCallsRecord(EffectSystemParser.CallsRecordContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EffectSystemParser#hintsEffect}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitHintsEffect(EffectSystemParser.HintsEffectContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EffectSystemParser#type}.
 	 * @param ctx the parse tree

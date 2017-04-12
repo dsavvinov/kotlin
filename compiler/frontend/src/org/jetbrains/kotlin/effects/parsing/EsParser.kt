@@ -23,16 +23,12 @@ import org.jetbrains.kotlin.effects.facade.EsResolutionContext
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemBaseVisitor
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemParser
 import org.jetbrains.kotlin.effects.structure.effects.EsCalls
+import org.jetbrains.kotlin.effects.structure.effects.EsHints
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsFunction
-import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.effects.structure.schema.Cons
-import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
-import org.jetbrains.kotlin.effects.structure.schema.Nil
-import org.jetbrains.kotlin.effects.structure.schema.NodeSequence
+import org.jetbrains.kotlin.effects.structure.general.*
+import org.jetbrains.kotlin.effects.structure.general.EsVariable.Companion.RESULT
+import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -48,7 +44,7 @@ typealias BinaryOperatorT<T> = (T, T) -> T
 typealias UnaryOperatorT<T> = (T) -> T
 
 
-class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResolutionContext: EsResolutionContext) : EffectSystemBaseVisitor<EsNode?>() {
+class EsParser(val ownerDescriptor: CallableDescriptor, val esResolutionContext: EsResolutionContext) : EffectSystemBaseVisitor<EsNode?>() {
     override fun visitEffectSchema(ctx: EffectSystemParser.EffectSchemaContext): EffectSchema {
         val esClauses = ctx.clause().map(this::visitClause)
 
@@ -156,7 +152,9 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     override fun visitPostfixUnaryExpression(ctx: EffectSystemParser.PostfixUnaryExpressionContext): EsNode {
         val atom = visitAtomicExpression(ctx.atomicExpression())
         val postfixOps = ctx.postfixUnaryOperation().map {
-            when ((it.getChild(0) as TerminalNode).symbol.type) {
+            if (it.effect() != null) return@map { node: EsNode -> EsAt(node, visitEffect(it.effect())) }
+
+            return@map when ((it.getChild(0) as TerminalNode).symbol.type) {
                 EffectSystemParser.PLUSPLUS -> TODO()
                 EffectSystemParser.MINUSMINUS -> TODO()
                 EffectSystemParser.EXCLEXCL -> TODO()
@@ -190,6 +188,10 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
             return visitCallsEffect(ctx.callsEffect())
         }
 
+        if (ctx.hintsEffect() != null) {
+            return visitHintsEffect(ctx.hintsEffect())
+        }
+
         if (ctx.returnsEffect() != null) {
             return visitReturnsEffect(ctx.returnsEffect())
         }
@@ -214,6 +216,12 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     override fun visitCallsEffect(ctx: EffectSystemParser.CallsEffectContext): EsCalls {
         val callsRecords = ctx.callsRecord().map { visitCallsRecord(it) }
         return EsCalls(callsRecords.map { it.left to it.right }.toMap().toMutableMap())
+    }
+
+    override fun visitHintsEffect(ctx: EffectSystemParser.HintsEffectContext): EsHints {
+        val variable = resolveVariable(ctx.SimpleName())
+        val type = resolveType(ctx.type().SimpleName())
+        return EsHints(mutableMapOf(variable to mutableSetOf(type)))
     }
 
     override fun visitLiteralConstant(ctx: EffectSystemParser.LiteralConstantContext): EsConstant {
@@ -281,6 +289,8 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     }
 
     private fun resolveVariable(simpleName: TerminalNode): EsVariable {
+        if (simpleName.text == "RESULT") return RESULT
+
         val name = Name.identifier(simpleName.text)
 
         val parameterDescriptor = ownerDescriptor.valueParameters.find { it.name == name }
