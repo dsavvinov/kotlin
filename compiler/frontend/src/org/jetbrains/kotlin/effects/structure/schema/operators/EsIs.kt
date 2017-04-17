@@ -61,4 +61,6 @@ data class EsIs(override val arg: EsNode, val type: KotlinType) : UnaryOperator 
 
         return EffectSchema(combinedClauses)
     }
+
+    override fun toString(): String = "Is($arg, $type)"
 }

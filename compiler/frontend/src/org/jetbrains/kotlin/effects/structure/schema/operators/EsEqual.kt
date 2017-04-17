@@ -31,5 +31,7 @@ data class EsEqual(override val left: EsNode, override val right: EsNode) : Bina
 
         return this
     }
+
+    override fun toString(): String = "EsEqual($left, $right)"
 }
 

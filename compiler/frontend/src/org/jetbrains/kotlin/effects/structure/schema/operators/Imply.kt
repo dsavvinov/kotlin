@@ -91,4 +91,6 @@ data class Imply(override val left: EsNode, override val right: NodeSequence) : 
         val result = EffectSchema(resultedClauses)
         return result
     }
+
+    override fun toString(): String = "Imply($left, $right)"
 }

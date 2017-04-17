@@ -33,5 +33,7 @@ data class EsNot(override val arg: EsNode) : UnaryOperator {
 
         return this
     }
+
+    override fun toString(): String = "Not($arg)"
 }
 
