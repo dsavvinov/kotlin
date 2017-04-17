@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.cfg
 
 import com.google.common.collect.Lists
+import com.intellij.codeInsight.controlflow.Instruction
 import com.intellij.psi.PsiElement
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.util.PsiTreeUtil
@@ -29,11 +30,16 @@ import org.jetbrains.kotlin.cfg.pseudocode.PseudoValue
 import org.jetbrains.kotlin.cfg.pseudocode.Pseudocode
 import org.jetbrains.kotlin.cfg.pseudocode.PseudocodeImpl
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.AccessTarget
+import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.CallInstruction
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.InstructionWithValue
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.MagicKind
+import org.jetbrains.kotlin.cfg.pseudocode.instructions.jumps.NondeterministicJumpInstruction
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors.*
+import org.jetbrains.kotlin.effects.facade.EffectSystem
+import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.lexer.KtTokens.*
@@ -41,13 +47,11 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getQualifiedElementSelector
 import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 import org.jetbrains.kotlin.psi.psiUtil.isAncestor
-import org.jetbrains.kotlin.resolve.BindingContext
-import org.jetbrains.kotlin.resolve.BindingContextUtils
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.CompileTimeConstantUtils
+import org.jetbrains.kotlin.resolve.*
 import org.jetbrains.kotlin.resolve.calls.callUtil.getCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ArgumentMatch
+import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.VariableAsFunctionResolvedCall
 import org.jetbrains.kotlin.resolve.calls.tasks.ExplicitReceiverKind
@@ -60,9 +64,12 @@ import org.jetbrains.kotlin.types.expressions.OperatorConventions
 import org.jetbrains.kotlin.util.slicedMap.ReadOnlySlice
 import java.util.*
 
-class ControlFlowProcessor(private val trace: BindingTrace) {
+class ControlFlowProcessor(private val trace: BindingTrace, private val typeResolver: TypeResolver? = null) {
 
     private val builder: ControlFlowBuilder = ControlFlowInstructionsGenerator()
+
+    private val localDeclarationsLabels: MutableMap<KtDeclaration, Label> = mutableMapOf()
+    private val localDeclarationsPseudocodes: MutableMap<KtDeclaration, Pseudocode> = mutableMapOf()
 
     fun generatePseudocode(subroutine: KtElement): Pseudocode {
         val pseudocode = generate(subroutine)
@@ -80,6 +87,12 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
             }
             val bodyExpression = subroutine.bodyExpression
             if (bodyExpression != null) {
+                if (subroutine is KtFunction && getLabelForLocalDeclaration(subroutine) == null) {
+                    val label = builder.createUnboundLabel("start of local declaration")
+                    builder.bindLabel(label)
+                    localDeclarationsLabels.putIfAbsent(subroutine, label)
+                }
+
                 cfpVisitor.generateInstructions(bodyExpression)
                 if (!subroutine.hasBlockBody()) {
                     generateImplicitReturnValue(bodyExpression, subroutine)
@@ -89,7 +102,13 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
         else {
             cfpVisitor.generateInstructions(subroutine)
         }
-        return builder.exitSubroutine(subroutine)
+
+        val subroutinePseudocode = builder.exitSubroutine(subroutine)
+        if (subroutine is KtFunction) {
+            localDeclarationsPseudocodes.putIfAbsent(subroutine, subroutinePseudocode)
+        }
+
+        return subroutinePseudocode
     }
 
     private fun generateImplicitReturnValue(bodyExpression: KtExpression, subroutine: KtElement) {
@@ -111,9 +130,11 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
         builder.bindLabel(afterDeclaration)
     }
 
-    private class CatchFinallyLabels(val onException: Label?, val toFinally: Label?, val tryExpression: KtTryExpression?)
+    private fun getLabelForLocalDeclaration(declaration: KtDeclaration) = localDeclarationsLabels[declaration]
 
     private inner class CFPVisitor(private val builder: ControlFlowBuilder) : KtVisitorVoid() {
+
+        inner class CatchFinallyLabels(val onException: Label?, val toFinally: Label?, val tryExpression: KtTryExpression?)
 
         private val catchFinallyStack = Stack<CatchFinallyLabels>()
 
@@ -1534,7 +1555,56 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
             }
 
             mark(resolvedCall.call.callElement)
-            return builder.call(callElement, resolvedCall, receivers, parameterValues)
+            val callInstruction = builder.call(callElement, resolvedCall, receivers, parameterValues)
+            val afterCall = builder.createUnboundLabel("after call")
+            checkArgumentsInvocations(callInstruction, afterCall)
+            builder.bindLabel(afterCall)
+            return callInstruction
+        }
+
+        // Checks if we can get some information about invocations of arguments amd
+        // generates appropriate jumps, if we know something specific
+        private fun checkArgumentsInvocations(callInstruction: CallInstruction, afterCall: Label) {
+            val arguments = callInstruction.resolvedCall.valueArgumentsByIndex ?: return
+
+            for (arg in arguments) {
+                if (arg !is ExpressionValueArgument || arg.valueArgument !is LambdaArgument) continue
+                val invocationsInfo = EffectSystem.getInvokationsInfo(
+                        (arg.valueArgument as LambdaArgument).getLambdaExpression(),
+                        callInstruction.resolvedCall.call.callElement as? KtCallExpression ?: return,
+                        trace,
+                        typeResolver ?: return
+                    )
+
+                when (invocationsInfo) {
+                    MutableEffectsInfo.InvokationsInfo.UNKNOWN -> return
+                    MutableEffectsInfo.InvokationsInfo.NOT_INVOKED -> return
+                    MutableEffectsInfo.InvokationsInfo.EXACTLY_ONCE -> joinLambdaBodyToCall(callInstruction, arg.valueArgument as LambdaArgument, afterCall)
+                    MutableEffectsInfo.InvokationsInfo.AT_LEAST_ONCE -> return
+                    null -> return
+                }
+            }
+        }
+
+        private fun joinLambdaBodyToCall(callInstruction: CallInstruction, lambda: LambdaArgument, afterCall: Label) {
+            // NB. 'return' here shouldn't really happen, as any function should be declared before usage
+            val label = getLabelForLocalDeclaration(lambda.getLambdaExpression().functionLiteral) ?: return
+            builder.jump(label, callInstruction.element)
+
+            /**
+             * Нужно взять псевдокод, соответствующий декларации, соответствующей лямбде.
+             **/
+            val invokedDeclarationPseudocode: Pseudocode = localDeclarationsPseudocodes[lambda.getLambdaExpression().functionLiteral] ?: return
+
+            /**
+             * У этого псевдокода найти ту самую инструкцию с non-deterministic jump
+             **/
+            val wormholeInstruction: NondeterministicJumpInstruction = (invokedDeclarationPseudocode as? PseudocodeImpl)?.flowLeakageInstruction ?: return
+
+             /**
+             * Впендюрить этой инструкции еще один кандидат на jump
+             */
+            wormholeInstruction.HACK_LABELS(afterCall)
         }
 
         private fun getReceiverValues(resolvedCall: ResolvedCall<*>): Map<PseudoValue, ReceiverValue> {

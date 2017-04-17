@@ -48,6 +48,9 @@ class PseudocodeImpl(override val correspondingElement: KtElement) : Pseudocode 
     private val mergedValues = Maps.newHashMap<PseudoValue, Set<PseudoValue>>()
     private val sideEffectFree = Sets.newHashSet<Instruction>()
 
+    // Instruction to lead control-flow out of declaration body that is statically known to be invoked
+    var flowLeakageInstruction: NondeterministicJumpInstruction? = null
+
     override var parent: Pseudocode? = null
         private set
 
@@ -286,6 +289,7 @@ class PseudocodeImpl(override val correspondingElement: KtElement) : Pseudocode 
                 body.parent = this@PseudocodeImpl
                 body.postProcess()
                 instruction.next = sinkInstruction
+//                instruction.next = getNextPosition(currentPosition)
             }
 
             override fun visitSubroutineExit(instruction: SubroutineExitInstruction) {

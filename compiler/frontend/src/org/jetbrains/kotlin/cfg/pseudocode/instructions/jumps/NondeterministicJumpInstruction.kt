@@ -28,7 +28,8 @@ import org.jetbrains.kotlin.cfg.pseudocode.instructions.InstructionVisitor
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.InstructionVisitorWithResult
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.InstructionImpl
 
-class NondeterministicJumpInstruction(
+class NondeterministicJumpInstruction
+(
         element: KtElement,
         targetLabels: List<Label>,
         blockScope: BlockScope,
@@ -37,9 +38,11 @@ class NondeterministicJumpInstruction(
     private var _next: Instruction? = null
     private val _resolvedTargets: MutableMap<Label, Instruction> = Maps.newLinkedHashMap()
 
-    val targetLabels: List<Label> = Lists.newArrayList(targetLabels)
+    val targetLabels: MutableList<Label> = Lists.newArrayList(targetLabels)
     val resolvedTargets: Map<Label, Instruction>
             get() = _resolvedTargets
+
+    fun HACK_LABELS(label: Label) = targetLabels.add(label)
 
     fun setResolvedTarget(label: Label, resolvedTarget: Instruction) {
         _resolvedTargets[label] = outgoingEdgeTo(resolvedTarget)!!

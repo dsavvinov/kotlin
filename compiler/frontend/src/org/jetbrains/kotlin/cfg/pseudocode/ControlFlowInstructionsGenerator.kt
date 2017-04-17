@@ -219,6 +219,7 @@ class ControlFlowInstructionsGenerator : ControlFlowBuilderAdapter() {
 
         override fun exitSubroutine(subroutine: KtElement): Pseudocode {
             getSubroutineExitPoint(subroutine)?.let { bindLabel(it) }
+            leakage(subroutine)
             pseudocode.addExitInstruction(SubroutineExitInstruction(subroutine, currentScope, false))
             bindLabel(error)
             pseudocode.addErrorInstruction(SubroutineExitInstruction(subroutine, currentScope, true))
@@ -314,6 +315,14 @@ class ControlFlowInstructionsGenerator : ControlFlowBuilderAdapter() {
             //todo
             //handleJumpInsideTryFinally(label);
             add(NondeterministicJumpInstruction(element, label, currentScope, null))
+        }
+
+        // Denotes point of possible leak of control-flow.
+        // It maybe useful to lead control-flow out of declaration that is definitely invoked
+        fun leakage(element: KtElement) {
+            val jump = NondeterministicJumpInstruction(element, listOf(), currentScope, null)
+            add(jump)
+            pseudocode.flowLeakageInstruction = jump
         }
 
         override fun jumpToError(element: KtElement) {
