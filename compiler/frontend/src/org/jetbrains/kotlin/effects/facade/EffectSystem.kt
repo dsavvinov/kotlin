@@ -80,9 +80,9 @@ object EffectSystem {
                 .buildCallTree(resolutionContext)
                 ?.computeEffectSchema(resolutionContext) as? EffectSchema ?: return DataFlowInfoFactory.EMPTY
 
-        val effectsDataFlowInfo = resultingEs.extractDataFlowInfoAt(EsReturns(result.lift()), languageVersionSettings)
+        val effectsDataFlowInfo = resultingEs.extractDataFlowInfoAt(EsReturns(result.lift()))
 
-        return effectsDataFlowInfo.toDataFlowInfo()
+        return effectsDataFlowInfo.toDataFlowInfo(languageVersionSettings)
     }
 
     fun <D : CallableDescriptor> computeEffectsForArguments(
@@ -97,12 +97,12 @@ object EffectSystem {
         val resultingCall: MutableResolvedCall<D> = resolutionResults.resultingCall
         val resolutionUtils = EsResolutionContext.create(resolutionContext, KtPsiFactory(resultingCall.call.callElement), typeResolver)
 
-        val resultingEs = (resultingCall.call.callElement as KtExpression)
-                .buildCallTree(resolutionUtils)
+        val resultingEs = (resultingCall.call.callElement as? KtExpression)
+                ?.buildCallTree(resolutionUtils)
                 ?.computeEffectSchema(resolutionUtils)
                           ?: return resolutionResults
 
-        val effectsDFInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown), languageVersionSettings)
+        val effectsDFInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown))
 
         resultingEs.checkAndRecordFeasibilty(EsReturns(Unknown), resolutionContext.trace, resultingCall.call)
 
@@ -117,7 +117,7 @@ object EffectSystem {
                     = resultingCall.dataFlowInfoForArguments.getInfo(valueArgument)
 
             override fun getResultInfo(): DataFlowInfo
-                    = resultingCall.dataFlowInfoForArguments.resultInfo.and(effectsDFInfo.toDataFlowInfo())
+                    = resultingCall.dataFlowInfoForArguments.resultInfo.and(effectsDFInfo.toDataFlowInfo(languageVersionSettings))
         }
 
 
@@ -169,11 +169,11 @@ object EffectSystem {
     }
 
     fun getInvokationsInfo(lambda: KtLambdaExpression, call: KtCallExpression, trace: BindingTrace,
-                           languageVersionSettings: LanguageVersionSettings, typeResolver: TypeResolver): MutableEffectsInfo.InvokationsInfo? {
+                           typeResolver: TypeResolver): MutableEffectsInfo.InvokationsInfo? {
         val esResolutionContext = EsResolutionContext.create(trace, call, typeResolver) ?: return null
 
         val resultingEs = call.buildCallTree(esResolutionContext)?.computeEffectSchema(esResolutionContext) ?: return null
-        val effectsInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown), languageVersionSettings)
+        val effectsInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown))
 
         val lambdaDFV = DataFlowValueFactory.createDataFlowValue(lambda, trace.getType(lambda) ?: return null, trace.bindingContext, esResolutionContext.moduleDescriptor)
         return effectsInfo.getInvokationsInfo(lambdaDFV)
@@ -201,10 +201,9 @@ object EffectSystem {
     }
 
     private fun EffectSchema.extractDataFlowInfoAt(
-            outcome: Outcome,
-            languageVersionSettings: LanguageVersionSettings
+            outcome: Outcome
     ) : MutableEffectsInfo {
-        val effectsInfo = MutableEffectsInfo(languageVersionSettings)
+        val effectsInfo = MutableEffectsInfo()
 
         for (clause in clauses) {
             val clauseOutcome = clause.getOutcome()
@@ -234,8 +233,8 @@ object EffectSystem {
         // Effects of Is-entry equivalent to effects of expression `subjectExpression is typeAfterIs`
         val entrySchema = EsIs(subjectSchema, typeAfterIs).flatten().reduce() ?: return ConditionalDataFlowInfo.EMPTY
 
-        val trueDFI = entrySchema.extractDataFlowInfoAt(EsReturns(true.lift()), languageVersionSettings).toDataFlowInfo()
-        val falseDFI = entrySchema.extractDataFlowInfoAt(EsReturns(false.lift()), languageVersionSettings).toDataFlowInfo()
+        val trueDFI = entrySchema.extractDataFlowInfoAt(EsReturns(true.lift())).toDataFlowInfo(languageVersionSettings)
+        val falseDFI = entrySchema.extractDataFlowInfoAt(EsReturns(false.lift())).toDataFlowInfo(languageVersionSettings)
 
         return ConditionalDataFlowInfo(trueDFI, falseDFI)
     }
@@ -255,10 +254,10 @@ object EffectSystem {
         // Effects of when-condition with expression equivalent to effects of `subjectExpression == condition.expression`
         val entrySchema = EsEqual(subjectSchema, conditionSchema).flatten().reduce() ?: return ConditionalDataFlowInfo.EMPTY
 
-        val trueDFI = entrySchema.extractDataFlowInfoAt(EsReturns(true.lift()), languageVersionSettings)
-        val falseDFI = entrySchema.extractDataFlowInfoAt(EsReturns(false.lift()), languageVersionSettings)
+        val trueDFI = entrySchema.extractDataFlowInfoAt(EsReturns(true.lift()))
+        val falseDFI = entrySchema.extractDataFlowInfoAt(EsReturns(false.lift()))
 
-        return ConditionalDataFlowInfo(trueDFI.toDataFlowInfo(), falseDFI.toDataFlowInfo())
+        return ConditionalDataFlowInfo(trueDFI.toDataFlowInfo(languageVersionSettings), falseDFI.toDataFlowInfo(languageVersionSettings))
     }
 
 }

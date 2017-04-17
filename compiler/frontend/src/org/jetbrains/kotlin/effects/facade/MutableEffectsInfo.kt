@@ -23,16 +23,12 @@ import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
-class MutableEffectsInfo(val languageVersionSettings: LanguageVersionSettings) {
+class MutableEffectsInfo {
     private val subtypes: MutableMap<DataFlowValue, MutableSet<KotlinType>> = mutableMapOf()
     private val notSubtypes: MutableMap<DataFlowValue, MutableSet<KotlinType>> = mutableMapOf()
     private val equals: MutableMap<DataFlowValue, MutableSet<DataFlowValue>> = mutableMapOf()
     private val notEquals: MutableMap<DataFlowValue, MutableSet<DataFlowValue>> = mutableMapOf()
     private val invokations: MutableMap<DataFlowValue, MutableSet<Int>> = mutableMapOf()
-
-    val invokationsInfoMap: Map<DataFlowValue, InvokationsInfo> by lazy {
-        getAllValues().map { Pair(it, getConsistentInvokationInfo(it)) }.toMap()
-    }
 
     enum class InvokationsInfo {
         UNKNOWN,
@@ -51,7 +47,7 @@ class MutableEffectsInfo(val languageVersionSettings: LanguageVersionSettings) {
 
     fun calls(lhs: DataFlowValue, count: Int): Unit { invokations.put(lhs, count) }
 
-    fun toDataFlowInfo(): DataFlowInfo {
+    fun toDataFlowInfo(languageVersionSettings: LanguageVersionSettings): DataFlowInfo {
         val allValues = getAllValues()
 
         var resultingDataFlow = DataFlowInfoFactory.EMPTY
