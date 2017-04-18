@@ -76,7 +76,7 @@ class ControlFlowInformationProvider private constructor(
     }
 
     constructor(declaration: KtElement, trace: BindingTrace, languageVersionSettings: LanguageVersionSettings, typeResolver: TypeResolver)
-    : this(declaration, trace, ControlFlowProcessor(trace, typeResolver).generatePseudocode(declaration), languageVersionSettings, typeResolver)
+    : this(declaration, trace, ControlFlowProcessor(trace).generatePseudocode(declaration), languageVersionSettings, typeResolver)
 
     fun checkForLocalClassOrObjectMode() {
         // Local classes and objects are analyzed twice: when TopDownAnalyzer processes it and as a part of its container.
@@ -503,7 +503,7 @@ class ControlFlowInformationProvider private constructor(
                 getElementParentDeclaration(instruction.element)?.parent as? KtLambdaExpression ?: return null
         val callee = PsiTreeUtil.getParentOfType(lambdaExpression, KtCallExpression::class.java) ?: return null
 
-        return EffectSystem.getInvokationsInfo(lambdaExpression, callee, trace, typeResolver)
+        return EffectSystem.getInvokationsInfo(lambdaExpression, callee, trace, languageVersionSettings, typeResolver)
     }
 
     private fun checkAssignmentBeforeDeclaration(ctxt: VariableInitContext, expression: KtExpression) =

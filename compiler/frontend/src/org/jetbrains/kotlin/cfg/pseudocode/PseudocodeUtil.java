@@ -88,7 +88,7 @@ public class PseudocodeUtil {
                 return false;
             }
         };
-        return new ControlFlowProcessor(mockTrace, null).generatePseudocode(declaration);
+        return new ControlFlowProcessor(mockTrace).generatePseudocode(declaration);
     }
 
     @Nullable
