@@ -438,8 +438,7 @@ class ControlFlowInformationProvider private constructor(
         } ?: true
         val isThisOrNoDispatchReceiver = PseudocodeUtil.isThisOrNoDispatchReceiver(writeValueInstruction, trace.bindingContext)
         val captured = variableDescriptor?.let { isCapturedWrite(it, writeValueInstruction) } ?: false
-        val tmp = getEnclosingLambdaInvokationsInfo(writeValueInstruction)
-        val capturedInExactlyOnceInvokedLambda = tmp == MutableEffectsInfo.InvokationsInfo.EXACTLY_ONCE
+        val invocationsStatus = getEnclosingLambdaInvokationsInfo(writeValueInstruction)
 
         if ((mayBeInitializedNotHere || !hasBackingField || !isThisOrNoDispatchReceiver || captured) &&
                 variableDescriptor != null && !variableDescriptor.isVar) {
@@ -468,9 +467,15 @@ class ControlFlowInformationProvider private constructor(
                 }
             }
 
-            // I.e. if it is local `val` that is captures in exactly-once invoked lambda
-            if (!mayBeInitializedNotHere && captured && capturedInExactlyOnceInvokedLambda) {
-                return false
+            if (!mayBeInitializedNotHere && captured) {
+                when(invocationsStatus) {
+                    MutableEffectsInfo.InvokationsInfo.NOT_INVOKED -> return false
+                    MutableEffectsInfo.InvokationsInfo.EXACTLY_ONCE -> return false
+                    MutableEffectsInfo.InvokationsInfo.AT_LEAST_ONCE -> {
+                        report(Errors.VAL_REASSIGNMENT.on(expression, variableDescriptor), ctxt)
+                        return true
+                    }
+                }
             }
 
             if (!hasReassignMethodReturningUnit) {
