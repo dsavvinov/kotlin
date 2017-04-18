@@ -469,9 +469,9 @@ class ControlFlowInformationProvider private constructor(
 
             if (!mayBeInitializedNotHere && captured) {
                 when(invocationsStatus) {
-                    MutableEffectsInfo.InvokationsInfo.NOT_INVOKED -> return false
-                    MutableEffectsInfo.InvokationsInfo.EXACTLY_ONCE -> return false
-                    MutableEffectsInfo.InvokationsInfo.AT_LEAST_ONCE -> {
+                    MutableEffectsInfo.InvocationsInfo.NOT_INVOKED -> return false
+                    MutableEffectsInfo.InvocationsInfo.EXACTLY_ONCE -> return false
+                    MutableEffectsInfo.InvocationsInfo.AT_LEAST_ONCE -> {
                         report(Errors.VAL_REASSIGNMENT.on(expression, variableDescriptor), ctxt)
                         return true
                     }
@@ -498,12 +498,12 @@ class ControlFlowInformationProvider private constructor(
         return false
     }
 
-    private fun getEnclosingLambdaInvokationsInfo(instruction: WriteValueInstruction): MutableEffectsInfo.InvokationsInfo? {
+    private fun getEnclosingLambdaInvokationsInfo(instruction: WriteValueInstruction): MutableEffectsInfo.InvocationsInfo? {
         val lambdaExpression: KtLambdaExpression =
                 getElementParentDeclaration(instruction.element)?.parent as? KtLambdaExpression ?: return null
         val callee = PsiTreeUtil.getParentOfType(lambdaExpression, KtCallExpression::class.java) ?: return null
 
-        return EffectSystem.getInvokationsInfo(lambdaExpression, callee, trace, languageVersionSettings, typeResolver)
+        return EffectSystem.getInvocationsInfo(lambdaExpression, callee, trace, typeResolver)
     }
 
     private fun checkAssignmentBeforeDeclaration(ctxt: VariableInitContext, expression: KtExpression) =

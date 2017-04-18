@@ -95,18 +95,14 @@ object EffectSystem {
         if (!resolutionResults.isSingleResult) return resolutionResults
 
         val resultingCall: MutableResolvedCall<D> = resolutionResults.resultingCall
-        val resolutionUtils = EsResolutionContext.create(resolutionContext, KtPsiFactory(resultingCall.call.callElement), typeResolver)
+        val esResolutionContext = EsResolutionContext.create(resolutionContext, KtPsiFactory(resultingCall.call.callElement), typeResolver)
 
-        val resultingEs = (resultingCall.call.callElement as? KtExpression)
-                ?.buildCallTree(resolutionUtils)
-                ?.computeEffectSchema(resolutionUtils)
-                          ?: return resolutionResults
+        val callTree = (resultingCall.call.callElement as? KtExpression)?.buildCallTree(esResolutionContext)
+        val resultingEs = callTree?.computeEffectSchema(esResolutionContext) ?: return resolutionResults
 
         val effectsDFInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown))
 
         resultingEs.checkAndRecordFeasibilty(EsReturns(Unknown), resolutionContext.trace, resultingCall.call)
-
-//        effectsDFInfo.recordInvokationsInfoForArguments
 
         val newDFInfo = object : MutableDataFlowInfoForArguments(resultingCall.dataFlowInfoForArguments.resultInfo) {
             override fun updateInfo(valueArgument: ValueArgument, dataFlowInfo: DataFlowInfo)
@@ -168,15 +164,15 @@ object EffectSystem {
                evES.print()
     }
 
-    fun getInvokationsInfo(lambda: KtLambdaExpression, call: KtCallExpression, trace: BindingTrace,
-                           typeResolver: TypeResolver): MutableEffectsInfo.InvokationsInfo? {
+    fun getInvocationsInfo(lambda: KtLambdaExpression, call: KtCallExpression, trace: BindingTrace,
+                           typeResolver: TypeResolver): MutableEffectsInfo.InvocationsInfo? {
         val esResolutionContext = EsResolutionContext.create(trace, call, typeResolver) ?: return null
 
         val resultingEs = call.buildCallTree(esResolutionContext)?.computeEffectSchema(esResolutionContext) ?: return null
         val effectsInfo = resultingEs.extractDataFlowInfoAt(EsReturns(Unknown))
 
         val lambdaDFV = DataFlowValueFactory.createDataFlowValue(lambda, trace.getType(lambda) ?: return null, trace.bindingContext, esResolutionContext.moduleDescriptor)
-        return effectsInfo.getInvokationsInfo(lambdaDFV)
+        return effectsInfo.getInvocationsInfo(lambdaDFV)
     }
 
     private fun CallTree.computeEffectSchema(resolutionContext: EsResolutionContext): EffectSchema?

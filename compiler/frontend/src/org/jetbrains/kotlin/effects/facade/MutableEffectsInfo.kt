@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.effects.facade
 
 import org.jetbrains.kotlin.config.LanguageVersionSettings
+import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfoFactory
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
@@ -28,9 +29,9 @@ class MutableEffectsInfo {
     private val notSubtypes: MutableMap<DataFlowValue, MutableSet<KotlinType>> = mutableMapOf()
     private val equals: MutableMap<DataFlowValue, MutableSet<DataFlowValue>> = mutableMapOf()
     private val notEquals: MutableMap<DataFlowValue, MutableSet<DataFlowValue>> = mutableMapOf()
-    private val invokations: MutableMap<DataFlowValue, MutableSet<Int>> = mutableMapOf()
+    private val invocations: MutableMap<DataFlowValue, MutableSet<Int>> = mutableMapOf()
 
-    enum class InvokationsInfo {
+    enum class InvocationsInfo {
         UNKNOWN,
         NOT_INVOKED,
         EXACTLY_ONCE,
@@ -45,7 +46,7 @@ class MutableEffectsInfo {
 
     fun disequate(lhs: DataFlowValue, rhs: DataFlowValue): Unit { notEquals.put(lhs, rhs) }
 
-    fun calls(lhs: DataFlowValue, count: Int): Unit { invokations.put(lhs, count) }
+    fun calls(lhs: DataFlowValue, count: Int): Unit { invocations.put(lhs, count) }
 
     fun toDataFlowInfo(languageVersionSettings: LanguageVersionSettings): DataFlowInfo {
         val allValues = getAllValues()
@@ -66,8 +67,14 @@ class MutableEffectsInfo {
         return resultingDataFlow
     }
 
-    fun getInvokationsInfo(dataFlowValue: DataFlowValue): InvokationsInfo? = invokations.keys.map { Pair(it, getConsistentInvokationInfo(it)) }.toMap()[dataFlowValue]
+    fun getInvocationsInfo(dataFlowValue: DataFlowValue): InvocationsInfo? =
+            invocations.keys.map { Pair(it, getConsistentInvokationInfo(it)) }.toMap()[dataFlowValue]
 
+    fun recordAllInvocations(trace: BindingTrace) {
+        for ((dataFlowValue, info) in invocations) {
+            dataFlowValue.identifierInfo
+        }
+    }
 
     private fun getAllValues(): Set<DataFlowValue> {
         val allValues = mutableSetOf<DataFlowValue>()
@@ -115,10 +122,10 @@ class MutableEffectsInfo {
         return recordedNotEquals.minus(recordedValues).toList()
     }
 
-    private fun getConsistentInvokationInfo(dataFlowValue: DataFlowValue): InvokationsInfo {
-        val recordedInvokations = invokations[dataFlowValue] ?: return InvokationsInfo.UNKNOWN
+    private fun getConsistentInvokationInfo(dataFlowValue: DataFlowValue): InvocationsInfo {
+        val recordedInvokations = invocations[dataFlowValue] ?: return InvocationsInfo.UNKNOWN
 
-        if (recordedInvokations.isEmpty()) return InvokationsInfo.UNKNOWN
+        if (recordedInvokations.isEmpty()) return InvocationsInfo.UNKNOWN
 
         val lowerBound = recordedInvokations.min()!!
         val upperBound = recordedInvokations.max()!!
@@ -126,15 +133,15 @@ class MutableEffectsInfo {
         // Check if it is NOT_INVOKED, or EXACTLY_ONCE
         if (lowerBound == upperBound) {
             when(lowerBound) {
-                0 -> return InvokationsInfo.NOT_INVOKED
-                1 -> return InvokationsInfo.EXACTLY_ONCE
+                0 -> return InvocationsInfo.NOT_INVOKED
+                1 -> return InvocationsInfo.EXACTLY_ONCE
             }
         }
 
         // Now just decide between AT_LEAST_ONCE and UNKNOWN
-        if (lowerBound >= 1) return InvokationsInfo.AT_LEAST_ONCE
+        if (lowerBound >= 1) return InvocationsInfo.AT_LEAST_ONCE
 
-        return InvokationsInfo.UNKNOWN
+        return InvocationsInfo.UNKNOWN
     }
 
     private fun <D> MutableMap<DataFlowValue, MutableSet<D>>.put(key: DataFlowValue, value: D)

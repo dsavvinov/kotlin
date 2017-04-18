@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.cfg.TailRecursionKind;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor;
 import org.jetbrains.kotlin.effects.facade.CallEffectsInfo;
+import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo;
 import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.name.FqNameUnsafe;
 import org.jetbrains.kotlin.psi.*;
@@ -137,7 +138,6 @@ public interface BindingContext {
     WritableSlice<KtExpression, ResolvedCall<FunctionDescriptor>> RETURN_HANDLE_RESULT_RESOLVED_CALL = Slices.createSimpleSlice();
 
     WritableSlice<Call, FunctionDescriptor> ENCLOSING_SUSPEND_FUNCTION_FOR_SUSPEND_FUNCTION_CALL = Slices.createSimpleSlice();
-    WritableSlice<Call, CallEffectsInfo> CALL_EFFECTS_INFO = Slices.createSimpleSlice();
     WritableSlice<FunctionDescriptor, Boolean> CONTAINS_NON_TAIL_SUSPEND_CALLS = Slices.createSimpleSetSlice();
     WritableSlice<KtExpression, Boolean> IS_TAIL_EXPRESSION_IN_SUSPEND_FUNCTION = Slices.createSimpleSetSlice();
 
@@ -167,6 +167,8 @@ public interface BindingContext {
     WritableSlice<KtExpression, Boolean> VARIABLE_REASSIGNMENT = Slices.createSimpleSetSlice();
     WritableSlice<ValueParameterDescriptor, Boolean> AUTO_CREATED_IT = Slices.createSimpleSetSlice();
 
+    WritableSlice<Call, CallEffectsInfo> CALL_EFFECTS_INFO = Slices.createSimpleSlice();
+    WritableSlice<KtDeclaration, MutableEffectsInfo.InvocationsInfo> INVOCATIONS_INFO = Slices.createSimpleSlice();
     /**
      * Has type of current expression has been already resolved
      */
