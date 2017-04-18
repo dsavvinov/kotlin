@@ -32,7 +32,7 @@ public class EffectSystemParser extends Parser {
 		RULE_additiveOperator = 16, RULE_multiplicativeOperator = 17, RULE_prefixUnaryOperation = 18, 
 		RULE_postfixUnaryOperation = 19, RULE_inOperation = 20, RULE_isOperation = 21, 
 		RULE_effectsList = 22, RULE_effect = 23, RULE_throwsEffect = 24, RULE_returnsEffect = 25, 
-		RULE_callsEffect = 26, RULE_type = 27, RULE_literalConstant = 28;
+		RULE_callsEffect = 26, RULE_callsRecord = 27, RULE_type = 28, RULE_literalConstant = 29;
 	public static final String[] ruleNames = {
 		"effectSchema", "clause", "expression", "conjunction", "equalityComparison", 
 		"comparison", "namedInfix", "additiveExpression", "multiplicativeExpression", 
@@ -40,7 +40,8 @@ public class EffectSystemParser extends Parser {
 		"disjunctionOperator", "conjunctionOperator", "equalityOperator", "comparisonOperator", 
 		"additiveOperator", "multiplicativeOperator", "prefixUnaryOperation", 
 		"postfixUnaryOperation", "inOperation", "isOperation", "effectsList", 
-		"effect", "throwsEffect", "returnsEffect", "callsEffect", "type", "literalConstant"
+		"effect", "throwsEffect", "returnsEffect", "callsEffect", "callsRecord", 
+		"type", "literalConstant"
 	};
 
 	private static final String[] _LITERAL_NAMES = {
@@ -129,6 +130,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitEffectSchema(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitEffectSchema(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final EffectSchemaContext effectSchema() throws RecognitionException {
@@ -136,13 +142,13 @@ public class EffectSystemParser extends Parser {
 		enterRule(_localctx, 0, RULE_effectSchema);
 		int _la;
 		try {
-			setState(67);
+			setState(69);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case EOF:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(58);
+				setState(60);
 				match(EOF);
 				}
 				break;
@@ -160,21 +166,21 @@ public class EffectSystemParser extends Parser {
 			case NOT:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(59);
+				setState(61);
 				clause();
-				setState(64);
+				setState(66);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				while (_la==SEMI) {
 					{
 					{
-					setState(60);
+					setState(62);
 					match(SEMI);
-					setState(61);
+					setState(63);
 					clause();
 					}
 					}
-					setState(66);
+					setState(68);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
@@ -214,6 +220,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitClause(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitClause(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ClauseContext clause() throws RecognitionException {
@@ -222,11 +233,11 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(69);
-			expression();
-			setState(70);
-			match(T__0);
 			setState(71);
+			expression();
+			setState(72);
+			match(T__0);
+			setState(73);
 			effectsList();
 			}
 		}
@@ -266,6 +277,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitExpression(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitExpression(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ExpressionContext expression() throws RecognitionException {
@@ -275,21 +291,21 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(73);
+			setState(75);
 			conjunction();
-			setState(79);
+			setState(81);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==T__3) {
 				{
 				{
-				setState(74);
+				setState(76);
 				disjunctionOperator();
-				setState(75);
+				setState(77);
 				conjunction();
 				}
 				}
-				setState(81);
+				setState(83);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -331,6 +347,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitConjunction(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitConjunction(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ConjunctionContext conjunction() throws RecognitionException {
@@ -340,21 +361,21 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(82);
+			setState(84);
 			equalityComparison();
-			setState(88);
+			setState(90);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==T__4) {
 				{
 				{
-				setState(83);
+				setState(85);
 				conjunctionOperator();
-				setState(84);
+				setState(86);
 				equalityComparison();
 				}
 				}
-				setState(90);
+				setState(92);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -396,6 +417,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitEqualityComparison(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitEqualityComparison(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final EqualityComparisonContext equalityComparison() throws RecognitionException {
@@ -405,21 +431,21 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(91);
+			setState(93);
 			comparison();
-			setState(97);
+			setState(99);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==EQEQ || _la==EXCLEQ) {
 				{
 				{
-				setState(92);
+				setState(94);
 				equalityOperator();
-				setState(93);
+				setState(95);
 				comparison();
 				}
 				}
-				setState(99);
+				setState(101);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -461,6 +487,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitComparison(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitComparison(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ComparisonContext comparison() throws RecognitionException {
@@ -470,21 +501,21 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(100);
+			setState(102);
 			namedInfix();
-			setState(106);
+			setState(108);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << LT) | (1L << GT) | (1L << LEQ) | (1L << GEQ))) != 0)) {
 				{
 				{
-				setState(101);
+				setState(103);
 				comparisonOperator();
-				setState(102);
+				setState(104);
 				namedInfix();
 				}
 				}
-				setState(108);
+				setState(110);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -532,6 +563,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitNamedInfix(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitNamedInfix(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final NamedInfixContext namedInfix() throws RecognitionException {
@@ -539,27 +575,27 @@ public class EffectSystemParser extends Parser {
 		enterRule(_localctx, 12, RULE_namedInfix);
 		int _la;
 		try {
-			setState(124);
+			setState(126);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,8,_ctx) ) {
 			case 1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(109);
+				setState(111);
 				additiveExpression();
-				setState(115);
+				setState(117);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				while (_la==T__5 || _la==T__6) {
 					{
 					{
-					setState(110);
+					setState(112);
 					inOperation();
-					setState(111);
+					setState(113);
 					additiveExpression();
 					}
 					}
-					setState(117);
+					setState(119);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
@@ -568,16 +604,16 @@ public class EffectSystemParser extends Parser {
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(118);
+				setState(120);
 				additiveExpression();
-				setState(122);
+				setState(124);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				if (_la==T__7 || _la==T__8) {
 					{
-					setState(119);
+					setState(121);
 					isOperation();
-					setState(120);
+					setState(122);
 					type();
 					}
 				}
@@ -622,6 +658,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitAdditiveExpression(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitAdditiveExpression(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final AdditiveExpressionContext additiveExpression() throws RecognitionException {
@@ -631,21 +672,21 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(126);
+			setState(128);
 			multiplicativeExpression();
-			setState(132);
+			setState(134);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==PLUS || _la==MINUS) {
 				{
 				{
-				setState(127);
+				setState(129);
 				additiveOperator();
-				setState(128);
+				setState(130);
 				multiplicativeExpression();
 				}
 				}
-				setState(134);
+				setState(136);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -687,6 +728,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitMultiplicativeExpression(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitMultiplicativeExpression(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final MultiplicativeExpressionContext multiplicativeExpression() throws RecognitionException {
@@ -696,21 +742,21 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(135);
+			setState(137);
 			prefixUnaryExpression();
-			setState(141);
+			setState(143);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << MUL) | (1L << DIV) | (1L << PERC))) != 0)) {
 				{
 				{
-				setState(136);
+				setState(138);
 				multiplicativeOperator();
-				setState(137);
+				setState(139);
 				prefixUnaryExpression();
 				}
 				}
-				setState(143);
+				setState(145);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -749,6 +795,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitPrefixUnaryExpression(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitPrefixUnaryExpression(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final PrefixUnaryExpressionContext prefixUnaryExpression() throws RecognitionException {
@@ -758,21 +809,21 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(147);
+			setState(149);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << PLUS) | (1L << MINUS) | (1L << PLUSPLUS) | (1L << MINUSMINUS) | (1L << NOT))) != 0)) {
 				{
 				{
-				setState(144);
+				setState(146);
 				prefixUnaryOperation();
 				}
 				}
-				setState(149);
+				setState(151);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(150);
+			setState(152);
 			postfixUnaryExpression();
 			}
 		}
@@ -809,6 +860,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitPostfixUnaryExpression(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitPostfixUnaryExpression(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final PostfixUnaryExpressionContext postfixUnaryExpression() throws RecognitionException {
@@ -818,19 +874,19 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(152);
+			setState(154);
 			atomicExpression();
-			setState(156);
+			setState(158);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << PLUSPLUS) | (1L << MINUSMINUS) | (1L << EXCLEXCL))) != 0)) {
 				{
 				{
-				setState(153);
+				setState(155);
 				postfixUnaryOperation();
 				}
 				}
-				setState(158);
+				setState(160);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -867,23 +923,28 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitAtomicExpression(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitAtomicExpression(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final AtomicExpressionContext atomicExpression() throws RecognitionException {
 		AtomicExpressionContext _localctx = new AtomicExpressionContext(_ctx, getState());
 		enterRule(_localctx, 22, RULE_atomicExpression);
 		try {
-			setState(165);
+			setState(167);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case T__1:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(159);
-				match(T__1);
-				setState(160);
-				expression();
 				setState(161);
+				match(T__1);
+				setState(162);
+				expression();
+				setState(163);
 				match(T__2);
 				}
 				break;
@@ -894,14 +955,14 @@ public class EffectSystemParser extends Parser {
 			case IntegerLiteral:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(163);
+				setState(165);
 				literalConstant();
 				}
 				break;
 			case SimpleName:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(164);
+				setState(166);
 				match(SimpleName);
 				}
 				break;
@@ -933,6 +994,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitDisjunctionOperator(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitDisjunctionOperator(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final DisjunctionOperatorContext disjunctionOperator() throws RecognitionException {
@@ -941,7 +1007,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(167);
+			setState(169);
 			match(T__3);
 			}
 		}
@@ -969,6 +1035,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitConjunctionOperator(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitConjunctionOperator(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ConjunctionOperatorContext conjunctionOperator() throws RecognitionException {
@@ -977,7 +1048,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(169);
+			setState(171);
 			match(T__4);
 			}
 		}
@@ -1007,6 +1078,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitEqualityOperator(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitEqualityOperator(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final EqualityOperatorContext equalityOperator() throws RecognitionException {
@@ -1016,7 +1092,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(171);
+			setState(173);
 			_la = _input.LA(1);
 			if ( !(_la==EQEQ || _la==EXCLEQ) ) {
 			_errHandler.recoverInline(this);
@@ -1056,6 +1132,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitComparisonOperator(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitComparisonOperator(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ComparisonOperatorContext comparisonOperator() throws RecognitionException {
@@ -1065,7 +1146,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(173);
+			setState(175);
 			_la = _input.LA(1);
 			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << LT) | (1L << GT) | (1L << LEQ) | (1L << GEQ))) != 0)) ) {
 			_errHandler.recoverInline(this);
@@ -1103,6 +1184,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitAdditiveOperator(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitAdditiveOperator(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final AdditiveOperatorContext additiveOperator() throws RecognitionException {
@@ -1112,7 +1198,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(175);
+			setState(177);
 			_la = _input.LA(1);
 			if ( !(_la==PLUS || _la==MINUS) ) {
 			_errHandler.recoverInline(this);
@@ -1151,6 +1237,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitMultiplicativeOperator(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitMultiplicativeOperator(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final MultiplicativeOperatorContext multiplicativeOperator() throws RecognitionException {
@@ -1160,7 +1251,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(177);
+			setState(179);
 			_la = _input.LA(1);
 			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << MUL) | (1L << DIV) | (1L << PERC))) != 0)) ) {
 			_errHandler.recoverInline(this);
@@ -1201,6 +1292,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitPrefixUnaryOperation(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitPrefixUnaryOperation(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final PrefixUnaryOperationContext prefixUnaryOperation() throws RecognitionException {
@@ -1210,7 +1306,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(179);
+			setState(181);
 			_la = _input.LA(1);
 			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << PLUS) | (1L << MINUS) | (1L << PLUSPLUS) | (1L << MINUSMINUS) | (1L << NOT))) != 0)) ) {
 			_errHandler.recoverInline(this);
@@ -1249,6 +1345,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitPostfixUnaryOperation(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitPostfixUnaryOperation(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final PostfixUnaryOperationContext postfixUnaryOperation() throws RecognitionException {
@@ -1258,7 +1359,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(181);
+			setState(183);
 			_la = _input.LA(1);
 			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << PLUSPLUS) | (1L << MINUSMINUS) | (1L << EXCLEXCL))) != 0)) ) {
 			_errHandler.recoverInline(this);
@@ -1294,6 +1395,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitInOperation(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitInOperation(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final InOperationContext inOperation() throws RecognitionException {
@@ -1303,7 +1409,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(183);
+			setState(185);
 			_la = _input.LA(1);
 			if ( !(_la==T__5 || _la==T__6) ) {
 			_errHandler.recoverInline(this);
@@ -1339,6 +1445,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitIsOperation(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitIsOperation(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final IsOperationContext isOperation() throws RecognitionException {
@@ -1348,7 +1459,7 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(185);
+			setState(187);
 			_la = _input.LA(1);
 			if ( !(_la==T__7 || _la==T__8) ) {
 			_errHandler.recoverInline(this);
@@ -1390,6 +1501,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitEffectsList(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitEffectsList(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final EffectsListContext effectsList() throws RecognitionException {
@@ -1399,21 +1515,21 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(187);
+			setState(189);
 			effect();
-			setState(192);
+			setState(194);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==T__9) {
 				{
 				{
-				setState(188);
+				setState(190);
 				match(T__9);
-				setState(189);
+				setState(191);
 				effect();
 				}
 				}
-				setState(194);
+				setState(196);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -1452,33 +1568,38 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitEffect(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitEffect(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final EffectContext effect() throws RecognitionException {
 		EffectContext _localctx = new EffectContext(_ctx, getState());
 		enterRule(_localctx, 46, RULE_effect);
 		try {
-			setState(198);
+			setState(200);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case T__10:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(195);
+				setState(197);
 				throwsEffect();
 				}
 				break;
 			case T__11:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(196);
+				setState(198);
 				returnsEffect();
 				}
 				break;
 			case T__12:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(197);
+				setState(199);
 				callsEffect();
 				}
 				break;
@@ -1511,6 +1632,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitThrowsEffect(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitThrowsEffect(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ThrowsEffectContext throwsEffect() throws RecognitionException {
@@ -1519,9 +1645,9 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(200);
+			setState(202);
 			match(T__10);
-			setState(201);
+			setState(203);
 			match(SimpleName);
 			}
 		}
@@ -1553,6 +1679,11 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitReturnsEffect(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitReturnsEffect(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ReturnsEffectContext returnsEffect() throws RecognitionException {
@@ -1561,9 +1692,9 @@ public class EffectSystemParser extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(203);
+			setState(205);
 			match(T__11);
-			setState(206);
+			setState(208);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case BooleanLiteral:
@@ -1572,13 +1703,13 @@ public class EffectSystemParser extends Parser {
 			case StringLiteral:
 			case IntegerLiteral:
 				{
-				setState(204);
+				setState(206);
 				literalConstant();
 				}
 				break;
 			case SimpleName:
 				{
-				setState(205);
+				setState(207);
 				match(SimpleName);
 				}
 				break;
@@ -1599,8 +1730,12 @@ public class EffectSystemParser extends Parser {
 	}
 
 	public static class CallsEffectContext extends ParserRuleContext {
-		public TerminalNode SimpleName() { return getToken(EffectSystemParser.SimpleName, 0); }
-		public TerminalNode IntegerLiteral() { return getToken(EffectSystemParser.IntegerLiteral, 0); }
+		public List<CallsRecordContext> callsRecord() {
+			return getRuleContexts(CallsRecordContext.class);
+		}
+		public CallsRecordContext callsRecord(int i) {
+			return getRuleContext(CallsRecordContext.class,i);
+		}
 		public CallsEffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1613,26 +1748,89 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitCallsEffect(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitCallsEffect(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final CallsEffectContext callsEffect() throws RecognitionException {
 		CallsEffectContext _localctx = new CallsEffectContext(_ctx, getState());
 		enterRule(_localctx, 52, RULE_callsEffect);
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(208);
-			match(T__12);
-			setState(209);
-			match(T__1);
 			setState(210);
-			match(SimpleName);
+			match(T__12);
 			setState(211);
-			match(T__9);
+			match(T__1);
 			setState(212);
-			match(IntegerLiteral);
-			setState(213);
+			callsRecord();
+			setState(217);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while (_la==SEMI) {
+				{
+				{
+				setState(213);
+				match(SEMI);
+				setState(214);
+				callsRecord();
+				}
+				}
+				setState(219);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
+			setState(220);
 			match(T__2);
+			}
+		}
+		catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		}
+		finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static class CallsRecordContext extends ParserRuleContext {
+		public TerminalNode SimpleName() { return getToken(EffectSystemParser.SimpleName, 0); }
+		public TerminalNode IntegerLiteral() { return getToken(EffectSystemParser.IntegerLiteral, 0); }
+		public CallsRecordContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+		@Override public int getRuleIndex() { return RULE_callsRecord; }
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).enterCallsRecord(this);
+		}
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitCallsRecord(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitCallsRecord(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final CallsRecordContext callsRecord() throws RecognitionException {
+		CallsRecordContext _localctx = new CallsRecordContext(_ctx, getState());
+		enterRule(_localctx, 54, RULE_callsRecord);
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(222);
+			match(SimpleName);
+			setState(223);
+			match(IntegerLiteral);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1660,15 +1858,20 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitType(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitType(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final TypeContext type() throws RecognitionException {
 		TypeContext _localctx = new TypeContext(_ctx, getState());
-		enterRule(_localctx, 54, RULE_type);
+		enterRule(_localctx, 56, RULE_type);
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(215);
+			setState(225);
 			match(SimpleName);
 			}
 		}
@@ -1701,16 +1904,21 @@ public class EffectSystemParser extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof EffectSystemListener ) ((EffectSystemListener)listener).exitLiteralConstant(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof EffectSystemVisitor ) return ((EffectSystemVisitor<? extends T>)visitor).visitLiteralConstant(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final LiteralConstantContext literalConstant() throws RecognitionException {
 		LiteralConstantContext _localctx = new LiteralConstantContext(_ctx, getState());
-		enterRule(_localctx, 56, RULE_literalConstant);
+		enterRule(_localctx, 58, RULE_literalConstant);
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(217);
+			setState(227);
 			_la = _input.LA(1);
 			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << BooleanLiteral) | (1L << NullLiteral) | (1L << UnitLiteral) | (1L << StringLiteral) | (1L << IntegerLiteral))) != 0)) ) {
 			_errHandler.recoverInline(this);
@@ -1734,72 +1942,76 @@ public class EffectSystemParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\'\u00de\4\2\t\2\4"+
+		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3\'\u00e8\4\2\t\2\4"+
 		"\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t"+
 		"\13\4\f\t\f\4\r\t\r\4\16\t\16\4\17\t\17\4\20\t\20\4\21\t\21\4\22\t\22"+
 		"\4\23\t\23\4\24\t\24\4\25\t\25\4\26\t\26\4\27\t\27\4\30\t\30\4\31\t\31"+
-		"\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36\3\2\3\2\3\2\3\2\7\2"+
-		"A\n\2\f\2\16\2D\13\2\5\2F\n\2\3\3\3\3\3\3\3\3\3\4\3\4\3\4\3\4\7\4P\n\4"+
-		"\f\4\16\4S\13\4\3\5\3\5\3\5\3\5\7\5Y\n\5\f\5\16\5\\\13\5\3\6\3\6\3\6\3"+
-		"\6\7\6b\n\6\f\6\16\6e\13\6\3\7\3\7\3\7\3\7\7\7k\n\7\f\7\16\7n\13\7\3\b"+
-		"\3\b\3\b\3\b\7\bt\n\b\f\b\16\bw\13\b\3\b\3\b\3\b\3\b\5\b}\n\b\5\b\177"+
-		"\n\b\3\t\3\t\3\t\3\t\7\t\u0085\n\t\f\t\16\t\u0088\13\t\3\n\3\n\3\n\3\n"+
-		"\7\n\u008e\n\n\f\n\16\n\u0091\13\n\3\13\7\13\u0094\n\13\f\13\16\13\u0097"+
-		"\13\13\3\13\3\13\3\f\3\f\7\f\u009d\n\f\f\f\16\f\u00a0\13\f\3\r\3\r\3\r"+
-		"\3\r\3\r\3\r\5\r\u00a8\n\r\3\16\3\16\3\17\3\17\3\20\3\20\3\21\3\21\3\22"+
-		"\3\22\3\23\3\23\3\24\3\24\3\25\3\25\3\26\3\26\3\27\3\27\3\30\3\30\3\30"+
-		"\7\30\u00c1\n\30\f\30\16\30\u00c4\13\30\3\31\3\31\3\31\5\31\u00c9\n\31"+
-		"\3\32\3\32\3\32\3\33\3\33\3\33\5\33\u00d1\n\33\3\34\3\34\3\34\3\34\3\34"+
-		"\3\34\3\34\3\35\3\35\3\36\3\36\3\36\2\2\37\2\4\6\b\n\f\16\20\22\24\26"+
-		"\30\32\34\36 \"$&(*,.\60\62\64\668:\2\13\3\2&\'\3\2\31\34\3\2\35\36\3"+
-		"\2\37!\4\2\35\36\"$\4\2\"#%%\3\2\b\t\3\2\n\13\3\2\20\24\u00d3\2E\3\2\2"+
-		"\2\4G\3\2\2\2\6K\3\2\2\2\bT\3\2\2\2\n]\3\2\2\2\ff\3\2\2\2\16~\3\2\2\2"+
-		"\20\u0080\3\2\2\2\22\u0089\3\2\2\2\24\u0095\3\2\2\2\26\u009a\3\2\2\2\30"+
-		"\u00a7\3\2\2\2\32\u00a9\3\2\2\2\34\u00ab\3\2\2\2\36\u00ad\3\2\2\2 \u00af"+
-		"\3\2\2\2\"\u00b1\3\2\2\2$\u00b3\3\2\2\2&\u00b5\3\2\2\2(\u00b7\3\2\2\2"+
-		"*\u00b9\3\2\2\2,\u00bb\3\2\2\2.\u00bd\3\2\2\2\60\u00c8\3\2\2\2\62\u00ca"+
-		"\3\2\2\2\64\u00cd\3\2\2\2\66\u00d2\3\2\2\28\u00d9\3\2\2\2:\u00db\3\2\2"+
-		"\2<F\7\2\2\3=B\5\4\3\2>?\7\30\2\2?A\5\4\3\2@>\3\2\2\2AD\3\2\2\2B@\3\2"+
-		"\2\2BC\3\2\2\2CF\3\2\2\2DB\3\2\2\2E<\3\2\2\2E=\3\2\2\2F\3\3\2\2\2GH\5"+
-		"\6\4\2HI\7\3\2\2IJ\5.\30\2J\5\3\2\2\2KQ\5\b\5\2LM\5\32\16\2MN\5\b\5\2"+
-		"NP\3\2\2\2OL\3\2\2\2PS\3\2\2\2QO\3\2\2\2QR\3\2\2\2R\7\3\2\2\2SQ\3\2\2"+
-		"\2TZ\5\n\6\2UV\5\34\17\2VW\5\n\6\2WY\3\2\2\2XU\3\2\2\2Y\\\3\2\2\2ZX\3"+
-		"\2\2\2Z[\3\2\2\2[\t\3\2\2\2\\Z\3\2\2\2]c\5\f\7\2^_\5\36\20\2_`\5\f\7\2"+
-		"`b\3\2\2\2a^\3\2\2\2be\3\2\2\2ca\3\2\2\2cd\3\2\2\2d\13\3\2\2\2ec\3\2\2"+
-		"\2fl\5\16\b\2gh\5 \21\2hi\5\16\b\2ik\3\2\2\2jg\3\2\2\2kn\3\2\2\2lj\3\2"+
-		"\2\2lm\3\2\2\2m\r\3\2\2\2nl\3\2\2\2ou\5\20\t\2pq\5*\26\2qr\5\20\t\2rt"+
-		"\3\2\2\2sp\3\2\2\2tw\3\2\2\2us\3\2\2\2uv\3\2\2\2v\177\3\2\2\2wu\3\2\2"+
-		"\2x|\5\20\t\2yz\5,\27\2z{\58\35\2{}\3\2\2\2|y\3\2\2\2|}\3\2\2\2}\177\3"+
-		"\2\2\2~o\3\2\2\2~x\3\2\2\2\177\17\3\2\2\2\u0080\u0086\5\22\n\2\u0081\u0082"+
-		"\5\"\22\2\u0082\u0083\5\22\n\2\u0083\u0085\3\2\2\2\u0084\u0081\3\2\2\2"+
-		"\u0085\u0088\3\2\2\2\u0086\u0084\3\2\2\2\u0086\u0087\3\2\2\2\u0087\21"+
-		"\3\2\2\2\u0088\u0086\3\2\2\2\u0089\u008f\5\24\13\2\u008a\u008b\5$\23\2"+
-		"\u008b\u008c\5\24\13\2\u008c\u008e\3\2\2\2\u008d\u008a\3\2\2\2\u008e\u0091"+
-		"\3\2\2\2\u008f\u008d\3\2\2\2\u008f\u0090\3\2\2\2\u0090\23\3\2\2\2\u0091"+
-		"\u008f\3\2\2\2\u0092\u0094\5&\24\2\u0093\u0092\3\2\2\2\u0094\u0097\3\2"+
-		"\2\2\u0095\u0093\3\2\2\2\u0095\u0096\3\2\2\2\u0096\u0098\3\2\2\2\u0097"+
-		"\u0095\3\2\2\2\u0098\u0099\5\26\f\2\u0099\25\3\2\2\2\u009a\u009e\5\30"+
-		"\r\2\u009b\u009d\5(\25\2\u009c\u009b\3\2\2\2\u009d\u00a0\3\2\2\2\u009e"+
-		"\u009c\3\2\2\2\u009e\u009f\3\2\2\2\u009f\27\3\2\2\2\u00a0\u009e\3\2\2"+
-		"\2\u00a1\u00a2\7\4\2\2\u00a2\u00a3\5\6\4\2\u00a3\u00a4\7\5\2\2\u00a4\u00a8"+
-		"\3\2\2\2\u00a5\u00a8\5:\36\2\u00a6\u00a8\7\25\2\2\u00a7\u00a1\3\2\2\2"+
-		"\u00a7\u00a5\3\2\2\2\u00a7\u00a6\3\2\2\2\u00a8\31\3\2\2\2\u00a9\u00aa"+
-		"\7\6\2\2\u00aa\33\3\2\2\2\u00ab\u00ac\7\7\2\2\u00ac\35\3\2\2\2\u00ad\u00ae"+
-		"\t\2\2\2\u00ae\37\3\2\2\2\u00af\u00b0\t\3\2\2\u00b0!\3\2\2\2\u00b1\u00b2"+
-		"\t\4\2\2\u00b2#\3\2\2\2\u00b3\u00b4\t\5\2\2\u00b4%\3\2\2\2\u00b5\u00b6"+
-		"\t\6\2\2\u00b6\'\3\2\2\2\u00b7\u00b8\t\7\2\2\u00b8)\3\2\2\2\u00b9\u00ba"+
-		"\t\b\2\2\u00ba+\3\2\2\2\u00bb\u00bc\t\t\2\2\u00bc-\3\2\2\2\u00bd\u00c2"+
-		"\5\60\31\2\u00be\u00bf\7\f\2\2\u00bf\u00c1\5\60\31\2\u00c0\u00be\3\2\2"+
-		"\2\u00c1\u00c4\3\2\2\2\u00c2\u00c0\3\2\2\2\u00c2\u00c3\3\2\2\2\u00c3/"+
-		"\3\2\2\2\u00c4\u00c2\3\2\2\2\u00c5\u00c9\5\62\32\2\u00c6\u00c9\5\64\33"+
-		"\2\u00c7\u00c9\5\66\34\2\u00c8\u00c5\3\2\2\2\u00c8\u00c6\3\2\2\2\u00c8"+
-		"\u00c7\3\2\2\2\u00c9\61\3\2\2\2\u00ca\u00cb\7\r\2\2\u00cb\u00cc\7\25\2"+
-		"\2\u00cc\63\3\2\2\2\u00cd\u00d0\7\16\2\2\u00ce\u00d1\5:\36\2\u00cf\u00d1"+
-		"\7\25\2\2\u00d0\u00ce\3\2\2\2\u00d0\u00cf\3\2\2\2\u00d1\65\3\2\2\2\u00d2"+
-		"\u00d3\7\17\2\2\u00d3\u00d4\7\4\2\2\u00d4\u00d5\7\25\2\2\u00d5\u00d6\7"+
-		"\f\2\2\u00d6\u00d7\7\24\2\2\u00d7\u00d8\7\5\2\2\u00d8\67\3\2\2\2\u00d9"+
-		"\u00da\7\25\2\2\u00da9\3\2\2\2\u00db\u00dc\t\n\2\2\u00dc;\3\2\2\2\23B"+
-		"EQZclu|~\u0086\u008f\u0095\u009e\u00a7\u00c2\u00c8\u00d0";
+		"\4\32\t\32\4\33\t\33\4\34\t\34\4\35\t\35\4\36\t\36\4\37\t\37\3\2\3\2\3"+
+		"\2\3\2\7\2C\n\2\f\2\16\2F\13\2\5\2H\n\2\3\3\3\3\3\3\3\3\3\4\3\4\3\4\3"+
+		"\4\7\4R\n\4\f\4\16\4U\13\4\3\5\3\5\3\5\3\5\7\5[\n\5\f\5\16\5^\13\5\3\6"+
+		"\3\6\3\6\3\6\7\6d\n\6\f\6\16\6g\13\6\3\7\3\7\3\7\3\7\7\7m\n\7\f\7\16\7"+
+		"p\13\7\3\b\3\b\3\b\3\b\7\bv\n\b\f\b\16\by\13\b\3\b\3\b\3\b\3\b\5\b\177"+
+		"\n\b\5\b\u0081\n\b\3\t\3\t\3\t\3\t\7\t\u0087\n\t\f\t\16\t\u008a\13\t\3"+
+		"\n\3\n\3\n\3\n\7\n\u0090\n\n\f\n\16\n\u0093\13\n\3\13\7\13\u0096\n\13"+
+		"\f\13\16\13\u0099\13\13\3\13\3\13\3\f\3\f\7\f\u009f\n\f\f\f\16\f\u00a2"+
+		"\13\f\3\r\3\r\3\r\3\r\3\r\3\r\5\r\u00aa\n\r\3\16\3\16\3\17\3\17\3\20\3"+
+		"\20\3\21\3\21\3\22\3\22\3\23\3\23\3\24\3\24\3\25\3\25\3\26\3\26\3\27\3"+
+		"\27\3\30\3\30\3\30\7\30\u00c3\n\30\f\30\16\30\u00c6\13\30\3\31\3\31\3"+
+		"\31\5\31\u00cb\n\31\3\32\3\32\3\32\3\33\3\33\3\33\5\33\u00d3\n\33\3\34"+
+		"\3\34\3\34\3\34\3\34\7\34\u00da\n\34\f\34\16\34\u00dd\13\34\3\34\3\34"+
+		"\3\35\3\35\3\35\3\36\3\36\3\37\3\37\3\37\2\2 \2\4\6\b\n\f\16\20\22\24"+
+		"\26\30\32\34\36 \"$&(*,.\60\62\64\668:<\2\13\3\2&\'\3\2\31\34\3\2\35\36"+
+		"\3\2\37!\4\2\35\36\"$\4\2\"#%%\3\2\b\t\3\2\n\13\3\2\20\24\u00dd\2G\3\2"+
+		"\2\2\4I\3\2\2\2\6M\3\2\2\2\bV\3\2\2\2\n_\3\2\2\2\fh\3\2\2\2\16\u0080\3"+
+		"\2\2\2\20\u0082\3\2\2\2\22\u008b\3\2\2\2\24\u0097\3\2\2\2\26\u009c\3\2"+
+		"\2\2\30\u00a9\3\2\2\2\32\u00ab\3\2\2\2\34\u00ad\3\2\2\2\36\u00af\3\2\2"+
+		"\2 \u00b1\3\2\2\2\"\u00b3\3\2\2\2$\u00b5\3\2\2\2&\u00b7\3\2\2\2(\u00b9"+
+		"\3\2\2\2*\u00bb\3\2\2\2,\u00bd\3\2\2\2.\u00bf\3\2\2\2\60\u00ca\3\2\2\2"+
+		"\62\u00cc\3\2\2\2\64\u00cf\3\2\2\2\66\u00d4\3\2\2\28\u00e0\3\2\2\2:\u00e3"+
+		"\3\2\2\2<\u00e5\3\2\2\2>H\7\2\2\3?D\5\4\3\2@A\7\30\2\2AC\5\4\3\2B@\3\2"+
+		"\2\2CF\3\2\2\2DB\3\2\2\2DE\3\2\2\2EH\3\2\2\2FD\3\2\2\2G>\3\2\2\2G?\3\2"+
+		"\2\2H\3\3\2\2\2IJ\5\6\4\2JK\7\3\2\2KL\5.\30\2L\5\3\2\2\2MS\5\b\5\2NO\5"+
+		"\32\16\2OP\5\b\5\2PR\3\2\2\2QN\3\2\2\2RU\3\2\2\2SQ\3\2\2\2ST\3\2\2\2T"+
+		"\7\3\2\2\2US\3\2\2\2V\\\5\n\6\2WX\5\34\17\2XY\5\n\6\2Y[\3\2\2\2ZW\3\2"+
+		"\2\2[^\3\2\2\2\\Z\3\2\2\2\\]\3\2\2\2]\t\3\2\2\2^\\\3\2\2\2_e\5\f\7\2`"+
+		"a\5\36\20\2ab\5\f\7\2bd\3\2\2\2c`\3\2\2\2dg\3\2\2\2ec\3\2\2\2ef\3\2\2"+
+		"\2f\13\3\2\2\2ge\3\2\2\2hn\5\16\b\2ij\5 \21\2jk\5\16\b\2km\3\2\2\2li\3"+
+		"\2\2\2mp\3\2\2\2nl\3\2\2\2no\3\2\2\2o\r\3\2\2\2pn\3\2\2\2qw\5\20\t\2r"+
+		"s\5*\26\2st\5\20\t\2tv\3\2\2\2ur\3\2\2\2vy\3\2\2\2wu\3\2\2\2wx\3\2\2\2"+
+		"x\u0081\3\2\2\2yw\3\2\2\2z~\5\20\t\2{|\5,\27\2|}\5:\36\2}\177\3\2\2\2"+
+		"~{\3\2\2\2~\177\3\2\2\2\177\u0081\3\2\2\2\u0080q\3\2\2\2\u0080z\3\2\2"+
+		"\2\u0081\17\3\2\2\2\u0082\u0088\5\22\n\2\u0083\u0084\5\"\22\2\u0084\u0085"+
+		"\5\22\n\2\u0085\u0087\3\2\2\2\u0086\u0083\3\2\2\2\u0087\u008a\3\2\2\2"+
+		"\u0088\u0086\3\2\2\2\u0088\u0089\3\2\2\2\u0089\21\3\2\2\2\u008a\u0088"+
+		"\3\2\2\2\u008b\u0091\5\24\13\2\u008c\u008d\5$\23\2\u008d\u008e\5\24\13"+
+		"\2\u008e\u0090\3\2\2\2\u008f\u008c\3\2\2\2\u0090\u0093\3\2\2\2\u0091\u008f"+
+		"\3\2\2\2\u0091\u0092\3\2\2\2\u0092\23\3\2\2\2\u0093\u0091\3\2\2\2\u0094"+
+		"\u0096\5&\24\2\u0095\u0094\3\2\2\2\u0096\u0099\3\2\2\2\u0097\u0095\3\2"+
+		"\2\2\u0097\u0098\3\2\2\2\u0098\u009a\3\2\2\2\u0099\u0097\3\2\2\2\u009a"+
+		"\u009b\5\26\f\2\u009b\25\3\2\2\2\u009c\u00a0\5\30\r\2\u009d\u009f\5(\25"+
+		"\2\u009e\u009d\3\2\2\2\u009f\u00a2\3\2\2\2\u00a0\u009e\3\2\2\2\u00a0\u00a1"+
+		"\3\2\2\2\u00a1\27\3\2\2\2\u00a2\u00a0\3\2\2\2\u00a3\u00a4\7\4\2\2\u00a4"+
+		"\u00a5\5\6\4\2\u00a5\u00a6\7\5\2\2\u00a6\u00aa\3\2\2\2\u00a7\u00aa\5<"+
+		"\37\2\u00a8\u00aa\7\25\2\2\u00a9\u00a3\3\2\2\2\u00a9\u00a7\3\2\2\2\u00a9"+
+		"\u00a8\3\2\2\2\u00aa\31\3\2\2\2\u00ab\u00ac\7\6\2\2\u00ac\33\3\2\2\2\u00ad"+
+		"\u00ae\7\7\2\2\u00ae\35\3\2\2\2\u00af\u00b0\t\2\2\2\u00b0\37\3\2\2\2\u00b1"+
+		"\u00b2\t\3\2\2\u00b2!\3\2\2\2\u00b3\u00b4\t\4\2\2\u00b4#\3\2\2\2\u00b5"+
+		"\u00b6\t\5\2\2\u00b6%\3\2\2\2\u00b7\u00b8\t\6\2\2\u00b8\'\3\2\2\2\u00b9"+
+		"\u00ba\t\7\2\2\u00ba)\3\2\2\2\u00bb\u00bc\t\b\2\2\u00bc+\3\2\2\2\u00bd"+
+		"\u00be\t\t\2\2\u00be-\3\2\2\2\u00bf\u00c4\5\60\31\2\u00c0\u00c1\7\f\2"+
+		"\2\u00c1\u00c3\5\60\31\2\u00c2\u00c0\3\2\2\2\u00c3\u00c6\3\2\2\2\u00c4"+
+		"\u00c2\3\2\2\2\u00c4\u00c5\3\2\2\2\u00c5/\3\2\2\2\u00c6\u00c4\3\2\2\2"+
+		"\u00c7\u00cb\5\62\32\2\u00c8\u00cb\5\64\33\2\u00c9\u00cb\5\66\34\2\u00ca"+
+		"\u00c7\3\2\2\2\u00ca\u00c8\3\2\2\2\u00ca\u00c9\3\2\2\2\u00cb\61\3\2\2"+
+		"\2\u00cc\u00cd\7\r\2\2\u00cd\u00ce\7\25\2\2\u00ce\63\3\2\2\2\u00cf\u00d2"+
+		"\7\16\2\2\u00d0\u00d3\5<\37\2\u00d1\u00d3\7\25\2\2\u00d2\u00d0\3\2\2\2"+
+		"\u00d2\u00d1\3\2\2\2\u00d3\65\3\2\2\2\u00d4\u00d5\7\17\2\2\u00d5\u00d6"+
+		"\7\4\2\2\u00d6\u00db\58\35\2\u00d7\u00d8\7\30\2\2\u00d8\u00da\58\35\2"+
+		"\u00d9\u00d7\3\2\2\2\u00da\u00dd\3\2\2\2\u00db\u00d9\3\2\2\2\u00db\u00dc"+
+		"\3\2\2\2\u00dc\u00de\3\2\2\2\u00dd\u00db\3\2\2\2\u00de\u00df\7\5\2\2\u00df"+
+		"\67\3\2\2\2\u00e0\u00e1\7\25\2\2\u00e1\u00e2\7\24\2\2\u00e29\3\2\2\2\u00e3"+
+		"\u00e4\7\25\2\2\u00e4;\3\2\2\2\u00e5\u00e6\t\n\2\2\u00e6=\3\2\2\2\24D"+
+		"GS\\enw~\u0080\u0088\u0091\u0097\u00a0\u00a9\u00c4\u00ca\u00d2\u00db";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

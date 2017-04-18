@@ -340,6 +340,18 @@ public class EffectSystemBaseListener implements EffectSystemListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterCallsRecord(EffectSystemParser.CallsRecordContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCallsRecord(EffectSystemParser.CallsRecordContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterType(EffectSystemParser.TypeContext ctx) { }
 	/**
 	 * {@inheritDoc}

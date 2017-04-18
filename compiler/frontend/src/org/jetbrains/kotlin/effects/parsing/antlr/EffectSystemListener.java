@@ -278,6 +278,16 @@ public interface EffectSystemListener extends ParseTreeListener {
 	 */
 	void exitCallsEffect(EffectSystemParser.CallsEffectContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link EffectSystemParser#callsRecord}.
+	 * @param ctx the parse tree
+	 */
+	void enterCallsRecord(EffectSystemParser.CallsRecordContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectSystemParser#callsRecord}.
+	 * @param ctx the parse tree
+	 */
+	void exitCallsRecord(EffectSystemParser.CallsRecordContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link EffectSystemParser#type}.
 	 * @param ctx the parse tree
 	 */

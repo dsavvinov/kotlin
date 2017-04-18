@@ -173,6 +173,12 @@ public interface EffectSystemVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitCallsEffect(EffectSystemParser.CallsEffectContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link EffectSystemParser#callsRecord}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCallsRecord(EffectSystemParser.CallsRecordContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link EffectSystemParser#type}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

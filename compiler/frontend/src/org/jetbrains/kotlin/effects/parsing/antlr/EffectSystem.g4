@@ -128,8 +128,11 @@ returnsEffect
     ;
 
 callsEffect
-    : 'Calls' '(' SimpleName ',' IntegerLiteral ')'
+    : 'Calls' '(' callsRecord (';' callsRecord)* ')'
     ;
+
+callsRecord
+    : SimpleName IntegerLiteral;
 
 type
     : SimpleName

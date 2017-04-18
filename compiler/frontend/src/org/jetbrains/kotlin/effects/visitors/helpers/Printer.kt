@@ -16,16 +16,14 @@
 
 package org.jetbrains.kotlin.effects.visitors.helpers
 
+import org.jetbrains.kotlin.effects.structure.effects.EsCalls
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.general.lift
-import org.jetbrains.kotlin.effects.structure.schema.Cons
-import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
-import org.jetbrains.kotlin.effects.structure.schema.Nil
-import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
+import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
 import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
 
@@ -136,8 +134,10 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
         }
     }
 
-    override fun visit(nil: Nil) {
-        super.visit(nil)
+    override fun visit(nil: Nil) { }
+
+    override fun visit(esCalls: EsCalls) {
+        sb.append("EsCalls(${esCalls.callCounts})")
     }
 
     private fun getPriority(node: EsNode): Int {

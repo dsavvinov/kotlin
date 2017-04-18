@@ -204,11 +204,16 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
         return EsReturns(arg)
     }
 
-    override fun visitCallsEffect(ctx: EffectSystemParser.CallsEffectContext): EsCalls {
+    class CallsRecord(val left: EsVariable, val right: Int) : EsNode
+    override fun visitCallsRecord(ctx: EffectSystemParser.CallsRecordContext): CallsRecord {
         val callable = resolveVariable(ctx.SimpleName())
         val times = ctx.IntegerLiteral().text.toInt()
+        return CallsRecord(callable, times)
+    }
 
-        return EsCalls(mutableMapOf(callable to times))
+    override fun visitCallsEffect(ctx: EffectSystemParser.CallsEffectContext): EsCalls {
+        val callsRecords = ctx.callsRecord().map { visitCallsRecord(it) }
+        return EsCalls(callsRecords.map { it.left to it.right }.toMap().toMutableMap())
     }
 
     override fun visitLiteralConstant(ctx: EffectSystemParser.LiteralConstantContext): EsConstant {
