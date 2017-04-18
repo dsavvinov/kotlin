@@ -17,7 +17,6 @@
 package org.jetbrains.kotlin.cfg
 
 import com.google.common.collect.Lists
-import com.intellij.codeInsight.controlflow.Instruction
 import com.intellij.psi.PsiElement
 import com.intellij.psi.tree.IElementType
 import com.intellij.psi.util.PsiTreeUtil
@@ -34,7 +33,6 @@ import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.CallInstruction
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.InstructionWithValue
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.MagicKind
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.jumps.NondeterministicJumpInstruction
-import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors.*
@@ -1556,21 +1554,20 @@ class ControlFlowProcessor(private val trace: BindingTrace, private val typeReso
 
             mark(resolvedCall.call.callElement)
             val callInstruction = builder.call(callElement, resolvedCall, receivers, parameterValues)
-            val afterCall = builder.createUnboundLabel("after call")
-            checkArgumentsInvocations(callInstruction, afterCall)
-            builder.bindLabel(afterCall)
+            checkArgumentsInvocations(callInstruction)
             return callInstruction
         }
 
         // Checks if we can get some information about invocations of arguments amd
         // generates appropriate jumps, if we know something specific
-        private fun checkArgumentsInvocations(callInstruction: CallInstruction, afterCall: Label) {
+        private fun checkArgumentsInvocations(callInstruction: CallInstruction) {
             val arguments = callInstruction.resolvedCall.valueArgumentsByIndex ?: return
 
-            for (arg in arguments) {
-                if (arg !is ExpressionValueArgument || arg.valueArgument !is LambdaArgument) continue
+            for ((ind, arg) in arguments.withIndex()) {
+                if (arg !is ExpressionValueArgument) continue
+                val lambdaExpression = arg.valueArgument?.getArgumentExpression() as? KtLambdaExpression ?: continue
                 val invocationsInfo = EffectSystem.getInvokationsInfo(
-                        (arg.valueArgument as LambdaArgument).getLambdaExpression(),
+                        lambdaExpression,
                         callInstruction.resolvedCall.call.callElement as? KtCallExpression ?: return,
                         trace,
                         typeResolver ?: return
@@ -1579,22 +1576,66 @@ class ControlFlowProcessor(private val trace: BindingTrace, private val typeReso
                 when (invocationsInfo) {
                     MutableEffectsInfo.InvokationsInfo.UNKNOWN -> return
                     MutableEffectsInfo.InvokationsInfo.NOT_INVOKED -> return
-                    MutableEffectsInfo.InvokationsInfo.EXACTLY_ONCE -> joinLambdaBodyToCall(callInstruction, arg.valueArgument as LambdaArgument, afterCall)
-                    MutableEffectsInfo.InvokationsInfo.AT_LEAST_ONCE -> return
+
+                    MutableEffectsInfo.InvokationsInfo.EXACTLY_ONCE -> {
+                        val afterJump = builder.createUnboundLabel("after $ind arg jump")
+                        joinLambdaBodyToCall(callInstruction, lambdaExpression, afterJump)
+                        builder.bindLabel(afterJump)
+                    }
+
+                    MutableEffectsInfo.InvokationsInfo.AT_LEAST_ONCE -> {
+                        val afterJump = builder.createUnboundLabel("after $ind arg jump")
+                        generateFakeDoWhile(
+                                bodyGenerator = { joinLambdaBodyToCall(callInstruction, lambdaExpression, afterJump) },
+                                conditionExpression = "false",
+                                ktPsiFactory = KtPsiFactory(callInstruction.resolvedCall.call.callElement)
+                        )
+                        builder.bindLabel(afterJump)
+                    }
+
                     null -> return
                 }
             }
         }
 
-        private fun joinLambdaBodyToCall(callInstruction: CallInstruction, lambda: LambdaArgument, afterCall: Label) {
+        private fun generateFakeDoWhile(bodyGenerator: () -> Unit, conditionExpression: String, ktPsiFactory: KtPsiFactory) {
+            val expression = ktPsiFactory.createExpression("do { } while ($conditionExpression)") as KtDoWhileExpression
+
+            builder.enterBlockScope(expression)
+            mark(expression)
+
+            val loopInfo = builder.enterLoop(expression)
+            builder.enterLoopBody(expression)
+            bodyGenerator()
+            builder.exitLoopBody(expression)
+
+            builder.bindLabel(loopInfo.conditionEntryPoint)
+            val condition = expression.condition
+            generateInstructions(condition)
+
+            builder.exitBlockScope(expression)
+
+            if (!CompileTimeConstantUtils.canBeReducedToBooleanConstant(condition, trace.bindingContext, true)) {
+                builder.jumpOnTrue(loopInfo.entryPoint, expression, builder.getBoundValue(expression.condition))
+            }
+            else {
+                assert(condition != null) { "Invalid do / while condition: " + expression.text }
+                createSyntheticValue(condition!!, MagicKind.VALUE_CONSUMER, condition)
+                builder.jump(loopInfo.entryPoint, expression)
+            }
+            builder.bindLabel(loopInfo.exitPoint)
+            builder.loadUnit(expression)
+        }
+
+        private fun joinLambdaBodyToCall(callInstruction: CallInstruction, lambda: KtLambdaExpression, afterCall: Label) {
             // NB. 'return' here shouldn't really happen, as any function should be declared before usage
-            val label = getLabelForLocalDeclaration(lambda.getLambdaExpression().functionLiteral) ?: return
+            val label = getLabelForLocalDeclaration(lambda.functionLiteral) ?: return
             builder.jump(label, callInstruction.element)
 
             /**
              * Нужно взять псевдокод, соответствующий декларации, соответствующей лямбде.
              **/
-            val invokedDeclarationPseudocode: Pseudocode = localDeclarationsPseudocodes[lambda.getLambdaExpression().functionLiteral] ?: return
+            val invokedDeclarationPseudocode: Pseudocode = localDeclarationsPseudocodes[lambda.functionLiteral] ?: return
 
             /**
              * У этого псевдокода найти ту самую инструкцию с non-deterministic jump
