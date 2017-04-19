@@ -18,7 +18,6 @@ package org.jetbrains.kotlin.codegen.optimization.boxing;
 
 import com.intellij.openapi.util.Pair;
 import kotlin.collections.CollectionsKt;
-import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.codegen.optimization.common.StrictBasicValue;
 import org.jetbrains.kotlin.codegen.optimization.common.UtilKt;
@@ -100,12 +99,7 @@ public class RedundantBoxingMethodTransformer extends MethodTransformer {
 
             List<BasicValue> variableValues = getValuesStoredOrLoadedToVariable(localVariableNode, node, frames);
 
-            Collection<BasicValue> boxed = CollectionsKt.filter(variableValues, new Function1<BasicValue, Boolean>() {
-                @Override
-                public Boolean invoke(BasicValue value) {
-                    return value instanceof BoxedBasicValue;
-                }
-            });
+            Collection<BasicValue> boxed = CollectionsKt.filter(variableValues, value -> value instanceof BoxedBasicValue);
 
             if (boxed.isEmpty()) continue;
 
@@ -126,17 +120,14 @@ public class RedundantBoxingMethodTransformer extends MethodTransformer {
         return needToRepeat;
     }
 
-    private static boolean isUnsafeToRemoveBoxingForConnectedValues(List<BasicValue> usedValues, final Type unboxedType) {
-        return CollectionsKt.any(usedValues, new Function1<BasicValue, Boolean>() {
-            @Override
-            public Boolean invoke(BasicValue input) {
-                if (input == StrictBasicValue.UNINITIALIZED_VALUE) return false;
-                if (!(input instanceof BoxedBasicValue)) return true;
+    private static boolean isUnsafeToRemoveBoxingForConnectedValues(List<BasicValue> usedValues, Type unboxedType) {
+        return CollectionsKt.any(usedValues, input -> {
+            if (input == StrictBasicValue.UNINITIALIZED_VALUE) return false;
+            if (!(input instanceof BoxedBasicValue)) return true;
 
-                BoxedValueDescriptor descriptor = ((BoxedBasicValue) input).getDescriptor();
-                return !descriptor.isSafeToRemove() ||
-                       !(descriptor.getUnboxedType().equals(unboxedType));
-            }
+            BoxedValueDescriptor descriptor = ((BoxedBasicValue) input).getDescriptor();
+            return !descriptor.isSafeToRemove() ||
+                   !(descriptor.getUnboxedType().equals(unboxedType));
         });
     }
 
@@ -162,7 +153,7 @@ public class RedundantBoxingMethodTransformer extends MethodTransformer {
             @NotNull MethodNode node,
             @NotNull Frame<BasicValue>[] frames
     ) {
-        List<BasicValue> values = new ArrayList<BasicValue>();
+        List<BasicValue> values = new ArrayList<>();
         InsnList insnList = node.instructions;
         int from = insnList.indexOf(localVariableNode.start) + 1;
         int to = insnList.indexOf(localVariableNode.end) - 1;
@@ -201,7 +192,7 @@ public class RedundantBoxingMethodTransformer extends MethodTransformer {
 
     @NotNull
     private static int[] buildVariablesRemapping(@NotNull RedundantBoxedValuesCollection values, @NotNull MethodNode node) {
-        Set<Integer> doubleSizedVars = new HashSet<Integer>();
+        Set<Integer> doubleSizedVars = new HashSet<>();
         for (BoxedValueDescriptor valueDescriptor : values) {
             if (valueDescriptor.isDoubleSize()) {
                 doubleSizedVars.addAll(valueDescriptor.getVariablesIndexes());

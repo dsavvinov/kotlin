@@ -83,7 +83,7 @@ public abstract class AbstractCompileKotlinAgainstKotlinTest extends CodegenTest
             System.out.println(result);
             throw ExceptionUtilsKt.rethrow(e);
         }
-        return new Pair<ClassFileFactory, ClassFileFactory>(factoryA, factoryB);
+        return new Pair<>(factoryA, factoryB);
     }
 
     private void invokeBox(@NotNull String className) throws Exception {
@@ -106,7 +106,7 @@ public abstract class AbstractCompileKotlinAgainstKotlinTest extends CodegenTest
         CompilerConfiguration configuration =
                 createConfiguration(ConfigurationKind.ALL, getJdkKind(files),
                                     Collections.singletonList(KotlinTestUtils.getAnnotationsJar()),
-                                    Collections.<File>emptyList(), Collections.singletonList(testFile));
+                                    Collections.emptyList(), Collections.singletonList(testFile));
 
         KotlinCoreEnvironment environment = KotlinCoreEnvironment.createForTests(
                 compileDisposable, configuration, EnvironmentConfigFiles.JVM_CONFIG_FILES);
@@ -119,7 +119,7 @@ public abstract class AbstractCompileKotlinAgainstKotlinTest extends CodegenTest
         CompilerConfiguration configurationWithADirInClasspath =
                 createConfiguration(ConfigurationKind.ALL, getJdkKind(files),
                                     Lists.newArrayList(KotlinTestUtils.getAnnotationsJar(), aDir),
-                                    Collections.<File>emptyList(), Collections.singletonList(testFile));
+                                    Collections.emptyList(), Collections.singletonList(testFile));
 
         Disposable compileDisposable = createDisposable("compileB");
         KotlinCoreEnvironment environment = KotlinCoreEnvironment.createForTests(

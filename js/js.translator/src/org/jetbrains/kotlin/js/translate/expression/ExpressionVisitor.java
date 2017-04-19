@@ -532,7 +532,7 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
 
         JsExpression constructor = ReferenceTranslator.translateAsTypeReference(descriptor, context);
         List<DeclarationDescriptor> closure = context.getClassOrConstructorClosure(descriptor);
-        List<JsExpression> closureArgs = new ArrayList<JsExpression>();
+        List<JsExpression> closureArgs = new ArrayList<>();
         if (closure != null) {
             for (DeclarationDescriptor capturedValue : closure) {
                 closureArgs.add(context.getArgumentForClosureConstructor(capturedValue));
@@ -604,6 +604,6 @@ public final class ExpressionVisitor extends TranslatorVisitor<JsNode> {
     ) {
         JsScope scope = context.getScopeForDescriptor(descriptor);
         TranslationContext classContext = context.innerWithUsageTracker(scope, descriptor);
-        ClassTranslator.translate(declaration, classContext);
+        ClassTranslator.translate(declaration, classContext, null);
     }
 }

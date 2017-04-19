@@ -43,29 +43,26 @@ public class Preloader {
     }
 
     private static void run(String[] args) throws Exception {
-        final long startTime = System.nanoTime();
+        long startTime = System.nanoTime();
 
-        final Options options = parseOptions(args);
+        Options options = parseOptions(args);
 
         ClassLoader classLoader = createClassLoader(options);
 
-        final Handler handler = getHandler(options, classLoader);
+        Handler handler = getHandler(options, classLoader);
         ClassLoader preloaded = ClassPreloadingUtils.preloadClasses(options.classpath, options.estimate, classLoader, null, handler);
 
         Class<?> mainClass = preloaded.loadClass(options.mainClass);
         Method mainMethod = mainClass.getMethod("main", String[].class);
 
         Runtime.getRuntime().addShutdownHook(
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (options.measure) {
-                            System.out.println();
-                            System.out.println("=== Preloader's measurements: ");
-                            System.out.format("Total time: %.3fs\n", (System.nanoTime() - startTime) / 1e9);
-                        }
-                        handler.done();
+                new Thread(() -> {
+                    if (options.measure) {
+                        System.out.println();
+                        System.out.println("=== Preloader's measurements: ");
+                        System.out.format("Total time: %.3fs\n", (System.nanoTime() - startTime) / 1e9);
                     }
+                    handler.done();
                 })
         );
 
@@ -94,7 +91,7 @@ public class Preloader {
         List<File> instrumenters = Collections.emptyList();
         int estimate = DEFAULT_CLASS_NUMBER_ESTIMATE;
         String mainClass = null;
-        List<String> arguments = new ArrayList<String>();
+        List<String> arguments = new ArrayList<>();
 
         for (int i = 0; i < args.length; i++) {
             String arg = args[i];
@@ -133,7 +130,7 @@ public class Preloader {
 
     private static List<File> parseClassPath(String classpath) {
         String[] paths = classpath.split(File.pathSeparator);
-        List<File> files = new ArrayList<File>(paths.length);
+        List<File> files = new ArrayList<>(paths.length);
         for (String path : paths) {
             File file = new File(path);
             if (!file.exists()) {
@@ -147,10 +144,10 @@ public class Preloader {
     private static Handler getHandler(Options options, ClassLoader withInstrumenter) {
         if (!options.measure) return new Handler();
 
-        final Instrumenter instrumenter = options.instrumenters.isEmpty() ? Instrumenter.DO_NOTHING : loadInstrumenter(withInstrumenter);
+        Instrumenter instrumenter = options.instrumenters.isEmpty() ? Instrumenter.DO_NOTHING : loadInstrumenter(withInstrumenter);
 
-        final int[] counter = new int[1];
-        final int[] size = new int[1];
+        int[] counter = new int[1];
+        int[] size = new int[1];
         return new Handler() {
             @Override
             public void beforeDefineClass(String name, int sizeInBytes) {

@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.idea.project.IdeaEnvironment
 import org.jetbrains.kotlin.idea.project.ResolveElementCache
 import org.jetbrains.kotlin.incremental.components.LookupTracker
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
@@ -125,12 +126,34 @@ object IDELightClassContexts {
         return IDELightClassConstructionContext(resolveSession.bindingContext, resolveSession.moduleDescriptor, EXACT)
     }
 
-    fun lightContextForClassOrObject(classOrObject: KtClassOrObject): LightClassConstructionContext {
+    fun lightContextForClassOrObject(classOrObject: KtClassOrObject): LightClassConstructionContext? {
+        if (!isDummyResolveApplicable(classOrObject)) return null
+
         val resolveSession = setupAdHocResolve(classOrObject.project, classOrObject.getResolutionFacade().moduleDescriptor, listOf(classOrObject.containingKtFile))
 
         ForceResolveUtil.forceResolveAllContents(resolveSession.resolveToDescriptor(classOrObject))
 
         return IDELightClassConstructionContext(resolveSession.bindingContext, resolveSession.moduleDescriptor, LIGHT)
+    }
+
+    private fun isDummyResolveApplicable(classOrObject: KtClassOrObject): Boolean {
+        val hasDelegatedMembers = classOrObject.superTypeListEntries.any { it is KtDelegatedSuperTypeEntry }
+        val dataClassWithGeneratedMembersOverridden =
+                classOrObject.hasModifier(KtTokens.DATA_KEYWORD) &&
+                classOrObject.declarations.filterIsInstance<KtFunction>().any {
+                    isGeneratedForDataClass(it.nameAsSafeName)
+                }
+        return !hasDelegatedMembers && !dataClassWithGeneratedMembersOverridden
+               && classOrObject.declarations.filterIsInstance<KtClassOrObject>().all { isDummyResolveApplicable(it) }
+    }
+
+    private fun isGeneratedForDataClass(name: Name): Boolean {
+        return name == DataClassDescriptorResolver.EQUALS_METHOD_NAME ||
+               // known failure is related to equals override, checking for other methods 'just in case'
+               name == DataClassDescriptorResolver.COPY_METHOD_NAME ||
+               name == DataClassDescriptorResolver.HASH_CODE_METHOD_NAME ||
+               name == DataClassDescriptorResolver.TO_STRING_METHOD_NAME ||
+               DataClassDescriptorResolver.isComponentLike(name)
     }
 
     fun lightContextForFacade(files: List<KtFile>): LightClassConstructionContext {
@@ -271,7 +294,7 @@ object IDELightClassContexts {
                     moduleDescriptor.getPackage(annotationFqName.parent()).memberScope
                             .getContributedClassifier(annotationFqName.shortName(), NoLookupLocation.FROM_IDE)?.let { return it as? ClassDescriptor }
 
-                }
+               }
             }
             return null
         }
@@ -329,6 +352,6 @@ object IDELightClassContexts {
     }
 
     private val notImplemented: Nothing
-            get() = error("Should not be called")
+        get() = error("Should not be called")
 }
 

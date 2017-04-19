@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,9 @@
 
 package org.jetbrains.kotlin.cli.common;
 
-import com.google.common.base.Predicates;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.util.Disposer;
-import com.intellij.openapi.util.SystemInfo;
 import kotlin.collections.ArraysKt;
-import kotlin.jvm.functions.Function1;
 import org.fusesource.jansi.AnsiConsole;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,9 +38,11 @@ import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static org.jetbrains.kotlin.cli.common.ExitCode.*;
 import static org.jetbrains.kotlin.cli.common.environment.UtilKt.setIdeaIoUseFallback;
+import static org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.*;
 
 public abstract class CLICompiler<A extends CommonCompilerArguments> {
 
@@ -52,8 +51,7 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
         return exec(errStream, Services.EMPTY, MessageRenderer.PLAIN_RELATIVE_PATHS, args);
     }
 
-    // Used via reflection in CompilerRunnerUtil#invokeExecMethod and in Eclipse plugin (see KotlinCLICompiler)
-    @SuppressWarnings("UnusedDeclaration")
+    // Used in CompilerRunnerUtil#invokeExecMethod, in Eclipse plugin (KotlinCLICompiler) and in kotlin-gradle-plugin (GradleCompilerRunner)
     @NotNull
     public ExitCode execAndOutputXml(@NotNull PrintStream errStream, @NotNull Services services, @NotNull String... args) {
         return exec(errStream, services, MessageRenderer.XML, args);
@@ -67,27 +65,22 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
     }
 
     @Nullable
-    private A parseArguments(@NotNull PrintStream errStream, @NotNull MessageRenderer messageRenderer, @NotNull String[] args) {
+    private A parseArguments(@NotNull MessageCollector messageCollector, @NotNull String[] args) {
         try {
             A arguments = createArguments();
             parseArguments(args, arguments);
             return arguments;
         }
         catch (IllegalArgumentException e) {
-            errStream.println(e.getMessage());
-            Usage.print(errStream, createArguments(), false);
+            throw e;
         }
         catch (Throwable t) {
-            errStream.println(messageRenderer.render(
-                    CompilerMessageSeverity.EXCEPTION,
-                    OutputMessageUtil.renderException(t),
-                    CompilerMessageLocation.NO_LOCATION)
-            );
+            messageCollector.report(EXCEPTION, OutputMessageUtil.renderException(t), null);
+            return null;
         }
-        return null;
     }
 
-    @SuppressWarnings("WeakerAccess") // Used in maven (see KotlinCompileMojoBase.java)
+    // Used in kotlin-maven-plugin (KotlinCompileMojoBase) and in kotlin-gradle-plugin (KotlinJvmOptionsImpl, KotlinJsOptionsImpl)
     public void parseArguments(@NotNull String[] args, @NotNull A arguments) {
         ArgumentUtilsKt.parseArguments(args, arguments);
     }
@@ -104,13 +97,20 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
     ) {
         K2JVMCompiler.Companion.resetInitStartTime();
 
-        A arguments = parseArguments(errStream, messageRenderer, args);
-        if (arguments == null) {
-            return INTERNAL_ERROR;
+        MessageCollector parseArgumentsCollector = new PrintingMessageCollector(errStream, messageRenderer, false);
+        A arguments;
+        try {
+            arguments = parseArguments(parseArgumentsCollector, args);
+            if (arguments == null) return INTERNAL_ERROR;
+        }
+        catch (IllegalArgumentException e) {
+            parseArgumentsCollector.report(ERROR, e.getMessage(), null);
+            parseArgumentsCollector.report(INFO, "Use -help for more information", null);
+            return COMPILATION_ERROR;
         }
 
         if (arguments.help || arguments.extraHelp) {
-            Usage.print(errStream, createArguments(), arguments.extraHelp);
+            Usage.print(errStream, arguments);
             return OK;
         }
 
@@ -133,17 +133,16 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
         }
     }
 
-    @SuppressWarnings("WeakerAccess") // Used in maven (see KotlinCompileMojoBase.java)
+    // Used in kotlin-maven-plugin (KotlinCompileMojoBase)
     @NotNull
     public ExitCode exec(@NotNull MessageCollector messageCollector, @NotNull Services services, @NotNull A arguments) {
         printVersionIfNeeded(messageCollector, arguments);
 
         if (arguments.suppressWarnings) {
-            messageCollector = new FilteringMessageCollector(messageCollector, Predicates.equalTo(CompilerMessageSeverity.WARNING));
+            messageCollector = new FilteringMessageCollector(messageCollector, Predicate.isEqual(WARNING));
         }
 
-        reportUnknownExtraFlags(messageCollector, arguments);
-        reportUnsupportedJavaVersion(messageCollector, arguments);
+        reportArgumentParseProblems(messageCollector, arguments);
 
         GroupingMessageCollector groupingCollector = new GroupingMessageCollector(messageCollector);
 
@@ -179,14 +178,13 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
                     exitCode = groupingCollector.hasErrors() ? COMPILATION_ERROR : code;
                 }
                 catch (CompilationCanceledException e) {
-                    messageCollector.report(CompilerMessageSeverity.INFO, "Compilation was canceled", CompilerMessageLocation.NO_LOCATION);
+                    messageCollector.report(INFO, "Compilation was canceled", null);
                     return ExitCode.OK;
                 }
                 catch (RuntimeException e) {
                     Throwable cause = e.getCause();
                     if (cause instanceof CompilationCanceledException) {
-                        messageCollector
-                                .report(CompilerMessageSeverity.INFO, "Compilation was canceled", CompilerMessageLocation.NO_LOCATION);
+                        messageCollector.report(INFO, "Compilation was canceled", null);
                         return ExitCode.OK;
                     }
                     else {
@@ -200,8 +198,7 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
             return exitCode;
         }
         catch (Throwable t) {
-            groupingCollector.report(CompilerMessageSeverity.EXCEPTION, OutputMessageUtil.renderException(t),
-                                     CompilerMessageLocation.NO_LOCATION);
+            MessageCollectorUtil.reportException(groupingCollector, t);
             return INTERNAL_ERROR;
         }
         finally {
@@ -215,7 +212,10 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
         if (arguments.noInline) {
             configuration.put(CommonConfigurationKeys.DISABLE_INLINE, true);
         }
-
+        if (arguments.intellijPluginRoot != null) {
+            configuration.put(CLIConfigurationKeys.INTELLIJ_PLUGIN_ROOT, arguments.intellijPluginRoot);
+        }
+        @SuppressWarnings("deprecation")
         CompilerJarLocator locator = services.get(CompilerJarLocator.class);
         if (locator != null) {
             configuration.put(CLIConfigurationKeys.COMPILER_JAR_LOCATOR, locator);
@@ -231,8 +231,8 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
         LanguageVersion apiVersion = parseVersion(configuration, arguments.apiVersion, "API");
 
         if (languageVersion == null) {
-            // If only "-api-version" is specified, language version is assumed to be the latest
-            languageVersion = LanguageVersion.LATEST;
+            // If only "-api-version" is specified, language version is assumed to be the latest stable
+            languageVersion = LanguageVersion.LATEST_STABLE;
         }
 
         if (apiVersion == null) {
@@ -246,14 +246,23 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
 
         if (apiVersion.compareTo(languageVersion) > 0) {
             configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY).report(
-                    CompilerMessageSeverity.ERROR,
+                    ERROR,
                     "-api-version (" + apiVersion.getVersionString() + ") cannot be greater than " +
                     "-language-version (" + languageVersion.getVersionString() + ")",
-                    CompilerMessageLocation.NO_LOCATION
+                    null
             );
         }
 
-        Map<LanguageFeature, LanguageFeature.State> extraLanguageFeatures = new HashMap<LanguageFeature, LanguageFeature.State>(0);
+        if (!languageVersion.isStable()) {
+            configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY).report(
+                    STRONG_WARNING,
+                    "Language version " + languageVersion.getVersionString() + " is experimental, there are " +
+                    "no backwards compatibility guarantees for new language and library features",
+                    null
+            );
+        }
+
+        Map<LanguageFeature, LanguageFeature.State> extraLanguageFeatures = new HashMap<>(0);
         if (arguments.multiPlatform) {
             extraLanguageFeatures.put(LanguageFeature.MultiPlatformProjects, LanguageFeature.State.ENABLED);
         }
@@ -275,22 +284,17 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
             @NotNull CompilerConfiguration configuration,
             @NotNull CommonCompilerArguments arguments
     ) {
-        if (arguments.coroutinesError && !arguments.coroutinesWarn && !arguments.coroutinesEnable) {
-            return LanguageFeature.State.ENABLED_WITH_ERROR;
-        }
-        else if (arguments.coroutinesEnable && !arguments.coroutinesWarn && !arguments.coroutinesError) {
-            return LanguageFeature.State.ENABLED;
-        }
-        else if (!arguments.coroutinesEnable && !arguments.coroutinesError) {
-            return null;
-        }
-        else {
-            String message = "The -Xcoroutines can only have one value";
-            configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY).report(
-                    CompilerMessageSeverity.ERROR, message, CompilerMessageLocation.NO_LOCATION
-            );
-
-            return null;
+        switch (arguments.coroutinesState) {
+            case CommonCompilerArguments.ERROR:
+                return LanguageFeature.State.ENABLED_WITH_ERROR;
+            case CommonCompilerArguments.ENABLE:
+                return LanguageFeature.State.ENABLED;
+            case CommonCompilerArguments.WARN:
+                return null;
+            default:
+                String message = "Invalid value of -Xcoroutines (should be: enable, warn or error): " + arguments.coroutinesState;
+                configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY).report(ERROR, message, null);
+                return null;
         }
     }
 
@@ -305,18 +309,10 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
             return version;
         }
 
-        List<String> versionStrings = ArraysKt.map(LanguageVersion.values(), new Function1<LanguageVersion, String>() {
-            @Override
-            public String invoke(LanguageVersion version) {
-                return version.getVersionString();
-            }
-        });
+        List<String> versionStrings = ArraysKt.map(LanguageVersion.values(), LanguageVersion::getDescription);
         String message = "Unknown " + versionOf + " version: " + value + "\n" +
                          "Supported " + versionOf + " versions: " + StringsKt.join(versionStrings, ", ");
-        configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY).report(
-                CompilerMessageSeverity.ERROR, message, CompilerMessageLocation.NO_LOCATION
-        );
-
+        configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY).report(ERROR, message, null);
         return null;
     }
 
@@ -324,23 +320,17 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
             @NotNull CompilerConfiguration configuration, @NotNull A arguments, @NotNull Services services
     );
 
-    private void reportUnknownExtraFlags(@NotNull MessageCollector collector, @NotNull A arguments) {
+    private void reportArgumentParseProblems(@NotNull MessageCollector collector, @NotNull A arguments) {
         for (String flag : arguments.unknownExtraFlags) {
-            collector.report(
-                    CompilerMessageSeverity.STRONG_WARNING,
-                    "Flag is not supported by this version of the compiler: " + flag,
-                    CompilerMessageLocation.NO_LOCATION
-            );
+            collector.report(STRONG_WARNING, "Flag is not supported by this version of the compiler: " + flag, null);
         }
-    }
-
-    private void reportUnsupportedJavaVersion(MessageCollector collector, A arguments) {
-        if (!SystemInfo.isJavaVersionAtLeast("1.8") && !arguments.noJavaVersionWarning) {
-            collector.report(
-                    CompilerMessageSeverity.STRONG_WARNING,
-                    "Running the Kotlin compiler under Java 6 or 7 is unsupported and will no longer be possible in a future update.",
-                    CompilerMessageLocation.NO_LOCATION
-            );
+        for (String argument : arguments.extraArgumentsPassedInObsoleteForm) {
+            collector.report(STRONG_WARNING, "Advanced option value is passed in an obsolete form. Please use the '=' character " +
+                                             "to specify the value: " + argument + "=...", null);
+        }
+        for (Map.Entry<String, String> argument : arguments.duplicateArguments.entrySet()) {
+            collector.report(STRONG_WARNING, "Argument " + argument.getKey() + " is passed multiple times. " +
+                                             "Only the last value will be used: " + argument.getValue(), null);
         }
     }
 
@@ -354,9 +344,7 @@ public abstract class CLICompiler<A extends CommonCompilerArguments> {
     private void printVersionIfNeeded(@NotNull MessageCollector messageCollector, @NotNull A arguments) {
         if (!arguments.version) return;
 
-        messageCollector.report(CompilerMessageSeverity.INFO,
-                                "Kotlin Compiler version " + KotlinCompilerVersion.VERSION,
-                                CompilerMessageLocation.NO_LOCATION);
+        messageCollector.report(INFO, "Kotlin Compiler version " + KotlinCompilerVersion.VERSION, null);
     }
 
     /**

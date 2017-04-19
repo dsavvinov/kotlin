@@ -20,7 +20,7 @@ import static org.jetbrains.kotlin.maven.kapt.AnnotationProcessingManager.getGen
 import static org.jetbrains.kotlin.maven.kapt.AnnotationProcessingManager.getStubsDirectory;
 
 /** @noinspection UnusedDeclaration */
-@Mojo(name = "kapt", defaultPhase = LifecyclePhase.PROCESS_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE)
+@Mojo(name = "kapt", defaultPhase = LifecyclePhase.PROCESS_SOURCES, requiresDependencyResolution = ResolutionScope.COMPILE, threadSafe = false)
 public class KaptJVMCompilerMojo extends K2JVMCompileMojo {
     @Parameter
     private String[] annotationProcessors;
@@ -179,5 +179,10 @@ public class KaptJVMCompilerMojo extends K2JVMCompileMojo {
         System.arraycopy(second, 0, result, first.length, second.length);
 
         return result;
+    }
+
+    @Override
+    protected boolean isIncremental() {
+        return false;
     }
 }

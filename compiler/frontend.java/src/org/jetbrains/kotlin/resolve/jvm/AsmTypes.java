@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class AsmTypes {
-    private static final Map<Class<?>, Type> TYPES_MAP = new HashMap<Class<?>, Type>();
+    private static final Map<Class<?>, Type> TYPES_MAP = new HashMap<>();
 
     public static final Type OBJECT_TYPE = getType(Object.class);
     public static final Type JAVA_STRING_TYPE = getType(String.class);
@@ -120,12 +120,7 @@ public class AsmTypes {
 
     @NotNull
     public static Type getType(@NotNull Class<?> javaClass) {
-        Type type = TYPES_MAP.get(javaClass);
-        if (type == null) {
-            type = Type.getType(javaClass);
-            TYPES_MAP.put(javaClass, type);
-        }
-        return type;
+        return TYPES_MAP.computeIfAbsent(javaClass, k -> Type.getType(javaClass));
     }
 
     private AsmTypes() {

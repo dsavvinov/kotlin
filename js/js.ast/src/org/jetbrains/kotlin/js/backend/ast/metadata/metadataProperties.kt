@@ -77,6 +77,8 @@ var HasMetadata.sideEffects: SideEffectKind by MetadataProperty(default = SideEf
  */
 var JsExpression.isSuspend: Boolean by MetadataProperty(default = false)
 
+var JsExpression.isTailCallSuspend: Boolean by MetadataProperty(default = false)
+
 /**
  * Denotes a reference to coroutine's `result` field that contains result of
  * last suspended invocation.
@@ -100,16 +102,13 @@ var JsFunction.coroutineMetadata: CoroutineMetadata? by MetadataProperty(default
 
 class CoroutineMetadata(
         val doResumeName: JsName,
-        val resumeName: JsName,
         val stateName: JsName,
         val exceptionStateName: JsName,
         val finallyPathName: JsName,
         val resultName: JsName,
         val exceptionName: JsName,
-        val facadeName: JsName,
         val baseClassRef: JsExpression,
         val suspendObjectRef: JsExpression,
-        val isLambda: Boolean,
         val hasController: Boolean,
         val hasReceiver: Boolean
 )

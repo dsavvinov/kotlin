@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.effects.facade.EffectSystem;
+import org.jetbrains.kotlin.diagnostics.Errors;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.*;
 import org.jetbrains.kotlin.resolve.calls.model.MutableDataFlowInfoForArguments;
@@ -278,8 +279,8 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
                 .replaceDataFlowInfo(dataFlowInfo);
     }
 
-    private boolean containsJumpOutOfLoop(@NotNull final KtExpression expression, final ExpressionTypingContext context) {
-        final boolean[] result = new boolean[1];
+    private boolean containsJumpOutOfLoop(@NotNull KtExpression expression, ExpressionTypingContext context) {
+        boolean[] result = new boolean[1];
         result[0] = false;
         //todo breaks in inline function literals
         expression.accept(new KtTreeVisitor<List<KtLoopExpression>>() {
@@ -313,9 +314,7 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
                 newOuterLoops.add(loopExpression);
                 return super.visitLoopExpression(loopExpression, newOuterLoops);
             }
-        }, expression instanceof KtLoopExpression
-           ? Lists.newArrayList((KtLoopExpression) expression)
-           : Lists.<KtLoopExpression>newArrayList());
+        }, expression instanceof KtLoopExpression ? Lists.newArrayList((KtLoopExpression) expression) : Lists.newArrayList());
 
         return result[0];
     }
@@ -490,24 +489,19 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
         KtExpression tryBlock = expression.getTryBlock();
         List<KtCatchClause> catchClauses = expression.getCatchClauses();
         KtFinallySection finallyBlock = expression.getFinallyBlock();
-        List<KotlinType> types = new ArrayList<KotlinType>();
+        List<KotlinType> types = new ArrayList<>();
         boolean nothingInAllCatchBranches = true;
         for (KtCatchClause catchClause : catchClauses) {
             KtParameter catchParameter = catchClause.getCatchParameter();
             KtExpression catchBody = catchClause.getCatchBody();
             boolean nothingInCatchBranch = false;
             if (catchParameter != null) {
-                components.identifierChecker.checkDeclaration(catchParameter, context.trace);
-                ModifiersChecker.ModifiersCheckingProcedure modifiersChecking = components.modifiersChecker.withTrace(context.trace);
-                modifiersChecking.checkParameterHasNoValOrVar(catchParameter, VAL_OR_VAR_ON_CATCH_PARAMETER);
-                ModifierCheckerCore.INSTANCE.check(catchParameter, context.trace, null, components.languageVersionSettings);
+                checkCatchParameterDeclaration(catchParameter, context);
 
                 VariableDescriptor variableDescriptor = components.descriptorResolver.resolveLocalVariableDescriptor(
                         context.scope, catchParameter, context.trace);
                 KotlinType catchParameterType = variableDescriptor.getType();
-                if (TypeUtils.isReifiedTypeParameter(catchParameterType)) {
-                    context.trace.report(REIFIED_TYPE_IN_CATCH_CLAUSE.on(catchParameter));
-                }
+                checkCatchParameterType(catchParameter, catchParameterType, context);
 
                 KotlinType throwableType = components.builtIns.getThrowable().getDefaultType();
                 components.dataFlowAnalyzer.checkType(catchParameterType, catchParameter, context.replaceExpectedType(throwableType));
@@ -547,6 +541,29 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
         }
         else {
             return result.replaceType(CommonSupertypes.commonSupertype(types));
+        }
+    }
+
+    private static void checkCatchParameterType(KtParameter catchParameter, KotlinType catchParameterType, ExpressionTypingContext context) {
+        TypeParameterDescriptor typeParameterDescriptor = TypeUtils.getTypeParameterDescriptorOrNull(catchParameterType);
+        if (typeParameterDescriptor != null) {
+            if (typeParameterDescriptor.isReified()) {
+                context.trace.report(REIFIED_TYPE_IN_CATCH_CLAUSE.on(catchParameter));
+            }
+            else {
+                context.trace.report(TYPE_PARAMETER_IN_CATCH_CLAUSE.on(catchParameter));
+            }
+        }
+    }
+
+    private void checkCatchParameterDeclaration(KtParameter catchParameter, ExpressionTypingContext context) {
+        components.identifierChecker.checkDeclaration(catchParameter, context.trace);
+        ModifiersChecker.ModifiersCheckingProcedure modifiersChecking = components.modifiersChecker.withTrace(context.trace);
+        modifiersChecking.checkParameterHasNoValOrVar(catchParameter, VAL_OR_VAR_ON_CATCH_PARAMETER);
+        ModifierCheckerCore.INSTANCE.check(catchParameter, context.trace, null, components.languageVersionSettings);
+
+        if (catchParameter.hasDefaultValue()) {
+            context.trace.report(Errors.CATCH_PARAMETER_WITH_DEFAULT_VALUE.on(catchParameter));
         }
     }
 
@@ -614,9 +631,6 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
                     context.trace.report(RETURN_NOT_ALLOWED.on(expression));
                     resultType = ErrorUtils.createErrorType(RETURN_NOT_ALLOWED_MESSAGE);
                 }
-            }
-            else {
-                context.trace.report(NOT_A_RETURN_LABEL.on(expression, expression.getLabelName()));
             }
         }
 

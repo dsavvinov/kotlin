@@ -16,13 +16,13 @@
 
 package org.jetbrains.kotlin.js.translate.utils;
 
-import org.jetbrains.kotlin.js.backend.ast.*;
-import org.jetbrains.kotlin.js.backend.ast.metadata.MetadataProperties;
-import org.jetbrains.kotlin.js.backend.ast.metadata.SideEffectKind;
 import com.intellij.util.SmartList;
 import kotlin.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.js.backend.ast.*;
+import org.jetbrains.kotlin.js.backend.ast.metadata.MetadataProperties;
+import org.jetbrains.kotlin.js.backend.ast.metadata.SideEffectKind;
 import org.jetbrains.kotlin.js.translate.context.Namer;
 import org.jetbrains.kotlin.js.translate.context.TranslationContext;
 import org.jetbrains.kotlin.types.expressions.OperatorConventions;
@@ -215,7 +215,7 @@ public final class JsAstUtils {
         if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
             int low = (int) value;
             int high = (int) (value >> 32);
-            List<JsExpression> args = new SmartList<JsExpression>();
+            List<JsExpression> args = new SmartList<>();
             args.add(context.program().getNumberLiteral(low));
             args.add(context.program().getNumberLiteral(high));
             return new JsNew(Namer.kotlinLong(), args);
@@ -368,7 +368,7 @@ public final class JsAstUtils {
         JsBinaryOperation binary = (JsBinaryOperation) expr;
         if (binary.getOperator() != JsBinaryOperator.ASG) return null;
 
-        return new Pair<JsExpression, JsExpression>(binary.getArg1(), binary.getArg2());
+        return new Pair<>(binary.getArg1(), binary.getArg2());
     }
 
     @Nullable
@@ -379,7 +379,7 @@ public final class JsAstUtils {
         JsNameRef nameRef = (JsNameRef) assignment.getFirst();
         if (nameRef.getName() == null || nameRef.getQualifier() != null) return null;
 
-        return new Pair<JsName, JsExpression>(nameRef.getName(), assignment.getSecond());
+        return new Pair<>(nameRef.getName(), assignment.getSecond());
     }
 
     @NotNull
@@ -457,7 +457,7 @@ public final class JsAstUtils {
             return Collections.emptyList();
         }
 
-        List<JsExpression> result = new SmartList<JsExpression>();
+        List<JsExpression> result = new SmartList<>();
         for (String str : strings) {
             result.add(program.getStringLiteral(str));
         }
@@ -523,7 +523,7 @@ public final class JsAstUtils {
             return ((JsBlock) statement).getStatements();
         }
 
-        return new SmartList<JsStatement>(statement);
+        return new SmartList<>(statement);
     }
 
     @NotNull
@@ -573,6 +573,15 @@ public final class JsAstUtils {
     public static JsExpression stateMachineReceiver() {
         JsNameRef result = new JsNameRef("$this$");
         MetadataProperties.setCoroutineReceiver(result, true);
+        return result;
+    }
+
+    @NotNull
+    public static JsExpression comma(JsExpression first, JsExpression... tail) {
+        JsExpression result = first;
+        for (JsExpression e : tail) {
+            result = new JsBinaryOperation(JsBinaryOperator.COMMA, result, e);
+        }
         return result;
     }
 }

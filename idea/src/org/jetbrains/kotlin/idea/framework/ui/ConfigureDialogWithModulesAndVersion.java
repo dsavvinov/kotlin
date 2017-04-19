@@ -38,6 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.idea.KotlinPluginUtil;
 import org.jetbrains.kotlin.idea.configuration.ConfigureKotlinInProjectUtilsKt;
 import org.jetbrains.kotlin.idea.configuration.KotlinProjectConfigurator;
+import org.jetbrains.kotlin.idea.configuration.RepositoryDescription;
 import org.jetbrains.kotlin.idea.versions.KotlinRuntimeLibraryUtilKt;
 
 import javax.swing.*;
@@ -48,7 +49,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -56,8 +56,6 @@ public class ConfigureDialogWithModulesAndVersion extends DialogWrapper {
     private static final String VERSIONS_LIST_URL =
             "http://search.maven.org/solrsearch/select?q=g:%22org.jetbrains.kotlin%22+AND+a:%22kotlin-runtime%22&core=gav&rows=20&wt=json";
 
-    private static final String EAP_VERSIONS_URL =
-            "https://bintray.com/kotlin/kotlin-eap/kotlin/";
     @NotNull private final String minimumVersion;
 
     private final ChooseModulePanel chooseModulePanel;
@@ -77,7 +75,7 @@ public class ConfigureDialogWithModulesAndVersion extends DialogWrapper {
     ) {
         super(project);
 
-        setTitle("Configure Kotlin in Project");
+        setTitle("Configure Kotlin with " + configurator.getPresentableText());
 
         this.minimumVersion = minimumVersion;
         init();
@@ -177,8 +175,9 @@ public class ConfigureDialogWithModulesAndVersion extends DialogWrapper {
         List<String> versions = Lists.newArrayList();
 
         String bundledRuntimeVersion = KotlinRuntimeLibraryUtilKt.bundledRuntimeVersion();
-        if (ConfigureKotlinInProjectUtilsKt.isEap(bundledRuntimeVersion)) {
-            HttpURLConnection eapConnection = HttpConfigurable.getInstance().openHttpConnection(EAP_VERSIONS_URL + bundledRuntimeVersion);
+        RepositoryDescription repositoryDescription = ConfigureKotlinInProjectUtilsKt.getRepositoryForVersion(bundledRuntimeVersion);
+        if (repositoryDescription != null && repositoryDescription.getBintrayUrl() != null) {
+            HttpURLConnection eapConnection = HttpConfigurable.getInstance().openHttpConnection(repositoryDescription.getBintrayUrl() + bundledRuntimeVersion);
             try {
                 int timeout = (int) TimeUnit.SECONDS.toMillis(30);
                 eapConnection.setConnectTimeout(timeout);

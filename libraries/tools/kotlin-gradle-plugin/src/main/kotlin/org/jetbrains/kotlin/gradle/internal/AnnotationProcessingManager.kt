@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.gradle.internal
 import com.android.build.gradle.BaseExtension
 import org.gradle.api.Project
 import org.gradle.api.UnknownDomainObjectException
+import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.gradle.api.tasks.compile.JavaCompile
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
@@ -41,7 +42,7 @@ import java.util.zip.ZipFile
 
 internal fun Project.initKapt(
         kotlinTask: KotlinCompile,
-        javaTask: AbstractCompile,
+        javaTask: JavaCompile,
         kaptManager: AnnotationProcessingManager,
         variantName: String,
         kotlinOptions: KotlinJvmOptionsImpl?,
@@ -90,16 +91,13 @@ internal fun Project.initKapt(
         kaptManager.generateJavaHackFile()
     }
 
-    var originalJavaCompilerArgs: List<String>? = null
     javaTask.doFirst {
-        originalJavaCompilerArgs = (javaTask as JavaCompile).options.compilerArgs
         kaptManager.setupKapt()
         kaptManager.generateJavaHackFile()
         kotlinAfterJavaTask?.source(kaptManager.generatedKotlinSourceDir)
     }
 
     javaTask.doLast {
-        (javaTask as JavaCompile).options.compilerArgs = originalJavaCompilerArgs
         kaptManager.afterJavaCompile()
     }
 
@@ -137,6 +135,9 @@ class AnnotationProcessingManager(
     val wrappersDirectory = File(aptWorkingDir, "wrappers")
     val hackAnnotationDir = File(aptWorkingDir, "java_src")
 
+    private var originalJavaCompilerArgs: List<String>? = null
+    private var originalProcessorPath: FileCollection? = null
+
     private companion object {
         val JAVA_FQNAME_PATTERN = "^([\\p{L}_$][\\p{L}\\p{N}_$]*\\.)*[\\p{L}_$][\\p{L}\\p{N}_$]*$".toRegex()
         val GEN_ANNOTATION = "__gen/annotation"
@@ -156,7 +157,11 @@ class AnnotationProcessingManager(
             return kotlinGeneratedDir
         }
 
+    val kaptProcessorPath get() = javaTask.classpath + setOf(wrappersDirectory) + aptFiles
+
     fun setupKapt() {
+        originalJavaCompilerArgs = javaTask.options.compilerArgs
+
         if (aptFiles.isEmpty()) return
 
         if (project.plugins.findPlugin(ANDROID_APT_PLUGIN_ID) != null) {
@@ -167,8 +172,7 @@ class AnnotationProcessingManager(
 
         generateAnnotationProcessorStubs(javaTask, annotationProcessorFqNames, wrappersDirectory)
 
-        val processorPath = setOf(wrappersDirectory) + aptFiles
-        setProcessorPath(javaTask, (processorPath + javaTask.classpath).joinToString(File.pathSeparator))
+        setProcessorPathInJavaTask()
 
         if (aptOutputDir.exists()) {
             aptOutputDir.deleteRecursively()
@@ -186,6 +190,8 @@ class AnnotationProcessingManager(
         } else {
             project.logger.kotlinDebug("kapt: Java file stub was not found at $generatedFile")
         }
+        javaTask.options.compilerArgs = originalJavaCompilerArgs
+        tryRevertProcessorPathProperty()
     }
 
     fun generateJavaHackFile() {
@@ -265,11 +271,46 @@ class AnnotationProcessingManager(
         }
     }
 
-    private fun setProcessorPath(javaTask: JavaCompile, path: String) {
-        javaTask.addCompilerArgument("-processorpath") { prevValue ->
-            if (prevValue != null)
-                javaTask.logger.warn("Processor path was modified by kapt. Previous value = $prevValue")
-            path
+    private fun setProcessorPathInJavaTask() {
+        val path = kaptProcessorPath
+
+        // If processor path property is supported, set it, otherwise set compiler argument:
+        val couldSetProperty = tryAppendProcessorPathProperty(path)
+
+        if (!couldSetProperty) {
+            javaTask.addCompilerArgument("-processorpath") { prevValue ->
+                if (prevValue != null)
+                    javaTask.logger.warn("Processor path was modified by kapt. Previous value = $prevValue")
+                path.joinToString(prefix = prevValue?.let { it + File.pathSeparator }.orEmpty(),
+                                  separator = File.pathSeparator)
+            }
+        }
+    }
+
+    private fun tryAppendProcessorPathProperty(path: Iterable<File>): Boolean = try {
+        val optionsClass = javaTask.options.javaClass
+        val getPath = optionsClass.getMethod("getAnnotationProcessorPath")
+        val setPath = optionsClass.getMethod("setAnnotationProcessorPath", FileCollection::class.java)
+
+        originalProcessorPath = getPath(javaTask.options) as? FileCollection
+
+        if (originalProcessorPath != null)
+            javaTask.logger.warn("Processor path was modified by kapt. Previous value = $originalProcessorPath")
+
+        val newPath = javaTask.project.files(path + (originalProcessorPath ?: emptyList<File>()))
+        setPath(javaTask.options, newPath)
+        true
+    } catch (_: NoSuchMethodException) {
+        false
+    }
+
+    private fun tryRevertProcessorPathProperty() {
+        try {
+            val optionsClass = javaTask.options.javaClass
+            val setPath = optionsClass.getMethod("setAnnotationProcessorPath", FileCollection::class.java)
+
+            setPath(javaTask.options, originalProcessorPath)
+        } catch (_: NoSuchMethodException) {
         }
     }
 

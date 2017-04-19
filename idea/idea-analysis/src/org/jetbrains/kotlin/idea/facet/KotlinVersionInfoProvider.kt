@@ -20,14 +20,13 @@ import com.intellij.openapi.extensions.ExtensionPointName
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.roots.ModuleRootModel
 import com.intellij.util.text.VersionComparatorUtil
-import org.jetbrains.kotlin.config.JvmTarget
 import org.jetbrains.kotlin.config.KotlinFacetSettingsProvider
 import org.jetbrains.kotlin.config.LanguageVersion
 import org.jetbrains.kotlin.config.TargetPlatformKind
 
 interface KotlinVersionInfoProvider {
     companion object {
-        val EP_NAME: ExtensionPointName<KotlinVersionInfoProvider> = ExtensionPointName.create("org.jetbrains.kotlin.versionInfoProvider")!!
+        val EP_NAME: ExtensionPointName<KotlinVersionInfoProvider> = ExtensionPointName.create("org.jetbrains.kotlin.versionInfoProvider")
     }
 
     fun getCompilerVersion(module: Module): String?
@@ -67,10 +66,12 @@ fun getDefaultLanguageLevel(
                      ?: KotlinVersionInfoProvider.EP_NAME.extensions
                              .mapNotNull { it.getCompilerVersion(module) }
                              .minWith(VersionComparatorUtil.COMPARATOR)
-                     ?: return LanguageVersion.LATEST
+                     ?: return LanguageVersion.LATEST_STABLE
     return when {
+        libVersion.startsWith("1.2") -> LanguageVersion.KOTLIN_1_2
+        libVersion.startsWith("1.1") -> LanguageVersion.KOTLIN_1_1
         libVersion.startsWith("1.0") -> LanguageVersion.KOTLIN_1_0
-        else -> LanguageVersion.KOTLIN_1_1
+        else -> LanguageVersion.LATEST_STABLE
     }
 }
 

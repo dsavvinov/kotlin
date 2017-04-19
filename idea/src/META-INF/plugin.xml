@@ -40,6 +40,9 @@
     <component>
       <implementation-class>org.jetbrains.kotlin.idea.project.KotlinCodeBlockModificationListener</implementation-class>
     </component>
+    <component>
+      <implementation-class>org.jetbrains.kotlin.idea.caches.KotlinPackageContentModificationListener</implementation-class>
+    </component>
   </project-components>
 
   <application-components>
@@ -256,7 +259,7 @@
                     serviceImplementation="org.jetbrains.kotlin.script.KotlinScriptDefinitionProvider"/>
 
     <projectService serviceInterface="org.jetbrains.kotlin.script.KotlinScriptExternalImportsProvider"
-                    serviceImplementation="org.jetbrains.kotlin.script.KotlinScriptExternalImportsProvider"/>
+                    serviceImplementation="org.jetbrains.kotlin.script.KotlinScriptExternalImportsProviderImpl"/>
 
     <projectService serviceInterface="org.jetbrains.kotlin.idea.core.script.KotlinScriptConfigurationManager"
                     serviceImplementation="org.jetbrains.kotlin.idea.core.script.KotlinScriptConfigurationManager"/>
@@ -316,6 +319,8 @@
     <projectService serviceInterface="org.jetbrains.kotlin.idea.kdoc.SampleResolutionService"
                     serviceImplementation="org.jetbrains.kotlin.idea.kdoc.IdeSampleResolutionService"/>
 
+    <projectService serviceImplementation="org.jetbrains.kotlin.idea.caches.PerModulePackageCacheService"/>
+
     <errorHandler implementation="org.jetbrains.kotlin.idea.reporter.KotlinReportSubmitter"/>
 
     <internalFileTemplate name="Kotlin File"/>
@@ -372,7 +377,14 @@
         id="kotlin.moveTopLevelDeclarations"
         implementation="org.jetbrains.kotlin.idea.refactoring.move.moveDeclarations.MoveKotlinDeclarationsHandler"
         order="first,before kotlin.moveFilesOrDirectories"/>
+    <refactoring.moveHandler
+        id="kotlinAwareJavaMoveClassesOrPackagesHandler"
+        implementation="org.jetbrains.kotlin.idea.refactoring.move.moveClassesOrPackages.KotlinAwareJavaMoveClassesOrPackagesHandler"
+        order="first" />
     <moveFileHandler implementation="org.jetbrains.kotlin.idea.refactoring.move.moveFilesOrDirectories.MoveKotlinFileHandler" />
+    <moveFileHandler
+        implementation="org.jetbrains.kotlin.idea.refactoring.move.moveFilesOrDirectories.FqNameFixingMoveJavaFileHandler"
+        order="before java" />
     <refactoring.moveDirectoryWithClassesHelper
         implementation="org.jetbrains.kotlin.idea.refactoring.move.moveFilesOrDirectories.KotlinMoveDirectoryWithClassesHelper"
         order="first" />
@@ -452,6 +464,8 @@
         language="kotlin"
         implementation="org.jetbrains.kotlin.idea.references.KotlinDefaultAnnotationMethodImplicitReferenceContributor"/>
 
+    <psi.treeChangePreprocessor implementation="org.jetbrains.kotlin.idea.caches.KotlinPackageStatementPsiTreeChangePreprocessor"/>
+
     <renamePsiElementProcessor id="KotlinClass"
                                implementation="org.jetbrains.kotlin.idea.refactoring.rename.RenameKotlinClassProcessor"
                                order="first"/>
@@ -520,6 +534,8 @@
     <annotator language="kotlin" implementationClass="org.jetbrains.kotlin.idea.highlighter.DuplicateJvmSignatureAnnotator"/>
     <annotator language="kotlin" implementationClass="org.jetbrains.kotlin.idea.highlighter.PlatformHeaderAnnotator"/>
     <problemHighlightFilter implementation="org.jetbrains.kotlin.idea.highlighter.KotlinProblemHighlightFilter"/>
+
+    <annotator language="JAVA" implementationClass="org.jetbrains.kotlin.idea.java.UnimplementedKotlinInterfaceMemberAnnotator"/>
 
     <extendWordSelectionHandler implementation="org.jetbrains.kotlin.idea.editor.wordSelection.KotlinStatementGroupSelectioner"/>
     <extendWordSelectionHandler implementation="org.jetbrains.kotlin.idea.editor.wordSelection.KotlinCodeBlockSelectioner"/>
@@ -668,6 +684,7 @@
     <stubIndex implementation="org.jetbrains.kotlin.idea.stubindex.KotlinMultifileClassPartIndex"/>
     <stubIndex implementation="org.jetbrains.kotlin.idea.stubindex.KotlinScriptFqnIndex"/>
     <stubIndex implementation="org.jetbrains.kotlin.idea.stubindex.KotlinTypeAliasByExpansionShortNameIndex"/>
+    <stubIndex implementation="org.jetbrains.kotlin.idea.stubindex.KotlinOverridableInternalMembersShortNameIndex"/>
 
     <psi.classFileDecompiler implementation="org.jetbrains.kotlin.idea.decompiler.classFile.KotlinClassFileDecompiler"/>
     <psi.classFileDecompiler implementation="org.jetbrains.kotlin.idea.decompiler.js.KotlinJavaScriptMetaFileDecompiler"/>
@@ -1534,6 +1551,11 @@
 
     <intentionAction>
       <className>org.jetbrains.kotlin.idea.intentions.MovePropertyToConstructorIntention</className>
+      <category>Kotlin</category>
+    </intentionAction>
+
+    <intentionAction>
+      <className>org.jetbrains.kotlin.idea.intentions.AddOpenModifierIntention</className>
       <category>Kotlin</category>
     </intentionAction>
 

@@ -206,7 +206,7 @@ public class CallMaker {
             arguments = Collections.emptyList();
         }
         else {
-            arguments = new ArrayList<ValueArgument>(argumentExpressions.size());
+            arguments = new ArrayList<>(argumentExpressions.size());
             for (KtExpression argumentExpression : argumentExpressions) {
                 arguments.add(makeValueArgument(argumentExpression, calleeExpression));
             }
@@ -233,7 +233,7 @@ public class CallMaker {
 
     @NotNull
     public static Call makeCall(@NotNull ReceiverValue baseAsReceiver, KtUnaryExpression expression) {
-        return makeCall(expression, baseAsReceiver, null, expression.getOperationReference(), Collections.<ValueArgument>emptyList());
+        return makeCall(expression, baseAsReceiver, null, expression.getOperationReference(), Collections.emptyList());
     }
 
     @NotNull
@@ -277,7 +277,7 @@ public class CallMaker {
 
     @NotNull
     public static Call makePropertyCall(@Nullable Receiver explicitReceiver, @Nullable ASTNode callOperationNode, @NotNull KtSimpleNameExpression nameExpression) {
-        return makeCallWithExpressions(nameExpression, explicitReceiver, callOperationNode, nameExpression, Collections.<KtExpression>emptyList());
+        return makeCallWithExpressions(nameExpression, explicitReceiver, callOperationNode, nameExpression, Collections.emptyList());
     }
 
 
@@ -299,7 +299,7 @@ public class CallMaker {
     }
 
     @NotNull
-    public static Call makeConstructorCallForEnumEntryWithoutInitializer(@NotNull final KtSuperTypeCallEntry callElement) {
+    public static Call makeConstructorCallForEnumEntryWithoutInitializer(@NotNull KtSuperTypeCallEntry callElement) {
         return new Call() {
             @Nullable
             @Override
@@ -370,7 +370,7 @@ public class CallMaker {
     }
 
     @NotNull
-    public static Call makeCall(@Nullable final Receiver explicitReceiver, @Nullable final ASTNode callOperationNode, @NotNull final KtCallElement callElement) {
+    public static Call makeCall(@Nullable Receiver explicitReceiver, @Nullable ASTNode callOperationNode, @NotNull KtCallElement callElement) {
         return new Call() {
             @Override
             public ASTNode getCallOperationNode() {
@@ -446,6 +446,6 @@ public class CallMaker {
 
     @NotNull
     public static Call makeCall(@NotNull KtElement callElement, @NotNull ReceiverValue explicitReceiver) {
-        return new CallImpl(callElement, explicitReceiver, null, null, Collections.<ValueArgument>emptyList());
+        return new CallImpl(callElement, explicitReceiver, null, null, Collections.emptyList());
     }
 }

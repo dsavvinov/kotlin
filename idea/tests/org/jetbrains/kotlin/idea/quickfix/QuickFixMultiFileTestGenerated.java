@@ -576,6 +576,12 @@ public class QuickFixMultiFileTestGenerated extends AbstractQuickFixMultiFileTes
             doTestWithExtraFile(fileName);
         }
 
+        @TestMetadata("plusOperatorWithTypeMismatch.before.Main.kt")
+        public void testPlusOperatorWithTypeMismatch() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/autoImports/plusOperatorWithTypeMismatch.before.Main.kt");
+            doTestWithExtraFile(fileName);
+        }
+
         @TestMetadata("postfixOperator.before.Main.kt")
         public void testPostfixOperator() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/autoImports/postfixOperator.before.Main.kt");
@@ -1722,36 +1728,6 @@ public class QuickFixMultiFileTestGenerated extends AbstractQuickFixMultiFileTes
             }
         }
 
-        @TestMetadata("idea/testData/quickfix/migration/missingConstructorKeyword")
-        @TestDataPath("$PROJECT_ROOT")
-        @RunWith(JUnit3RunnerWithInners.class)
-        public static class MissingConstructorKeyword extends AbstractQuickFixMultiFileTest {
-            public void testAllFilesPresentInMissingConstructorKeyword() throws Exception {
-                KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/quickfix/migration/missingConstructorKeyword"), Pattern.compile("^(\\w+)\\.((before\\.Main\\.\\w+)|(test))$"), TargetBackend.ANY, true);
-            }
-
-            @TestMetadata("manyFilesMuitliple.before.Main.kt")
-            public void testManyFilesMuitliple() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/migration/missingConstructorKeyword/manyFilesMuitliple.before.Main.kt");
-                doTestWithExtraFile(fileName);
-            }
-        }
-
-        @TestMetadata("idea/testData/quickfix/migration/obsoleteLabelSyntax")
-        @TestDataPath("$PROJECT_ROOT")
-        @RunWith(JUnit3RunnerWithInners.class)
-        public static class ObsoleteLabelSyntax extends AbstractQuickFixMultiFileTest {
-            public void testAllFilesPresentInObsoleteLabelSyntax() throws Exception {
-                KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/quickfix/migration/obsoleteLabelSyntax"), Pattern.compile("^(\\w+)\\.((before\\.Main\\.\\w+)|(test))$"), TargetBackend.ANY, true);
-            }
-
-            @TestMetadata("manyFilesMuitliple.before.Main.kt")
-            public void testManyFilesMuitliple() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/migration/obsoleteLabelSyntax/manyFilesMuitliple.before.Main.kt");
-                doTestWithExtraFile(fileName);
-            }
-        }
-
     }
 
     @TestMetadata("idea/testData/quickfix/modifiers")
@@ -1776,23 +1752,16 @@ public class QuickFixMultiFileTestGenerated extends AbstractQuickFixMultiFileTes
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/quickfix/modifiers/addOpenToClassDeclaration"), Pattern.compile("^(\\w+)\\.((before\\.Main\\.\\w+)|(test))$"), TargetBackend.ANY, true);
             }
 
-            @TestMetadata("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaClass")
-            @TestDataPath("$PROJECT_ROOT")
-            @RunWith(JUnit3RunnerWithInners.class)
-            public static class FinalJavaClass extends AbstractQuickFixMultiFileTest {
-                public void testAllFilesPresentInFinalJavaClass() throws Exception {
-                    KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaClass"), Pattern.compile("^(\\w+)\\.((before\\.Main\\.\\w+)|(test))$"), TargetBackend.ANY, true);
-                }
+            @TestMetadata("finalJavaSupertype.before.Main.kt")
+            public void testFinalJavaSupertype() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaSupertype.before.Main.kt");
+                doTestWithExtraFile(fileName);
+            }
 
-                @TestMetadata("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaClass/javaCode")
-                @TestDataPath("$PROJECT_ROOT")
-                @RunWith(JUnit3RunnerWithInners.class)
-                public static class JavaCode extends AbstractQuickFixMultiFileTest {
-                    public void testAllFilesPresentInJavaCode() throws Exception {
-                        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaClass/javaCode"), Pattern.compile("^(\\w+)\\.((before\\.Main\\.\\w+)|(test))$"), TargetBackend.ANY, true);
-                    }
-
-                }
+            @TestMetadata("finalJavaUpperBound.before.Main.kt")
+            public void testFinalJavaUpperBound() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaUpperBound.before.Main.kt");
+                doTestWithExtraFile(fileName);
             }
         }
 

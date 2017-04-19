@@ -133,8 +133,8 @@ class KotlinJpsBuildTest : AbstractKotlinJpsBuildTestCase() {
             val list = arrayListOf<String>()
             for (moduleName in moduleNames) {
                 val outputDir = File("out/production/$moduleName")
-                list.add(toSystemIndependentName(JpsJsModuleUtils.getOutputFile(outputDir, moduleName).path))
-                list.add(toSystemIndependentName(JpsJsModuleUtils.getOutputMetaFile(outputDir, moduleName).path))
+                list.add(toSystemIndependentName(JpsJsModuleUtils.getOutputFile(outputDir, moduleName, false).path))
+                list.add(toSystemIndependentName(JpsJsModuleUtils.getOutputMetaFile(outputDir, moduleName, false).path))
             }
             return list.toTypedArray()
         }
@@ -277,12 +277,9 @@ class KotlinJpsBuildTest : AbstractKotlinJpsBuildTestCase() {
         assertEquals("Invalid package prefix name is ignored: invalid-prefix.test", warnings.first().messageText)
     }
 
-    fun testSourcePackagePrefixKnownIssueWithInnerClasses() {
+    fun testSourcePackagePrefixWithInnerClasses() {
         initProject()
-        val buildResult = buildAllModules()
-        buildResult.assertFailed()
-        val errors = buildResult.getMessages(BuildMessage.Kind.ERROR).map { it.messageText }
-        assertTrue("Message wasn't found. $errors", errors.first().contains("class xxx.JavaWithInner.TextRenderer, unresolved supertypes: TableRow"))
+        buildAllModules().assertSuccessful()
     }
 
     fun testKotlinJavaScriptProject() {
@@ -392,8 +389,7 @@ class KotlinJpsBuildTest : AbstractKotlinJpsBuildTestCase() {
         buildResult.assertSuccessful()
 
         val warnings = buildResult.getMessages(BuildMessage.Kind.WARNING)
-        assertEquals("Warning about duplicate module definition: $warnings", 1, warnings.size)
-        assertEquals("Module \"srcAndTests\" is defined in more than one file", warnings[0].messageText)
+        assertEquals("Warning about duplicate module definition: $warnings", 0, warnings.size)
     }
 
     fun testKotlinJavaScriptProjectWithTwoSrcModuleDependency() {

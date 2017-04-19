@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.repository.ComponentDependency;
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys;
-import org.jetbrains.kotlin.utils.ReflectionUtilKt;
+import org.jetbrains.kotlin.script.ReflectionUtilKt;
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler;
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles;
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment;
@@ -76,7 +76,7 @@ import java.util.List;
  *     mojo.getLog().info("kotlin build script accessing build info of ${mojo.project.artifactId} project")
  * </code></pre>
  */
-@Mojo(name = "script", requiresDependencyResolution = ResolutionScope.COMPILE)
+@Mojo(name = "script", requiresDependencyResolution = ResolutionScope.COMPILE, threadSafe = false)
 public class ExecuteKotlinScriptMojo extends AbstractMojo {
     /**
      * The Kotlin script file to be executed.

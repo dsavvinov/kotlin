@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.config
 
 import org.jetbrains.kotlin.config.LanguageVersion.KOTLIN_1_1
+import org.jetbrains.kotlin.config.LanguageVersion.KOTLIN_1_2
 import org.jetbrains.kotlin.utils.DescriptionAware
 
 enum class LanguageFeature(
@@ -48,13 +49,13 @@ enum class LanguageFeature(
     NoDelegationToJavaDefaultInterfaceMembers(KOTLIN_1_1),
     DefaultImportOfPackageKotlinComparisons(KOTLIN_1_1),
 
+    ArrayLiteralsInAnnotations(KOTLIN_1_2),
+
     // Experimental features
 
     Coroutines(KOTLIN_1_1, ApiVersion.KOTLIN_1_1, "https://kotlinlang.org/docs/diagnostics/experimental-coroutines", State.ENABLED_WITH_WARNING),
 
     MultiPlatformProjects(sinceVersion = null, defaultState = State.DISABLED),
-
-    ArrayLiteralsInAnnotations(sinceVersion = null),
 
     ;
 
@@ -79,13 +80,17 @@ enum class LanguageFeature(
 
 enum class LanguageVersion(val major: Int, val minor: Int) : DescriptionAware {
     KOTLIN_1_0(1, 0),
-    KOTLIN_1_1(1, 1);
+    KOTLIN_1_1(1, 1),
+    KOTLIN_1_2(1, 2);
+
+    val isStable: Boolean
+        get() = this <= LATEST_STABLE
 
     val versionString: String
         get() = "$major.$minor"
 
     override val description: String
-        get() = versionString
+        get() = if (isStable) versionString else "$versionString (EXPERIMENTAL)"
 
     override fun toString() = versionString
 
@@ -97,7 +102,7 @@ enum class LanguageVersion(val major: Int, val minor: Int) : DescriptionAware {
         fun fromFullVersionString(str: String) = str.split(".", "-").let { if (it.size >= 2) fromVersionString("${it[0]}.${it[1]}") else null }
 
         @JvmField
-        val LATEST = values().last()
+        val LATEST_STABLE = KOTLIN_1_1
     }
 }
 
@@ -158,6 +163,6 @@ class LanguageVersionSettingsImpl @JvmOverloads constructor(
 
     companion object {
         @JvmField
-        val DEFAULT = LanguageVersionSettingsImpl(LanguageVersion.LATEST, ApiVersion.LATEST)
+        val DEFAULT = LanguageVersionSettingsImpl(LanguageVersion.LATEST_STABLE, ApiVersion.LATEST_STABLE)
     }
 }

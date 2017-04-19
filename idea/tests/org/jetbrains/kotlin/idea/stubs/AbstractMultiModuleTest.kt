@@ -24,17 +24,19 @@ import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.StdModuleTypes
 import com.intellij.openapi.roots.DependencyScope
 import com.intellij.openapi.roots.ModuleRootModificationUtil
+import com.intellij.openapi.roots.OrderRootType
+import com.intellij.openapi.roots.ui.configuration.libraryEditor.NewLibraryEditor
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.LocalFileSystem
+import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.testFramework.PsiTestUtil
-import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
-import org.jetbrains.kotlin.cli.common.parser.com.sampullara.cli.Argument
 import org.jetbrains.kotlin.config.CompilerSettings
 import org.jetbrains.kotlin.config.KotlinFacetSettingsProvider
 import org.jetbrains.kotlin.config.TargetPlatformKind
 import org.jetbrains.kotlin.idea.facet.getOrCreateFacet
 import org.jetbrains.kotlin.idea.facet.initializeIfNeeded
 import org.jetbrains.kotlin.idea.test.ConfigLibraryUtil
+import org.jetbrains.kotlin.idea.test.KotlinJdkAndLibraryProjectDescriptor
 import org.jetbrains.kotlin.idea.test.PluginTestCaseBase
 import java.io.File
 
@@ -75,6 +77,13 @@ abstract class AbstractMultiModuleTest : DaemonAnalyzerTestCase() {
             exported: Boolean = false
     ) = ModuleRootModificationUtil.addDependency(this, other, dependencyScope, exported)
 
+    protected fun Module.addLibrary(jar: File) {
+        ConfigLibraryUtil.addLibrary(NewLibraryEditor().apply {
+            name = KotlinJdkAndLibraryProjectDescriptor.LIBRARY_NAME
+            addRoot(VfsUtil.getUrlForLibraryRoot(jar), OrderRootType.CLASSES)
+        }, this)
+    }
+
     protected fun Module.createFacet(platformKind: TargetPlatformKind<*>? = null) {
         val accessToken = WriteAction.start()
         try {
@@ -94,13 +103,8 @@ abstract class AbstractMultiModuleTest : DaemonAnalyzerTestCase() {
     protected fun Module.enableMultiPlatform() {
         createFacet()
         val facetSettings = KotlinFacetSettingsProvider.getInstance(project).getInitializedSettings(this)
-        val compilerSettings = CompilerSettings()
-        compilerSettings.additionalArguments += " -$multiPlatformArg"
-        facetSettings.compilerSettings = compilerSettings
+        facetSettings.compilerSettings = CompilerSettings().apply {
+            additionalArguments += " -Xmulti-platform"
+        }
     }
-
-    companion object {
-        private val multiPlatformArg = CommonCompilerArguments::multiPlatform.annotations.filterIsInstance<Argument>().single().value
-    }
-
 }

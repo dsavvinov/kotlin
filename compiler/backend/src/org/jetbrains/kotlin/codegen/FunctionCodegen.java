@@ -19,9 +19,6 @@ package org.jetbrains.kotlin.codegen;
 import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.psi.PsiElement;
 import com.intellij.util.ArrayUtil;
-import com.intellij.util.Function;
-import com.intellij.util.containers.ContainerUtil;
-import kotlin.Unit;
 import kotlin.collections.CollectionsKt;
 import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
@@ -65,6 +62,7 @@ import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodParameterSignature
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodSignature;
 import org.jetbrains.kotlin.types.KotlinType;
 import org.jetbrains.kotlin.types.TypeUtils;
+import org.jetbrains.kotlin.utils.StringsKt;
 import org.jetbrains.org.objectweb.asm.*;
 import org.jetbrains.org.objectweb.asm.commons.InstructionAdapter;
 import org.jetbrains.org.objectweb.asm.commons.Method;
@@ -79,7 +77,8 @@ import java.util.Set;
 
 import static org.jetbrains.kotlin.builtins.KotlinBuiltIns.isNullableAny;
 import static org.jetbrains.kotlin.codegen.AsmUtil.*;
-import static org.jetbrains.kotlin.codegen.JvmCodegenUtil.*;
+import static org.jetbrains.kotlin.codegen.JvmCodegenUtil.isAnnotationOrJvmInterfaceWithoutDefaults;
+import static org.jetbrains.kotlin.codegen.JvmCodegenUtil.isJvm8InterfaceWithDefaultsMember;
 import static org.jetbrains.kotlin.codegen.serialization.JvmSerializationBindings.METHOD_FOR_FUNCTION;
 import static org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.DECLARATION;
 import static org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget.*;
@@ -209,11 +208,7 @@ public class FunctionCodegen {
                                        getThrownExceptions(functionDescriptor, typeMapper));
 
         if (CodegenContextUtil.isImplClassOwner(owner)) {
-            v.getSerializationBindings().put(
-                    METHOD_FOR_FUNCTION,
-                    CodegenUtilKt.<FunctionDescriptor>unwrapFrontendVersion(functionDescriptor),
-                    asmMethod
-            );
+            v.getSerializationBindings().put(METHOD_FOR_FUNCTION, CodegenUtilKt.unwrapFrontendVersion(functionDescriptor), asmMethod);
         }
 
         generateMethodAnnotations(functionDescriptor, asmMethod, mv);
@@ -268,7 +263,7 @@ public class FunctionCodegen {
     }
 
     private void generateDelegateForDefaultImpl(
-            @NotNull final FunctionDescriptor functionDescriptor,
+            @NotNull FunctionDescriptor functionDescriptor,
             @Nullable PsiElement element
     ) {
         Method defaultImplMethod = typeMapper.mapAsmMethod(functionDescriptor, OwnerKind.DEFAULT_IMPLS);
@@ -277,20 +272,17 @@ public class FunctionCodegen {
                 v, "Default Impl delegate in interface", Opcodes.ACC_SYNTHETIC | Opcodes.ACC_STATIC | Opcodes.ACC_PUBLIC,
                 new Method(defaultImplMethod.getName() + JvmAbi.DEFAULT_IMPLS_DELEGATE_SUFFIX, defaultImplMethod.getDescriptor()),
                 element, JvmDeclarationOrigin.NO_ORIGIN,
-                state, new Function1<InstructionAdapter, Unit>() {
-                    @Override
-                    public Unit invoke(InstructionAdapter adapter) {
-                        Method interfaceMethod = typeMapper.mapAsmMethod(functionDescriptor, OwnerKind.IMPLEMENTATION);
-                        Type type = typeMapper.mapOwner(functionDescriptor);
-                        generateDelegateToMethodBody(
-                                -1, adapter,
-                                interfaceMethod,
-                                type.getInternalName(),
-                                Opcodes.INVOKESPECIAL,
-                                true
-                        );
-                        return null;
-                    }
+                state, adapter -> {
+                    Method interfaceMethod = typeMapper.mapAsmMethod(functionDescriptor, OwnerKind.IMPLEMENTATION);
+                    Type type = typeMapper.mapOwner(functionDescriptor);
+                    generateDelegateToMethodBody(
+                            -1, adapter,
+                            interfaceMethod,
+                            type.getInternalName(),
+                            Opcodes.INVOKESPECIAL,
+                            true
+                    );
+                    return null;
                 }
         );
     }
@@ -442,7 +434,7 @@ public class FunctionCodegen {
         mv.visitLabel(methodBegin);
 
         KotlinTypeMapper typeMapper = parentCodegen.typeMapper;
-        if (BuiltinSpecialBridgesUtil.shouldHaveTypeSafeBarrier(functionDescriptor, getSignatureMapper(typeMapper))) {
+        if (BuiltinSpecialBridgesUtil.shouldHaveTypeSafeBarrier(functionDescriptor, typeMapper::mapAsmMethod)) {
             generateTypeCheckBarrierIfNeeded(
                     new InstructionAdapter(mv), functionDescriptor, signature.getReturnType(), /* delegateParameterTypes = */null);
         }
@@ -642,14 +634,11 @@ public class FunctionCodegen {
     }
 
     private static String joinParameterNames(@NotNull List<VariableDescriptor> variables) {
-        return org.jetbrains.kotlin.utils.StringsKt.join(CollectionsKt.map(variables, new Function1<VariableDescriptor, String>() {
-            @Override
-            public String invoke(VariableDescriptor descriptor) {
-                // stub for anonymous destructuring declaration entry
-                if (descriptor.getName().isSpecial()) return "$_$";
-                return descriptor.getName().asString();
-            }
-        }), "_");
+        // stub for anonymous destructuring declaration entry
+        return StringsKt.join(
+                CollectionsKt.map(variables, descriptor -> descriptor.getName().isSpecial() ? "$_$" : descriptor.getName().asString()),
+                "_"
+        );
     }
 
     private static void generateFacadeDelegateMethodBody(
@@ -770,11 +759,8 @@ public class FunctionCodegen {
 
         Set<Bridge<Method>> bridgesToGenerate;
         if (!isSpecial) {
-            bridgesToGenerate = ImplKt.generateBridgesForFunctionDescriptor(
-                    descriptor,
-                    getSignatureMapper(typeMapper),
-                    IS_PURE_INTERFACE_CHECKER
-            );
+            bridgesToGenerate =
+                    ImplKt.generateBridgesForFunctionDescriptor(descriptor, typeMapper::mapAsmMethod, IS_PURE_INTERFACE_CHECKER);
             if (!bridgesToGenerate.isEmpty()) {
                 PsiElement origin = descriptor.getKind() == DECLARATION ? getSourceFromDescriptor(descriptor) : null;
                 boolean isSpecialBridge =
@@ -787,9 +773,7 @@ public class FunctionCodegen {
         }
         else {
             Set<BridgeForBuiltinSpecial<Method>> specials = BuiltinSpecialBridgesUtil.generateBridgesForBuiltinSpecial(
-                    descriptor,
-                    getSignatureMapper(typeMapper),
-                    IS_PURE_INTERFACE_CHECKER
+                    descriptor, typeMapper::mapAsmMethod, IS_PURE_INTERFACE_CHECKER
             );
 
             if (!specials.isEmpty()) {
@@ -815,23 +799,11 @@ public class FunctionCodegen {
     }
 
     public static boolean isThereOverriddenInKotlinClass(@NotNull CallableMemberDescriptor descriptor) {
-        return CollectionsKt.any(getAllOverriddenDescriptors(descriptor), new Function1<CallableMemberDescriptor, Boolean>() {
-            @Override
-            public Boolean invoke(CallableMemberDescriptor descriptor) {
-                return !(descriptor.getContainingDeclaration() instanceof JavaClassDescriptor) &&
-                            isClass(descriptor.getContainingDeclaration());
-            }
-        });
-    }
-
-    @NotNull
-    private static Function1<FunctionDescriptor, Method> getSignatureMapper(final @NotNull KotlinTypeMapper typeMapper) {
-        return new Function1<FunctionDescriptor, Method>() {
-            @Override
-            public Method invoke(FunctionDescriptor descriptor) {
-                return typeMapper.mapAsmMethod(descriptor);
-            }
-        };
+        return CollectionsKt.any(
+                getAllOverriddenDescriptors(descriptor),
+                overridden -> !(overridden.getContainingDeclaration() instanceof JavaClassDescriptor) &&
+                              isClass(overridden.getContainingDeclaration())
+        );
     }
 
     public static boolean isMethodOfAny(@NotNull FunctionDescriptor descriptor) {
@@ -847,7 +819,7 @@ public class FunctionCodegen {
     }
 
     @NotNull
-    public static String[] getThrownExceptions(@NotNull FunctionDescriptor function, @NotNull final KotlinTypeMapper mapper) {
+    public static String[] getThrownExceptions(@NotNull FunctionDescriptor function, @NotNull KotlinTypeMapper mapper) {
         AnnotationDescriptor annotation = function.getAnnotations().findAnnotation(new FqName("kotlin.throws"));
         if (annotation == null) {
             annotation = function.getAnnotations().findAnnotation(new FqName("kotlin.jvm.Throws"));
@@ -862,18 +834,15 @@ public class FunctionCodegen {
         if (!(value instanceof ArrayValue)) return ArrayUtil.EMPTY_STRING_ARRAY;
         ArrayValue arrayValue = (ArrayValue) value;
 
-        List<String> strings = ContainerUtil.mapNotNull(
+        List<String> strings = CollectionsKt.mapNotNull(
                 arrayValue.getValue(),
-                new Function<ConstantValue<?>, String>() {
-                    @Override
-                    public String fun(ConstantValue<?> constant) {
-                        if (constant instanceof KClassValue) {
-                            KClassValue classValue = (KClassValue) constant;
-                            ClassDescriptor classDescriptor = DescriptorUtils.getClassDescriptorForType(classValue.getValue());
-                            return mapper.mapClass(classDescriptor).getInternalName();
-                        }
-                        return null;
+                (ConstantValue<?> constant) -> {
+                    if (constant instanceof KClassValue) {
+                        KClassValue classValue = (KClassValue) constant;
+                        ClassDescriptor classDescriptor = DescriptorUtils.getClassDescriptorForType(classValue.getValue());
+                        return mapper.mapClass(classDescriptor).getInternalName();
                     }
+                    return null;
                 }
         );
         return ArrayUtil.toStringArray(strings);
@@ -1234,11 +1203,11 @@ public class FunctionCodegen {
     }
 
     private void genDelegate(
-            @NotNull final FunctionDescriptor delegateFunction,
-            final FunctionDescriptor delegatedTo,
+            @NotNull FunctionDescriptor delegateFunction,
+            FunctionDescriptor delegatedTo,
             @NotNull JvmDeclarationOrigin declarationOrigin,
-            final ClassDescriptor toClass,
-            final StackValue field
+            ClassDescriptor toClass,
+            StackValue field
     ) {
         generateMethod(
                 declarationOrigin, delegateFunction,

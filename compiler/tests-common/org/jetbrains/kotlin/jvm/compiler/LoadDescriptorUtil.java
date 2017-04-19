@@ -20,7 +20,6 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.io.FileUtil;
 import kotlin.collections.CollectionsKt;
-import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.analyzer.AnalysisResult;
 import org.jetbrains.kotlin.cli.common.output.outputUtils.OutputUtilsKt;
@@ -73,10 +72,10 @@ public class LoadDescriptorUtil {
             @NotNull ConfigurationKind configurationKind,
             boolean isBinaryRoot
     ) {
-        List<File> javaBinaryRoots = new ArrayList<File>();
+        List<File> javaBinaryRoots = new ArrayList<>();
         javaBinaryRoots.add(KotlinTestUtils.getAnnotationsJar());
 
-        List<File> javaSourceRoots = new ArrayList<File>();
+        List<File> javaSourceRoots = new ArrayList<>();
         javaSourceRoots.add(new File("compiler/testData/loadJava/include"));
         if (isBinaryRoot) {
             javaBinaryRoots.add(javaRoot);
@@ -106,16 +105,13 @@ public class LoadDescriptorUtil {
     }
 
     @NotNull
-    private static List<KtFile> createKtFiles(@NotNull List<File> kotlinFiles, @NotNull final KotlinCoreEnvironment environment) {
-        return CollectionsKt.map(kotlinFiles, new Function1<File, KtFile>() {
-            @Override
-            public KtFile invoke(File kotlinFile) {
-                try {
-                    return KotlinTestUtils.createFile(kotlinFile.getName(), FileUtil.loadFile(kotlinFile, true), environment.getProject());
-                }
-                catch (IOException e) {
-                    throw ExceptionUtilsKt.rethrow(e);
-                }
+    private static List<KtFile> createKtFiles(@NotNull List<File> kotlinFiles, @NotNull KotlinCoreEnvironment environment) {
+        return CollectionsKt.map(kotlinFiles, kotlinFile -> {
+            try {
+                return KotlinTestUtils.createFile(kotlinFile.getName(), FileUtil.loadFile(kotlinFile, true), environment.getProject());
+            }
+            catch (IOException e) {
+                throw ExceptionUtilsKt.rethrow(e);
             }
         });
     }

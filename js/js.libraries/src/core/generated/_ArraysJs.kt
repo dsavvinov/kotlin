@@ -10,6 +10,7 @@ package kotlin.collections
 
 import kotlin.js.*
 import primitiveArrayConcat
+import withType
 import kotlin.comparisons.*
 
 /**
@@ -2157,6 +2158,7 @@ public inline fun <T> Array<out T>.single(predicate: (T) -> Boolean): T {
         }
     }
     if (!found) throw NoSuchElementException("Array contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as T
 }
 
@@ -2174,6 +2176,7 @@ public inline fun ByteArray.single(predicate: (Byte) -> Boolean): Byte {
         }
     }
     if (!found) throw NoSuchElementException("Array contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as Byte
 }
 
@@ -2191,6 +2194,7 @@ public inline fun ShortArray.single(predicate: (Short) -> Boolean): Short {
         }
     }
     if (!found) throw NoSuchElementException("Array contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as Short
 }
 
@@ -2208,6 +2212,7 @@ public inline fun IntArray.single(predicate: (Int) -> Boolean): Int {
         }
     }
     if (!found) throw NoSuchElementException("Array contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as Int
 }
 
@@ -2225,6 +2230,7 @@ public inline fun LongArray.single(predicate: (Long) -> Boolean): Long {
         }
     }
     if (!found) throw NoSuchElementException("Array contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as Long
 }
 
@@ -2242,6 +2248,7 @@ public inline fun FloatArray.single(predicate: (Float) -> Boolean): Float {
         }
     }
     if (!found) throw NoSuchElementException("Array contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as Float
 }
 
@@ -2259,6 +2266,7 @@ public inline fun DoubleArray.single(predicate: (Double) -> Boolean): Double {
         }
     }
     if (!found) throw NoSuchElementException("Array contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as Double
 }
 
@@ -2276,6 +2284,7 @@ public inline fun BooleanArray.single(predicate: (Boolean) -> Boolean): Boolean 
         }
     }
     if (!found) throw NoSuchElementException("Array contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as Boolean
 }
 
@@ -2293,6 +2302,7 @@ public inline fun CharArray.single(predicate: (Char) -> Boolean): Char {
         }
     }
     if (!found) throw NoSuchElementException("Array contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as Char
 }
 
@@ -5158,6 +5168,7 @@ public fun CharArray.sortedWith(comparator: Comparator<in Char>): List<Char> {
  */
 @SinceKotlin("1.1")
 @library("arrayDeepEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun <T> Array<out T>.contentDeepEquals(other: Array<out T>): Boolean {
     definedExternally
 }
@@ -5193,6 +5204,7 @@ public fun <T> Array<out T>.contentDeepToString(): String {
  */
 @SinceKotlin("1.1")
 @library("arrayEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun <T> Array<out T>.contentEquals(other: Array<out T>): Boolean {
     definedExternally
 }
@@ -5203,6 +5215,7 @@ public infix fun <T> Array<out T>.contentEquals(other: Array<out T>): Boolean {
  */
 @SinceKotlin("1.1")
 @library("arrayEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun ByteArray.contentEquals(other: ByteArray): Boolean {
     definedExternally
 }
@@ -5213,6 +5226,7 @@ public infix fun ByteArray.contentEquals(other: ByteArray): Boolean {
  */
 @SinceKotlin("1.1")
 @library("arrayEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun ShortArray.contentEquals(other: ShortArray): Boolean {
     definedExternally
 }
@@ -5223,6 +5237,7 @@ public infix fun ShortArray.contentEquals(other: ShortArray): Boolean {
  */
 @SinceKotlin("1.1")
 @library("arrayEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun IntArray.contentEquals(other: IntArray): Boolean {
     definedExternally
 }
@@ -5233,6 +5248,7 @@ public infix fun IntArray.contentEquals(other: IntArray): Boolean {
  */
 @SinceKotlin("1.1")
 @library("arrayEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun LongArray.contentEquals(other: LongArray): Boolean {
     definedExternally
 }
@@ -5243,6 +5259,7 @@ public infix fun LongArray.contentEquals(other: LongArray): Boolean {
  */
 @SinceKotlin("1.1")
 @library("arrayEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun FloatArray.contentEquals(other: FloatArray): Boolean {
     definedExternally
 }
@@ -5253,6 +5270,7 @@ public infix fun FloatArray.contentEquals(other: FloatArray): Boolean {
  */
 @SinceKotlin("1.1")
 @library("arrayEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun DoubleArray.contentEquals(other: DoubleArray): Boolean {
     definedExternally
 }
@@ -5263,6 +5281,7 @@ public infix fun DoubleArray.contentEquals(other: DoubleArray): Boolean {
  */
 @SinceKotlin("1.1")
 @library("arrayEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun BooleanArray.contentEquals(other: BooleanArray): Boolean {
     definedExternally
 }
@@ -5273,6 +5292,7 @@ public infix fun BooleanArray.contentEquals(other: BooleanArray): Boolean {
  */
 @SinceKotlin("1.1")
 @library("arrayEquals")
+@Suppress("UNUSED_PARAMETER")
 public infix fun CharArray.contentEquals(other: CharArray): Boolean {
     definedExternally
 }
@@ -12916,6 +12936,7 @@ public fun <T> Array<out T>.asList(): List<T> {
 /**
  * Returns a [List] that wraps the original array.
  */
+@kotlin.internal.InlineOnly
 public inline fun ByteArray.asList(): List<Byte> {
     return this.unsafeCast<Array<Byte>>().asList()
 }
@@ -12923,6 +12944,7 @@ public inline fun ByteArray.asList(): List<Byte> {
 /**
  * Returns a [List] that wraps the original array.
  */
+@kotlin.internal.InlineOnly
 public inline fun ShortArray.asList(): List<Short> {
     return this.unsafeCast<Array<Short>>().asList()
 }
@@ -12930,6 +12952,7 @@ public inline fun ShortArray.asList(): List<Short> {
 /**
  * Returns a [List] that wraps the original array.
  */
+@kotlin.internal.InlineOnly
 public inline fun IntArray.asList(): List<Int> {
     return this.unsafeCast<Array<Int>>().asList()
 }
@@ -12937,6 +12960,7 @@ public inline fun IntArray.asList(): List<Int> {
 /**
  * Returns a [List] that wraps the original array.
  */
+@kotlin.internal.InlineOnly
 public inline fun LongArray.asList(): List<Long> {
     return this.unsafeCast<Array<Long>>().asList()
 }
@@ -12944,6 +12968,7 @@ public inline fun LongArray.asList(): List<Long> {
 /**
  * Returns a [List] that wraps the original array.
  */
+@kotlin.internal.InlineOnly
 public inline fun FloatArray.asList(): List<Float> {
     return this.unsafeCast<Array<Float>>().asList()
 }
@@ -12951,6 +12976,7 @@ public inline fun FloatArray.asList(): List<Float> {
 /**
  * Returns a [List] that wraps the original array.
  */
+@kotlin.internal.InlineOnly
 public inline fun DoubleArray.asList(): List<Double> {
     return this.unsafeCast<Array<Double>>().asList()
 }
@@ -12958,6 +12984,7 @@ public inline fun DoubleArray.asList(): List<Double> {
 /**
  * Returns a [List] that wraps the original array.
  */
+@kotlin.internal.InlineOnly
 public inline fun BooleanArray.asList(): List<Boolean> {
     return this.unsafeCast<Array<Boolean>>().asList()
 }
@@ -13011,9 +13038,8 @@ public inline fun IntArray.copyOf(): IntArray {
 /**
  * Returns new array which is a copy of the original array.
  */
-@Suppress("NOTHING_TO_INLINE")
-public inline fun LongArray.copyOf(): LongArray {
-    return this.asDynamic().slice()
+public fun LongArray.copyOf(): LongArray {
+    return withType("LongArray", this.asDynamic().slice())
 }
 
 /**
@@ -13035,73 +13061,71 @@ public inline fun DoubleArray.copyOf(): DoubleArray {
 /**
  * Returns new array which is a copy of the original array.
  */
-@Suppress("NOTHING_TO_INLINE")
-public inline fun BooleanArray.copyOf(): BooleanArray {
-    return this.asDynamic().slice()
+public fun BooleanArray.copyOf(): BooleanArray {
+    return withType("BooleanArray", this.asDynamic().slice())
 }
 
 /**
  * Returns new array which is a copy of the original array.
  */
-@Suppress("NOTHING_TO_INLINE")
-public inline fun CharArray.copyOf(): CharArray {
-    return this.asDynamic().slice()
+public fun CharArray.copyOf(): CharArray {
+    return withType("CharArray", this.asDynamic().slice())
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun ByteArray.copyOf(newSize: Int): ByteArray {
-    return arrayCopyResize(this, newSize, 0)
+    return fillFrom(this, ByteArray(newSize))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun ShortArray.copyOf(newSize: Int): ShortArray {
-    return arrayCopyResize(this, newSize, 0)
+    return fillFrom(this, ShortArray(newSize))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun IntArray.copyOf(newSize: Int): IntArray {
-    return arrayCopyResize(this, newSize, 0)
+    return fillFrom(this, IntArray(newSize))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun LongArray.copyOf(newSize: Int): LongArray {
-    return arrayCopyResize(this, newSize, 0L)
+    return withType("LongArray", arrayCopyResize(this, newSize, 0L))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun FloatArray.copyOf(newSize: Int): FloatArray {
-    return arrayCopyResize(this, newSize, 0.0f)
+    return fillFrom(this, FloatArray(newSize))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun DoubleArray.copyOf(newSize: Int): DoubleArray {
-    return arrayCopyResize(this, newSize, 0.0)
+    return fillFrom(this, DoubleArray(newSize))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun BooleanArray.copyOf(newSize: Int): BooleanArray {
-    return arrayCopyResize(this, newSize, false)
+    return withType("BooleanArray", arrayCopyResize(this, newSize, false))
 }
 
 /**
  * Returns new array which is a copy of the original array, resized to the given [newSize].
  */
 public fun CharArray.copyOf(newSize: Int): CharArray {
-    return arrayCopyResize(this, newSize, 0)
+    return withType("CharArray", fillFrom(this, CharArray(newSize)))
 }
 
 /**
@@ -13146,9 +13170,8 @@ public inline fun IntArray.copyOfRange(fromIndex: Int, toIndex: Int): IntArray {
 /**
  * Returns new array which is a copy of range of original array.
  */
-@Suppress("NOTHING_TO_INLINE")
-public inline fun LongArray.copyOfRange(fromIndex: Int, toIndex: Int): LongArray {
-    return this.asDynamic().slice(fromIndex, toIndex)
+public fun LongArray.copyOfRange(fromIndex: Int, toIndex: Int): LongArray {
+    return withType("LongArray", this.asDynamic().slice(fromIndex, toIndex))
 }
 
 /**
@@ -13170,17 +13193,15 @@ public inline fun DoubleArray.copyOfRange(fromIndex: Int, toIndex: Int): DoubleA
 /**
  * Returns new array which is a copy of range of original array.
  */
-@Suppress("NOTHING_TO_INLINE")
-public inline fun BooleanArray.copyOfRange(fromIndex: Int, toIndex: Int): BooleanArray {
-    return this.asDynamic().slice(fromIndex, toIndex)
+public fun BooleanArray.copyOfRange(fromIndex: Int, toIndex: Int): BooleanArray {
+    return withType("BooleanArray", this.asDynamic().slice(fromIndex, toIndex))
 }
 
 /**
  * Returns new array which is a copy of range of original array.
  */
-@Suppress("NOTHING_TO_INLINE")
-public inline fun CharArray.copyOfRange(fromIndex: Int, toIndex: Int): CharArray {
-    return this.asDynamic().slice(fromIndex, toIndex)
+public fun CharArray.copyOfRange(fromIndex: Int, toIndex: Int): CharArray {
+    return withType("CharArray", this.asDynamic().slice(fromIndex, toIndex))
 }
 
 /**
@@ -13266,21 +13287,21 @@ public operator fun <T> Array<out T>.plus(elements: Collection<T>): Array<T> {
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun ByteArray.plus(elements: Collection<Byte>): ByteArray {
-    return arrayPlusCollection(this, elements)
+    return fillFromCollection(this.copyOf(size + elements.size), this.size, elements)
 }
 
 /**
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun ShortArray.plus(elements: Collection<Short>): ShortArray {
-    return arrayPlusCollection(this, elements)
+    return fillFromCollection(this.copyOf(size + elements.size), this.size, elements)
 }
 
 /**
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun IntArray.plus(elements: Collection<Int>): IntArray {
-    return arrayPlusCollection(this, elements)
+    return fillFromCollection(this.copyOf(size + elements.size), this.size, elements)
 }
 
 /**
@@ -13294,14 +13315,14 @@ public operator fun LongArray.plus(elements: Collection<Long>): LongArray {
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun FloatArray.plus(elements: Collection<Float>): FloatArray {
-    return arrayPlusCollection(this, elements)
+    return fillFromCollection(this.copyOf(size + elements.size), this.size, elements)
 }
 
 /**
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun DoubleArray.plus(elements: Collection<Double>): DoubleArray {
-    return arrayPlusCollection(this, elements)
+    return fillFromCollection(this.copyOf(size + elements.size), this.size, elements)
 }
 
 /**
@@ -13315,7 +13336,7 @@ public operator fun BooleanArray.plus(elements: Collection<Boolean>): BooleanArr
  * Returns an array containing all elements of the original array and then all elements of the given [elements] collection.
  */
 public operator fun CharArray.plus(elements: Collection<Char>): CharArray {
-    return arrayPlusCollection(this, elements)
+    return fillFromCollection(this.copyOf(size + elements.size), this.size, elements)
 }
 
 /**
@@ -13474,21 +13495,21 @@ public fun <T> Array<out T>.sortWith(comparator: Comparator<in T>): Unit {
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun ByteArray.toTypedArray(): Array<Byte> {
-    return copyOf().unsafeCast<Array<Byte>>()
+    return js("[]").slice.call(this)
 }
 
 /**
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun ShortArray.toTypedArray(): Array<Short> {
-    return copyOf().unsafeCast<Array<Short>>()
+    return js("[]").slice.call(this)
 }
 
 /**
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun IntArray.toTypedArray(): Array<Int> {
-    return copyOf().unsafeCast<Array<Int>>()
+    return js("[]").slice.call(this)
 }
 
 /**
@@ -13502,14 +13523,14 @@ public fun LongArray.toTypedArray(): Array<Long> {
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun FloatArray.toTypedArray(): Array<Float> {
-    return copyOf().unsafeCast<Array<Float>>()
+    return js("[]").slice.call(this)
 }
 
 /**
  * Returns a *typed* object array containing all of the elements of this primitive array.
  */
 public fun DoubleArray.toTypedArray(): Array<Double> {
-    return copyOf().unsafeCast<Array<Double>>()
+    return js("[]").slice.call(this)
 }
 
 /**
@@ -13529,6 +13550,7 @@ public fun CharArray.toTypedArray(): Array<Char> {
 /**
  * Sorts the array in-place according to the order specified by the given [comparison] function.
  */
+@kotlin.internal.InlineOnly
 public inline fun <T> Array<out T>.sort(noinline comparison: (a: T, b: T) -> Int): Unit {
     asDynamic().sort(comparison)
 }
@@ -13536,6 +13558,7 @@ public inline fun <T> Array<out T>.sort(noinline comparison: (a: T, b: T) -> Int
 /**
  * Sorts the array in-place according to the order specified by the given [comparison] function.
  */
+@kotlin.internal.InlineOnly
 public inline fun ByteArray.sort(noinline comparison: (a: Byte, b: Byte) -> Int): Unit {
     asDynamic().sort(comparison)
 }
@@ -13543,6 +13566,7 @@ public inline fun ByteArray.sort(noinline comparison: (a: Byte, b: Byte) -> Int)
 /**
  * Sorts the array in-place according to the order specified by the given [comparison] function.
  */
+@kotlin.internal.InlineOnly
 public inline fun ShortArray.sort(noinline comparison: (a: Short, b: Short) -> Int): Unit {
     asDynamic().sort(comparison)
 }
@@ -13550,6 +13574,7 @@ public inline fun ShortArray.sort(noinline comparison: (a: Short, b: Short) -> I
 /**
  * Sorts the array in-place according to the order specified by the given [comparison] function.
  */
+@kotlin.internal.InlineOnly
 public inline fun IntArray.sort(noinline comparison: (a: Int, b: Int) -> Int): Unit {
     asDynamic().sort(comparison)
 }
@@ -13557,6 +13582,7 @@ public inline fun IntArray.sort(noinline comparison: (a: Int, b: Int) -> Int): U
 /**
  * Sorts the array in-place according to the order specified by the given [comparison] function.
  */
+@kotlin.internal.InlineOnly
 public inline fun LongArray.sort(noinline comparison: (a: Long, b: Long) -> Int): Unit {
     asDynamic().sort(comparison)
 }
@@ -13564,6 +13590,7 @@ public inline fun LongArray.sort(noinline comparison: (a: Long, b: Long) -> Int)
 /**
  * Sorts the array in-place according to the order specified by the given [comparison] function.
  */
+@kotlin.internal.InlineOnly
 public inline fun FloatArray.sort(noinline comparison: (a: Float, b: Float) -> Int): Unit {
     asDynamic().sort(comparison)
 }
@@ -13571,6 +13598,7 @@ public inline fun FloatArray.sort(noinline comparison: (a: Float, b: Float) -> I
 /**
  * Sorts the array in-place according to the order specified by the given [comparison] function.
  */
+@kotlin.internal.InlineOnly
 public inline fun DoubleArray.sort(noinline comparison: (a: Double, b: Double) -> Int): Unit {
     asDynamic().sort(comparison)
 }
@@ -13578,6 +13606,7 @@ public inline fun DoubleArray.sort(noinline comparison: (a: Double, b: Double) -
 /**
  * Sorts the array in-place according to the order specified by the given [comparison] function.
  */
+@kotlin.internal.InlineOnly
 public inline fun CharArray.sort(noinline comparison: (a: Char, b: Char) -> Int): Unit {
     asDynamic().sort(comparison)
 }

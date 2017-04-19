@@ -255,7 +255,11 @@ public class AndroidLintInspectionToolProvider {
     public AndroidKLintParcelCreatorInspection() {
       super(AndroidBundle.message("android.lint.inspections.parcel.creator"), ParcelDetector.ISSUE);
     }
-
+    @NotNull
+    @Override
+    public AndroidLintQuickFix[] getQuickFixes(@NotNull String message) {
+        return new AndroidLintQuickFix[]{ new ParcelableQuickFix() };
+    }
   }
 
   public static class AndroidKLintPluralsCandidateInspection extends AndroidLintInspectionBase {
@@ -383,6 +387,11 @@ public class AndroidLintInspectionToolProvider {
     @NotNull
     @Override
     public AndroidLintQuickFix[] getQuickFixes(@NotNull PsiElement startElement, @NotNull PsiElement endElement, @NotNull String message) {
+      return getApiQuickFixes(startElement, endElement, message);
+    }
+
+    @NotNull
+    public static AndroidLintQuickFix[] getApiQuickFixes(@NotNull PsiElement startElement, @NotNull PsiElement endElement, @NotNull String message) {
       int api = ApiDetector.getRequiredVersion(TextFormat.RAW.toText(message));
       if (api == -1) {
         return AndroidLintQuickFix.EMPTY_ARRAY;
@@ -409,6 +418,11 @@ public class AndroidLintInspectionToolProvider {
       super(AndroidBundle.message("android.lint.inspections.inlined.api"), ApiDetector.INLINED);
     }
 
+    @NotNull
+    @Override
+    public AndroidLintQuickFix[] getQuickFixes(@NotNull PsiElement startElement, @NotNull PsiElement endElement, @NotNull String message) {
+      return AndroidKLintNewApiInspection.getApiQuickFixes(startElement, endElement, message);
+    }
   }
 
   public static class AndroidKLintOverrideInspection extends AndroidLintInspectionBase {

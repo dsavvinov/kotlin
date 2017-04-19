@@ -21,7 +21,6 @@ import org.jetbrains.jps.api.GlobalOptions
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.KOTLIN_COMPILER_ENVIRONMENT_KEEPALIVE_PROPERTY
 import org.jetbrains.kotlin.cli.common.arguments.*
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.config.CompilerSettings
 import org.jetbrains.kotlin.config.additionalArgumentsAsList
@@ -105,7 +104,7 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner<JpsCompilerEnvironment>() {
             compilerArgs: CommonCompilerArguments,
             environment: JpsCompilerEnvironment
     ): ExitCode {
-        environment.messageCollector.report(CompilerMessageSeverity.INFO, "Using kotlin-home = " + environment.kotlinPaths.homePath, CompilerMessageLocation.NO_LOCATION)
+        environment.messageCollector.report(CompilerMessageSeverity.INFO, "Using kotlin-home = " + environment.kotlinPaths.homePath)
 
         return if (isDaemonEnabled()) {
             val daemonExitCode = compileWithDaemon(compilerClassName, compilerArgs, environment)
@@ -139,21 +138,14 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner<JpsCompilerEnvironment>() {
         val compilerMode = CompilerMode.JPS_COMPILER
         val verbose = compilerArgs.verbose
         val options = CompilationOptions(compilerMode, targetPlatform, reportCategories(verbose), reportSeverity(verbose), requestedCompilationResults = emptyArray())
-        val res = daemon.compile(sessionId, serializeWithAdditionalCompilerArgs(compilerArgs), options, JpsCompilerServicesFacadeImpl(environment), null)
+        val res = daemon.compile(sessionId, withAdditionalCompilerArgs(compilerArgs), options, JpsCompilerServicesFacadeImpl(environment), null)
         return exitCodeFromProcessExitCode(res.get())
     }
 
-    private fun withAdditionalArguments(compilerArgs: CommonCompilerArguments): CommonCompilerArguments {
-        val compilerSettings = compilerSettings ?: return compilerArgs
-        return copyBean(compilerArgs).apply {
-            parseArguments(compilerSettings.additionalArgumentsAsList.toTypedArray(), this)
-            freeArgs.addAll(0, compilerArgs.freeArgs)
-            unknownExtraFlags.addAll(0, compilerArgs.unknownExtraFlags)
-        }
-    }
-
-    private fun serializeWithAdditionalCompilerArgs(compilerArgs: CommonCompilerArguments): Array<String> {
-        return ArgumentUtils.convertArgumentsToStringList(withAdditionalArguments(compilerArgs)).toTypedArray()
+    private fun withAdditionalCompilerArgs(compilerArgs: CommonCompilerArguments): Array<String> {
+        val allArgs = ArgumentUtils.convertArgumentsToStringList(compilerArgs) +
+                      (compilerSettings?.additionalArgumentsAsList ?: emptyList())
+        return allArgs.toTypedArray()
     }
 
     private fun reportCategories(verbose: Boolean): Array<Int> {
@@ -194,7 +186,7 @@ class JpsKotlinCompilerRunner : KotlinCompilerRunner<JpsCompilerEnvironment>() {
         if (System.getProperty(GlobalOptions.COMPILE_PARALLEL_OPTION, "false").toBoolean())
             System.setProperty(KOTLIN_COMPILER_ENVIRONMENT_KEEPALIVE_PROPERTY, "true")
 
-        val rc = CompilerRunnerUtil.invokeExecMethod(compilerClassName, serializeWithAdditionalCompilerArgs(compilerArgs), environment, out)
+        val rc = CompilerRunnerUtil.invokeExecMethod(compilerClassName, withAdditionalCompilerArgs(compilerArgs), environment, out)
 
         // exec() returns an ExitCode object, class of which is loaded with a different class loader,
         // so we take it's contents through reflection

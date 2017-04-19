@@ -1,5 +1,6 @@
 <project xmlns:if="ant:if" xmlns:unless="ant:unless" name="Update Dependencies" default="update">
     <import file="common.xml" optional="false"/>
+    <import file="node_utils.xml" optional="false"/>
 
     <property name="automerge_dummy" value="This property is used to trick git merge. Do not delete empty lines around."/>
     <property name="ideaVersion" value="171-SNAPSHOT"/>
@@ -32,6 +33,8 @@
     </condition>
 
     <property name="uast.version" value="1.0.12"/>
+
+    <property name="kotlinx.coroutines.version" value="0.14.1"/>
 
     <property name="generators" value="${basedir}/generators"/>
 
@@ -175,7 +178,7 @@
         </jar>
     </target>
 
-    <target name="fetch-third-party" depends="make-dependency-dirs, make-native-platform-uberjar, fetch-idea-artifacts-for-compiler-tests">
+    <target name="fetch-third-party" depends="make-dependency-dirs, make-native-platform-uberjar">
         <antcall target="override-version"/>
 
         <!-- ProGuard -->
@@ -234,24 +237,20 @@
         <!-- Rhino -->
         <get-maven-library prefix="org/mozilla" lib="rhino" version="1.7.6"/>
 
+        <!-- Javaslang -->
+        <get-maven-library prefix="io/javaslang" lib="javaslang" version="2.0.6"/>
+
         <!-- Uast -->
         <property name="uast.server" value="http://dl.bintray.com/kotlin/uast"/>
         <get-maven-library prefix="org/jetbrains/uast" lib="uast-common" version="${uast.version}" target.jar.name.base="uast-common" server="${uast.server}"/>
         <get-maven-library prefix="org/jetbrains/uast" lib="uast-java" version="${uast.version}" target.jar.name.base="uast-java" server="${uast.server}"/>
         <get-maven-library prefix="org/jetbrains/uast" lib="uast-tests" version="${uast.version}" target.jar.name.base="uast-tests" server="${uast.server}"/>
 
-        <!-- Closure Compiler -->
-        <!-- A download url taken from http://code.google.com/p/closure-compiler/wiki/BinaryDownloads -->
-        <get src="http://dl.google.com/closure-compiler/compiler-20160315.zip"
-             dest="${dependencies}/download/closure-compiler.zip" usetimestamp="true"/>
 
-        <delete file="${dependencies}/closure-compiler.jar" failonerror="false"/>
-        <unzip src="${dependencies}/download/closure-compiler.zip" dest="${dependencies}">
-            <patternset>
-                <include name="compiler.jar"/>
-            </patternset>
-            <mapper type="merge" to="closure-compiler.jar"/>
-        </unzip>
+        <!-- kotlinx.coroutines -->
+        <get-maven-library prefix="org/jetbrains/kotlinx" lib="kotlinx-coroutines-core" version="${kotlinx.coroutines.version}"
+                           target.jar.name.base="kotlinx-coroutines-core" server="http://dl.bintray.com/kotlin/kotlinx/"/>
+
 
         <delete file="${dependencies}/android.jar" failonerror="false"/>
         <get src="http://dl-ssl.google.com/android/repository/android-19_r02.zip"
@@ -312,75 +311,18 @@
 
         <get-protobuf-and-rename-packages/>
 
-        <download-or-build-markdown-parser/>
+        <download_teamcity_artifact
+            teamcity.server.url="https://teamcity.jetbrains.com"
+            build.locator.request="${markdown.locator}"
+            artifact.path="markdown_jar/markdown.jar"
+            dest="${dependencies}/markdown.jar"
+            usetimestamp="true"
+            build.number.pattern="\d+\s-\sKotlin\s[\w-+\.]+"
+        />
+
+        <!-- node.js -->
+        <antcall target="download-nodejs-and-npm"/>
     </target>
-
-    <macrodef name="download-or-build-markdown-parser">
-        <sequential>
-            <download_teamcity_artifact
-                teamcity.server.url="https://teamcity.jetbrains.com"
-                build.locator.request="${markdown.locator}"
-                artifact.path="markdown_jar/markdown.jar"
-                dest="${dependencies}/markdown.jar"
-                usetimestamp="true"
-                build.number.pattern="\d+\s-\sKotlin\s[\w-+\.]+"
-            />
-
-            <!-- When ABI version changes, the second build should compile markdown-parser manually instead of using the old version -->
-
-            <exec executable="${dependencies}/bootstrap-compiler/Kotlin/kotlinc/bin/${kotlinc.executable.path}" failonerror="false"
-                  resultproperty="markdown.abi.incompatible">
-                <arg value="-cp"/>
-                <arg value="${dependencies}/bootstrap-compiler/Kotlin/kotlinc/lib/kotlin-compiler.jar"/>
-                <arg value="-script"/>
-                <arg value="${generators}/infrastructure/check-library-abi-version.kts"/>
-                <arg value="${dependencies}/markdown.jar"/>
-                <arg value="${dependencies}/bootstrap-compiler/Kotlin/kotlinc/lib/kotlin-runtime.jar"/>
-            </exec>
-
-            <local name="markdown.need.recompile" />
-            <condition property="markdown.need.recompile">
-                <not>
-                    <equals arg1="${markdown.abi.incompatible}" arg2="0"/>
-                </not>
-            </condition>
-
-            <sequential if:set="markdown.need.recompile">
-                <echo message="Recompiling intellij-markdown manually"/>
-                <length file="${dependencies}/markdown.jar" property="old.markdown.size"/>
-                <echo message="Size of the incompatible jar: ${old.markdown.size} bytes"/>
-                <local name="markdown.dir" />
-                <property name="markdown.dir" value="${dependencies}/intellij-markdown-forKotlin/" />
-
-                <get src="https://github.com/valich/intellij-markdown/archive/forKotlin.zip"
-                     dest="${dependencies}/download/markdown-sources.zip" usetimestamp="true"/>
-
-                <delete dir="${markdown.dir}" failonerror="false"/>
-                <unzip src="${dependencies}/download/markdown-sources.zip" dest="${dependencies}"/>
-                <exec executable="${dependencies}/bootstrap-compiler/Kotlin/kotlinc/bin/${kotlinc.executable.path}" failonerror="true">
-                    <arg value="${markdown.dir}/src"/>
-                    <arg value="-d"/>
-                    <arg value="${markdown.dir}/out"/>
-                </exec>
-
-                <javac srcdir="${markdown.dir}/src"
-                       destdir="${markdown.dir}/out" includeantruntime="false">
-                    <classpath>
-                        <path location="${dependencies}/bootstrap-compiler/Kotlin/kotlinc/lib/kotlin-runtime.jar"/>
-                    </classpath>
-                </javac>
-
-                <delete file="${dependencies}/markdown.jar" failonerror="false"/>
-                <jar jarfile="${dependencies}/markdown.jar">
-                    <fileset dir="${markdown.dir}/out" includes="**"/>
-                </jar>
-
-                <echo message="Compilation of intellij-markdown finished"/>
-                <length file="${dependencies}/markdown.jar" property="new.markdown.size"/>
-                <echo message="Size of the new jar: ${new.markdown.size} bytes"/>
-            </sequential>
-        </sequential>
-    </macrodef>
 
     <macrodef name="get-protobuf-and-rename-packages">
         <sequential>
@@ -441,14 +383,6 @@
                 source.jar="${dependencies}/download/protobuf-java-${protobuf.version}-sources.jar"
                 target.jar="${dependencies}/protobuf-${protobuf.version}-sources.jar"
             />
-
-            <!-- Build protobuf lite jar -->
-            <exec executable="${dependencies}/bootstrap-compiler/Kotlin/kotlinc/bin/${kotlinc.executable.path}" failonerror="true">
-                <arg value="-script"/>
-                <arg value="${generators}/infrastructure/build-protobuf-lite.kts"/>
-                <arg value="${dependencies}/protobuf-${protobuf.version}.jar"/>
-                <arg value="${dependencies}/protobuf-${protobuf.version}-lite.jar"/>
-            </exec>
         </sequential>
     </macrodef>
 
@@ -483,7 +417,11 @@
             <sequential unless:set="idea.already.downloaded">
                 <echo message="IDEA build id: ${execute.build.id}, previous build id: ${dependencies.info.prev.idea.build.id}"/>
 
-                <delete dir="${idea.dir}" unless:set="edition.matched"/>
+                <delete dir="${idea.dir}" unless:set="edition.matched">
+                    <exclude name="config-idea/**"/>
+                    <exclude name="system-idea/**"/>
+                </delete>
+
                 <download_and_update_idea idea.maven.version="@{idea.maven.version}" base.repository.url="@{base.url}"/>
 
                 <propertyfile file="${dependencies.info.file}">
@@ -663,8 +601,6 @@
                         <file file="@{idea.dir}/lib/asm-all.jar"/>
                         <file file="@{idea.dir}/lib/snappy-in-java-0.5.1.jar"/>
 
-                        <file file="@{idea.dir}/lib/xercesImpl.jar"/>
-
                         <!-- TODO temporary workaround since util-rt is not packaged into intellij-core.jar -->
                         <file file="@{idea.dir}/lib/util.jar"/>
                     </resources>
@@ -833,18 +769,6 @@
       - Fill the target with downloading correct annotations
     -->
     <target name="fetch-annotations"/>
-
-    <target name="fetch-idea-artifacts-for-compiler-tests">
-        <!-- For running compiler tests with Java 1.6 -->
-        <local name="idea.for.compiler.testing.dir"/>
-        <property name="idea.for.compiler.testing.dir" value="dependencies/download/idea-for-compiler-test"/>
-        <mkdir dir="${idea.for.compiler.testing.dir}"/>
-        <local name="idea.for.compiler.testing.base.url"/>
-        <property name="idea.for.compiler.testing.base.url"
-                  value="https://teamcity.jetbrains.com/guestAuth/repository/download/IntelliJIdeaCe_OpenapiJar/idea-15.0.5"/>
-        <get src="${idea.for.compiler.testing.base.url}/idea_rt.jar" dest="${idea.for.compiler.testing.dir}/idea_rt.jar" usetimestamp="true"/>
-        <get src="${idea.for.compiler.testing.base.url}/openapi.jar" dest="${idea.for.compiler.testing.dir}/openapi.jar" usetimestamp="true"/>
-    </target>
 
     <target name="get_android_studio">
         <condition property="android.os.tag" value="windows">

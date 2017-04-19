@@ -21,8 +21,6 @@ import com.intellij.psi.PsiElement;
 import com.intellij.util.ArrayUtil;
 import kotlin.Unit;
 import kotlin.collections.CollectionsKt;
-import kotlin.jvm.functions.Function0;
-import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -85,6 +83,7 @@ import static org.jetbrains.kotlin.resolve.DescriptorUtils.*;
 import static org.jetbrains.kotlin.resolve.jvm.AsmTypes.JAVA_STRING_TYPE;
 import static org.jetbrains.kotlin.resolve.jvm.AsmTypes.OBJECT_TYPE;
 import static org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOrigin.NO_ORIGIN;
+import static org.jetbrains.kotlin.resolve.jvm.diagnostics.JvmDeclarationOriginKind.CLASS_MEMBER_DELEGATION_TO_DEFAULT_IMPL;
 import static org.jetbrains.kotlin.types.Variance.INVARIANT;
 import static org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils.isLocalFunction;
 import static org.jetbrains.org.objectweb.asm.Opcodes.*;
@@ -102,8 +101,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
 
     private final DelegationFieldsInfo delegationFieldsInfo;
 
-    private final List<Function2<ImplementationBodyCodegen, ClassBuilder, Unit>> additionalTasks =
-            new ArrayList<Function2<ImplementationBodyCodegen, ClassBuilder, Unit>>();
+    private final List<Function2<ImplementationBodyCodegen, ClassBuilder, Unit>> additionalTasks = new ArrayList<>();
 
     public ImplementationBodyCodegen(
             @NotNull KtPureClassOrObject aClass,
@@ -257,7 +255,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         }
     }
 
-    private static final Map<FqName, String> KOTLIN_MARKER_INTERFACES = new HashMap<FqName, String>();
+    private static final Map<FqName, String> KOTLIN_MARKER_INTERFACES = new HashMap<>();
     static {
         KOTLIN_MARKER_INTERFACES.put(FQ_NAMES.iterator, "kotlin/jvm/internal/markers/KMappedMarker");
         KOTLIN_MARKER_INTERFACES.put(FQ_NAMES.iterable, "kotlin/jvm/internal/markers/KMappedMarker");
@@ -304,8 +302,8 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         }
         sw.writeSuperclassEnd();
 
-        LinkedHashSet<String> superInterfaces = new LinkedHashSet<String>();
-        Set<String> kotlinMarkerInterfaces = new LinkedHashSet<String>();
+        LinkedHashSet<String> superInterfaces = new LinkedHashSet<>();
+        Set<String> kotlinMarkerInterfaces = new LinkedHashSet<>();
 
         for (KotlinType supertype : descriptor.getTypeConstructor().getSupertypes()) {
             if (isJvmInterface(supertype.getConstructor().getDeclarationDescriptor())) {
@@ -332,7 +330,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         superInterfaces.addAll(kotlinMarkerInterfaces);
 
         return new JvmClassSignature(classAsmType.getInternalName(), superClassInfo.getType().getInternalName(),
-                                     new ArrayList<String>(superInterfaces), sw.makeJavaGenericSignature());
+                                     new ArrayList<>(superInterfaces), sw.makeJavaGenericSignature());
     }
 
     private void getSuperClass() {
@@ -367,6 +365,8 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         if (context.closure != null)
             genClosureFields(context.closure, v, typeMapper);
 
+        if (state.getClassBuilderMode() == ClassBuilderMode.LIGHT_CLASSES) return;
+
         for (ExpressionCodegenExtension extension : ExpressionCodegenExtension.Companion.getInstances(state.getProject())) {
             extension.generateClassSyntheticParts(this);
         }
@@ -381,10 +381,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
                 generateSecondaryConstructor(secondaryConstructor);
             }
         }
-        catch (CompilationException e) {
-            throw e;
-        }
-        catch (ProcessCanceledException e) {
+        catch (CompilationException | ProcessCanceledException e) {
             throw e;
         }
         catch (RuntimeException e) {
@@ -395,15 +392,14 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
     private void generateToArray() {
         if (descriptor.getKind() == ClassKind.INTERFACE) return;
 
-        final KotlinBuiltIns builtIns = DescriptorUtilsKt.getBuiltIns(descriptor);
+        KotlinBuiltIns builtIns = DescriptorUtilsKt.getBuiltIns(descriptor);
         if (!isSubclass(descriptor, builtIns.getCollection())) return;
 
-        if (CollectionsKt.any(DescriptorUtilsKt.getAllSuperclassesWithoutAny(descriptor), new Function1<ClassDescriptor, Boolean>() {
-            @Override
-            public Boolean invoke(ClassDescriptor classDescriptor) {
-                return !(classDescriptor instanceof JavaClassDescriptor) && isSubclass(classDescriptor, builtIns.getCollection());
-            }
-        })) return;
+        if (CollectionsKt.any(DescriptorUtilsKt.getAllSuperclassesWithoutAny(descriptor),
+                              classDescriptor -> !(classDescriptor instanceof JavaClassDescriptor) &&
+                                                 isSubclass(classDescriptor, builtIns.getCollection()))) {
+            return;
+        }
 
         Collection<SimpleFunctionDescriptor> functions = descriptor.getDefaultType().getMemberScope().getContributedFunctions(
                 Name.identifier("toArray"), NoLookupLocation.FROM_BACKEND
@@ -637,7 +633,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         }
 
         @Override
-        public void generateComponentFunction(@NotNull FunctionDescriptor function, @NotNull final ValueParameterDescriptor parameter) {
+        public void generateComponentFunction(@NotNull FunctionDescriptor function, @NotNull ValueParameterDescriptor parameter) {
             PsiElement originalElement = DescriptorToSourceUtils.descriptorToDeclaration(parameter);
             functionCodegen.generateMethod(JvmDeclarationOriginKt.OtherOrigin(originalElement, function), function, new FunctionGenerationStrategy() {
                 @Override
@@ -665,10 +661,10 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
 
         @Override
         public void generateCopyFunction(
-                @NotNull final FunctionDescriptor function,
+                @NotNull FunctionDescriptor function,
                 @NotNull List<? extends KtParameter> constructorParameters
         ) {
-            final Type thisDescriptorType = typeMapper.mapType(descriptor);
+            Type thisDescriptorType = typeMapper.mapType(descriptor);
 
             functionCodegen.generateMethod(JvmDeclarationOriginKt.OtherOrigin(myClass, function), function, new FunctionGenerationStrategy() {
                 @Override
@@ -738,15 +734,12 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
 
             functionCodegen.generateDefaultIfNeeded(
                     context.intoFunction(function), function, OwnerKind.IMPLEMENTATION,
-                    new DefaultParameterValueLoader() {
-                        @Override
-                        public StackValue genValue(ValueParameterDescriptor valueParameter, ExpressionCodegen codegen) {
-                            assert ((ClassDescriptor) function.getContainingDeclaration()).isData()
-                                    : "Function container must have [data] modifier: " + function;
-                            PropertyDescriptor property = bindingContext.get(BindingContext.VALUE_PARAMETER_AS_PROPERTY, valueParameter);
-                            assert property != null : "Copy function doesn't correspond to any property: " + function;
-                            return codegen.intermediateValueForProperty(property, false, null, StackValue.LOCAL_0);
-                        }
+                    (valueParameter, codegen) -> {
+                        assert ((ClassDescriptor) function.getContainingDeclaration()).isData()
+                                : "Function container must have [data] modifier: " + function;
+                        PropertyDescriptor property = bindingContext.get(BindingContext.VALUE_PARAMETER_AS_PROPERTY, valueParameter);
+                        assert property != null : "Copy function doesn't correspond to any property: " + function;
+                        return codegen.intermediateValueForProperty(property, false, null, StackValue.LOCAL_0);
                     },
                     null
             );
@@ -788,14 +781,11 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
 
     private void generateEnumValueOfMethod() {
         FunctionDescriptor valueOfFunction =
-                CollectionsKt.single(descriptor.getStaticScope().getContributedFunctions(ENUM_VALUE_OF, NoLookupLocation.FROM_BACKEND), new Function1<FunctionDescriptor, Boolean>() {
-                    @Override
-                    public Boolean invoke(FunctionDescriptor descriptor) {
-                        return DescriptorUtilsKt.isEnumValueOfMethod(descriptor);
-                    }
-                });
-        MethodVisitor mv = v.newMethod(JvmDeclarationOriginKt.OtherOrigin(myClass, valueOfFunction), ACC_PUBLIC | ACC_STATIC, ENUM_VALUE_OF.asString(),
-                                       "(Ljava/lang/String;)" + classAsmType.getDescriptor(), null, null);
+                CollectionsKt.single(descriptor.getStaticScope().getContributedFunctions(ENUM_VALUE_OF, NoLookupLocation.FROM_BACKEND),
+                                     DescriptorUtilsKt::isEnumValueOfMethod);
+        MethodVisitor mv =
+                v.newMethod(JvmDeclarationOriginKt.OtherOrigin(myClass, valueOfFunction), ACC_PUBLIC | ACC_STATIC, ENUM_VALUE_OF.asString(),
+                            "(Ljava/lang/String;)" + classAsmType.getDescriptor(), null, null);
         if (!state.getClassBuilderMode().generateBodies) return;
 
         mv.visitCode();
@@ -896,15 +886,15 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         StackValue.singleton(companionObject, typeMapper).store(instance, codegen.v, true);
     }
 
-    private void generatePrimaryConstructor(final DelegationFieldsInfo delegationFieldsInfo) {
+    private void generatePrimaryConstructor(DelegationFieldsInfo delegationFieldsInfo) {
         if (isInterface(descriptor) || isAnnotationClass(descriptor)) return;
 
-        final ClassConstructorDescriptor constructorDescriptor = descriptor.getUnsubstitutedPrimaryConstructor();
+        ClassConstructorDescriptor constructorDescriptor = descriptor.getUnsubstitutedPrimaryConstructor();
         if (constructorDescriptor == null) return;
 
         ConstructorContext constructorContext = context.intoConstructor(constructorDescriptor);
 
-        final KtPrimaryConstructor primaryConstructor = myClass.getPrimaryConstructor();
+        KtPrimaryConstructor primaryConstructor = myClass.getPrimaryConstructor();
         JvmDeclarationOrigin origin = JvmDeclarationOriginKt
                 .OtherOrigin(primaryConstructor != null ? primaryConstructor : myClass.getPsiOrParent(), constructorDescriptor);
         functionCodegen.generateMethod(origin, constructorDescriptor, constructorContext,
@@ -922,7 +912,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         new DefaultParameterValueSubstitutor(state).generatePrimaryConstructorOverloadsIfNeeded(constructorDescriptor, v, this, kind, myClass);
     }
 
-    private void generateSecondaryConstructor(@NotNull final ClassConstructorDescriptor constructorDescriptor) {
+    private void generateSecondaryConstructor(@NotNull ClassConstructorDescriptor constructorDescriptor) {
         if (!canHaveDeclaredConstructors(descriptor)) return;
 
         ConstructorContext constructorContext = context.intoConstructor(constructorDescriptor);
@@ -994,13 +984,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         }
 
         if (JvmAbi.isCompanionObjectWithBackingFieldsInOuter(descriptor)) {
-            final ImplementationBodyCodegen parentCodegen = (ImplementationBodyCodegen) getParentCodegen();
-            generateInitializers(new Function0<ExpressionCodegen>() {
-                @Override
-                public ExpressionCodegen invoke() {
-                    return parentCodegen.createOrGetClInitCodegen();
-                }
-            });
+            generateInitializers(((ImplementationBodyCodegen) getParentCodegen())::createOrGetClInitCodegen);
         }
         else {
             generateInitializers(codegen);
@@ -1050,7 +1034,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         }
         else if (constructor.hasBody() && !(constructor instanceof KtSecondaryConstructor && !((KtSecondaryConstructor) constructor).hasImplicitDelegationCall())) {
             KtBlockExpression bodyExpression = constructor.getBodyExpression();
-            List<KtExpression> statements = bodyExpression != null ? bodyExpression.getStatements() : Collections.<KtExpression>emptyList();
+            List<KtExpression> statements = bodyExpression != null ? bodyExpression.getStatements() : Collections.emptyList();
             if (!statements.isEmpty()) {
                 codegen.markStartLineNumber(statements.iterator().next());
             }
@@ -1063,13 +1047,8 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         }
     }
 
-    private void generateInitializers(@NotNull final ExpressionCodegen codegen) {
-        generateInitializers(new Function0<ExpressionCodegen>() {
-            @Override
-            public ExpressionCodegen invoke() {
-                return codegen;
-            }
-        });
+    private void generateInitializers(@NotNull ExpressionCodegen codegen) {
+        generateInitializers(() -> codegen);
     }
 
     private void generateClosureInitialization(@NotNull InstructionAdapter iv) {
@@ -1112,7 +1091,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
                 return StackValue.field(type, classAsmType, name, false, StackValue.none());
             }
         }
-        private final Map<KtDelegatedSuperTypeEntry, Field> fields = new HashMap<KtDelegatedSuperTypeEntry, Field>();
+        private final Map<KtDelegatedSuperTypeEntry, Field> fields = new HashMap<>();
 
         @NotNull
         public Field getInfo(KtDelegatedSuperTypeEntry specifier) {
@@ -1289,7 +1268,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
     private void generateTraitMethods() {
         if (isAnnotationOrJvmInterfaceWithoutDefaults(descriptor, state)) return;
 
-        List<FunctionDescriptor> restrictedInheritance = new ArrayList<FunctionDescriptor>();
+        List<FunctionDescriptor> restrictedInheritance = new ArrayList<>();
         for (Map.Entry<FunctionDescriptor, FunctionDescriptor> entry : CodegenUtil.getNonPrivateTraitMethods(descriptor).entrySet()) {
             FunctionDescriptor interfaceFun = entry.getKey();
             //skip java 8 default methods
@@ -1306,14 +1285,15 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
         CodegenUtilKt.reportTarget6InheritanceErrorIfNeeded(descriptor, myClass.getPsiOrParent(), restrictedInheritance, state);
     }
 
-    private void generateDelegationToDefaultImpl(@NotNull final FunctionDescriptor traitFun, @NotNull final FunctionDescriptor inheritedFun) {
+    private void generateDelegationToDefaultImpl(@NotNull  FunctionDescriptor interfaceFun, @NotNull  FunctionDescriptor inheritedFun) {
+
         functionCodegen.generateMethod(
-                JvmDeclarationOriginKt.DelegationToDefaultImpls(descriptorToDeclaration(traitFun), traitFun),
+                new JvmDeclarationOrigin(CLASS_MEMBER_DELEGATION_TO_DEFAULT_IMPL, descriptorToDeclaration(interfaceFun), interfaceFun),
                 inheritedFun,
                 new FunctionGenerationStrategy.CodegenBased(state) {
                     @Override
                     public void doGenerateBody(@NotNull ExpressionCodegen codegen, @NotNull JvmMethodSignature signature) {
-                        DeclarationDescriptor containingDeclaration = traitFun.getContainingDeclaration();
+                        DeclarationDescriptor containingDeclaration = interfaceFun.getContainingDeclaration();
                         if (!DescriptorUtils.isInterface(containingDeclaration)) return;
 
                         DeclarationDescriptor declarationInheritedFun = inheritedFun.getContainingDeclaration();
@@ -1325,12 +1305,12 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
                         ClassDescriptor containingTrait = (ClassDescriptor) containingDeclaration;
                         Type traitImplType = typeMapper.mapDefaultImpls(containingTrait);
 
-                        Method traitMethod = typeMapper.mapAsmMethod(traitFun.getOriginal(), OwnerKind.DEFAULT_IMPLS);
+                        Method traitMethod = typeMapper.mapAsmMethod(interfaceFun.getOriginal(), OwnerKind.DEFAULT_IMPLS);
 
                         Type[] argTypes = signature.getAsmMethod().getArgumentTypes();
                         Type[] originalArgTypes = traitMethod.getArgumentTypes();
                         assert originalArgTypes.length == argTypes.length + 1 :
-                                "Invalid trait implementation signature: " + signature + " vs " + traitMethod + " for " + traitFun;
+                                "Invalid trait implementation signature: " + signature + " vs " + traitMethod + " for " + interfaceFun;
 
                         InstructionAdapter iv = codegen.v;
                         iv.load(0, OBJECT_TYPE);
@@ -1648,7 +1628,7 @@ public class ImplementationBodyCodegen extends ClassBodyCodegen {
 
     public void addCompanionObjectPropertyToCopy(@NotNull PropertyDescriptor descriptor, Object defaultValue) {
         if (companionObjectPropertiesToCopy == null) {
-            companionObjectPropertiesToCopy = new ArrayList<PropertyAndDefaultValue>();
+            companionObjectPropertiesToCopy = new ArrayList<>();
         }
         companionObjectPropertiesToCopy.add(new PropertyAndDefaultValue(descriptor, defaultValue));
     }

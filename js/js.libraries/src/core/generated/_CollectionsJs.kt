@@ -255,6 +255,7 @@ public fun <@kotlin.internal.OnlyInputTypes T> Iterable<T>.indexOf(element: T): 
 /**
  * Returns first index of [element], or -1 if the list does not contain element.
  */
+@Suppress("EXTENSION_SHADOWED_BY_MEMBER") // false warning, extension takes precedence in some cases
 public fun <@kotlin.internal.OnlyInputTypes T> List<T>.indexOf(element: T): Int {
     return indexOf(element)
 }
@@ -355,6 +356,7 @@ public inline fun <T> Iterable<T>.last(predicate: (T) -> Boolean): T {
         }
     }
     if (!found) throw NoSuchElementException("Collection contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return last as T
 }
 
@@ -389,6 +391,7 @@ public fun <@kotlin.internal.OnlyInputTypes T> Iterable<T>.lastIndexOf(element: 
 /**
  * Returns last index of [element], or -1 if the list does not contain element.
  */
+@Suppress("EXTENSION_SHADOWED_BY_MEMBER") // false warning, extension takes precedence in some cases
 public fun <@kotlin.internal.OnlyInputTypes T> List<T>.lastIndexOf(element: T): Int {
     return lastIndexOf(element)
 }
@@ -486,6 +489,7 @@ public inline fun <T> Iterable<T>.single(predicate: (T) -> Boolean): T {
         }
     }
     if (!found) throw NoSuchElementException("Collection contains no element matching the predicate.")
+    @Suppress("UNCHECKED_CAST")
     return single as T
 }
 
@@ -1198,7 +1202,6 @@ public inline fun <T, K> Iterable<T>.groupingBy(crossinline keySelector: (T) -> 
  * Returns a list containing the results of applying the given [transform] function
  * to each element in the original collection.
  */
-@Suppress("NON_PUBLIC_CALL_FROM_PUBLIC_INLINE")
 public inline fun <T, R> Iterable<T>.map(transform: (T) -> R): List<R> {
     return mapTo(ArrayList<R>(collectionSizeOrDefault(10)), transform)
 }
@@ -1209,7 +1212,6 @@ public inline fun <T, R> Iterable<T>.map(transform: (T) -> R): List<R> {
  * @param [transform] function that takes the index of an element and the element itself
  * and returns the result of the transform applied to the element.
  */
-@Suppress("NON_PUBLIC_CALL_FROM_PUBLIC_INLINE")
 public inline fun <T, R> Iterable<T>.mapIndexed(transform: (index: Int, T) -> R): List<R> {
     return mapIndexedTo(ArrayList<R>(collectionSizeOrDefault(10)), transform)
 }

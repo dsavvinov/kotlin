@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.allopen.AbstractBytecodeListingTestForAllOpen
 import org.jetbrains.kotlin.android.*
 import org.jetbrains.kotlin.android.configure.AbstractConfigureProjectTest
 import org.jetbrains.kotlin.android.folding.AbstractAndroidResourceFoldingTest
+import org.jetbrains.kotlin.android.intention.AbstractAndroidIntentionTest
 import org.jetbrains.kotlin.android.intention.AbstractAndroidResourceIntentionTest
 import org.jetbrains.kotlin.android.lint.AbstractKotlinLintTest
 import org.jetbrains.kotlin.android.quickfix.AbstractAndroidLintQuickfixTest
@@ -112,8 +113,10 @@ import org.jetbrains.kotlin.idea.refactoring.AbstractNameSuggestionProviderTest
 import org.jetbrains.kotlin.idea.refactoring.inline.AbstractInlineTest
 import org.jetbrains.kotlin.idea.refactoring.introduce.AbstractExtractionTest
 import org.jetbrains.kotlin.idea.refactoring.move.AbstractMoveTest
+import org.jetbrains.kotlin.idea.refactoring.move.AbstractMultiModuleMoveTest
 import org.jetbrains.kotlin.idea.refactoring.pullUp.AbstractPullUpTest
 import org.jetbrains.kotlin.idea.refactoring.pushDown.AbstractPushDownTest
+import org.jetbrains.kotlin.idea.refactoring.rename.AbstractMultiModuleRenameTest
 import org.jetbrains.kotlin.idea.refactoring.rename.AbstractRenameTest
 import org.jetbrains.kotlin.idea.refactoring.safeDelete.AbstractSafeDeleteTest
 import org.jetbrains.kotlin.idea.repl.AbstractIdeReplCompletionTest
@@ -126,6 +129,7 @@ import org.jetbrains.kotlin.idea.stubs.AbstractResolveByStubTest
 import org.jetbrains.kotlin.idea.stubs.AbstractStubBuilderTest
 import org.jetbrains.kotlin.integration.AbstractAntTaskTest
 import org.jetbrains.kotlin.ir.AbstractIrCfgTestCase
+import org.jetbrains.kotlin.ir.AbstractIrSourceRangesTestCase
 import org.jetbrains.kotlin.ir.AbstractIrTextTestCase
 import org.jetbrains.kotlin.j2k.AbstractJavaToKotlinConverterForWebDemoTest
 import org.jetbrains.kotlin.j2k.AbstractJavaToKotlinConverterMultiFileTest
@@ -275,6 +279,10 @@ fun main(args: Array<String>) {
             model("ir/irCfg")
         }
 
+        testClass<AbstractIrSourceRangesTestCase> {
+            model("ir/sourceRanges")
+        }
+
         testClass<AbstractBytecodeListingTest> {
             model("codegen/bytecodeListing")
         }
@@ -380,7 +388,7 @@ fun main(args: Array<String>) {
         }
 
         testClass<AbstractCompilerLightClassTest> {
-            model("asJava/lightClasses", excludeDirs = listOf("local"))
+            model("asJava/lightClasses", excludeDirs = listOf("local", "ideRegression"))
         }
 
         testClass<AbstractTypeBindingTest> {
@@ -705,6 +713,10 @@ fun main(args: Array<String>) {
             model("refactoring/move", extension = "test", singleClass = true)
         }
 
+        testClass<AbstractMultiModuleMoveTest> {
+            model("refactoring/moveMultiModule", extension = "test", singleClass = true)
+        }
+
         testClass<AbstractMultiFileIntentionTest> {
             model("multiFileIntentions", extension = "test", singleClass = true, filenameStartsLowerCase = true)
         }
@@ -740,6 +752,10 @@ fun main(args: Array<String>) {
 
         testClass<AbstractRenameTest> {
             model("refactoring/rename", extension = "test", singleClass = true)
+        }
+
+        testClass<AbstractMultiModuleRenameTest> {
+            model("refactoring/renameMultiModule", extension = "test", singleClass = true)
         }
 
         testClass<AbstractOutOfBlockModificationTest> {
@@ -965,11 +981,11 @@ fun main(args: Array<String>) {
 
     testGroup("idea/tests", "compiler/testData") {
         testClass<AbstractIdeLightClassTest> {
-            model("asJava/lightClasses", excludeDirs = listOf("delegation"))
+            model("asJava/lightClasses", excludeDirs = listOf("delegation"), pattern = KT_WITHOUT_DOTS_IN_NAME)
         }
 
         testClass<AbstractIdeCompiledLightClassTest> {
-            model("asJava/lightClasses", excludeDirs = listOf("local", "compilationErrors"), pattern = KT_WITHOUT_DOTS_IN_NAME)
+            model("asJava/lightClasses", excludeDirs = listOf("local", "compilationErrors", "ideRegression"), pattern = KT_WITHOUT_DOTS_IN_NAME)
         }
     }
 
@@ -1217,6 +1233,10 @@ fun main(args: Array<String>) {
             model("configuration/android-gradle", pattern = """(\w+)_before\.gradle$""", testMethod = "doTestAndroidGradle")
         }
 
+        testClass<AbstractAndroidIntentionTest> {
+            model("android/intention", pattern = "^([\\w\\-_]+)\\.kt$")
+        }
+
         testClass<AbstractAndroidResourceIntentionTest> {
             model("android/resourceIntention", extension = "test", singleClass = true)
         }
@@ -1276,6 +1296,10 @@ fun main(args: Array<String>) {
 
         testClass<AbstractEnumValuesInlineTests> {
             model("codegen/boxInline/enum/", targetBackend = TargetBackend.JS)
+        }
+
+        testClass<AbstractJsTypedArraysBoxTest> {
+            model("codegen/box/arrays", targetBackend = TargetBackend.JS)
         }
     }
 }

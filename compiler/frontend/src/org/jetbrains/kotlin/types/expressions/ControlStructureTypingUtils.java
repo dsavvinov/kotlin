@@ -118,7 +118,7 @@ public class ControlStructureTypingUtils {
         TracingStrategy tracing = createTracingForSpecialConstruction(call, construct.getName(), context);
         TypeSubstitutor knownTypeParameterSubstitutor = createKnownTypeParameterSubstitutorForSpecialCall(construct, function, context.expectedType);
         ResolutionCandidate<FunctionDescriptor> resolutionCandidate =
-                ResolutionCandidate.<FunctionDescriptor>create(call, function, knownTypeParameterSubstitutor);
+                ResolutionCandidate.create(call, function, knownTypeParameterSubstitutor);
         OverloadResolutionResults<FunctionDescriptor> results = callResolver.resolveCallWithKnownCandidate(
                 call, tracing, context, resolutionCandidate, dataFlowInfoForArguments);
         assert results.isSingleResult() : "Not single result after resolving one known candidate";
@@ -163,7 +163,7 @@ public class ControlStructureTypingUtils {
         KotlinType type = typeParameter.getDefaultType();
         KotlinType nullableType = TypeUtils.makeNullable(type);
 
-        List<ValueParameterDescriptor> valueParameters = new ArrayList<ValueParameterDescriptor>(argumentNames.size());
+        List<ValueParameterDescriptor> valueParameters = new ArrayList<>(argumentNames.size());
         for (int i = 0; i < argumentNames.size(); i++) {
             KotlinType argumentType = isArgumentNullable.get(i) ? nullableType : type;
             ValueParameterDescriptorImpl valueParameter = new ValueParameterDescriptorImpl(
@@ -191,7 +191,7 @@ public class ControlStructureTypingUtils {
 
     private static MutableDataFlowInfoForArguments createIndependentDataFlowInfoForArgumentsForCall(
             @NotNull DataFlowInfo initialDataFlowInfo,
-            final Map<ValueArgument, DataFlowInfo> dataFlowInfoForArgumentsMap
+            Map<ValueArgument, DataFlowInfo> dataFlowInfoForArgumentsMap
     ) {
         return new MutableDataFlowInfoForArguments(initialDataFlowInfo) {
 
@@ -235,11 +235,11 @@ public class ControlStructureTypingUtils {
     }
 
     /*package*/ static Call createCallForSpecialConstruction(
-            @NotNull final KtExpression expression,
-            @NotNull final KtExpression calleeExpression,
+            @NotNull KtExpression expression,
+            @NotNull KtExpression calleeExpression,
             @NotNull List<? extends KtExpression> arguments
     ) {
-        final List<ValueArgument> valueArguments = Lists.newArrayList();
+        List<ValueArgument> valueArguments = Lists.newArrayList();
         for (KtExpression argument : arguments) {
             valueArguments.add(CallMaker.makeValueArgument(argument));
         }
@@ -314,9 +314,9 @@ public class ControlStructureTypingUtils {
 
     @NotNull
     private TracingStrategy createTracingForSpecialConstruction(
-            final @NotNull Call call,
+            @NotNull Call call,
             @NotNull String constructionName,
-            final @NotNull ExpressionTypingContext context
+            @NotNull ExpressionTypingContext context
     ) {
         class CheckTypeContext {
             public BindingTrace trace;
@@ -333,8 +333,7 @@ public class ControlStructureTypingUtils {
             }
         }
 
-        final KtVisitor<Boolean, CheckTypeContext> checkTypeVisitor = new KtVisitor<Boolean, CheckTypeContext>() {
-
+        KtVisitor<Boolean, CheckTypeContext> checkTypeVisitor = new KtVisitor<Boolean, CheckTypeContext>() {
             private boolean checkExpressionType(@NotNull KtExpression expression, CheckTypeContext c) {
                 KotlinTypeInfo typeInfo = BindingContextUtils.getRecordedTypeInfo(expression, c.trace.getBindingContext());
                 if (typeInfo == null) return false;

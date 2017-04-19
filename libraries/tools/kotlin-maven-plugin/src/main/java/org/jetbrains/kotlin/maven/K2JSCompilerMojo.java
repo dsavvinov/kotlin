@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @noinspection UnusedDeclaration
  */
-@Mojo(name = "js", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = ResolutionScope.COMPILE, threadSafe = true)
+@Mojo(name = "js", defaultPhase = LifecyclePhase.COMPILE, requiresDependencyResolution = ResolutionScope.COMPILE, threadSafe = false)
 public class K2JSCompilerMojo extends KotlinCompileMojoBase<K2JSCompilerArguments> {
 
     private static final String OUTPUT_DIRECTORIES_COLLECTOR_PROPERTY_NAME = "outputDirectoriesCollector";
@@ -70,6 +70,12 @@ public class K2JSCompilerMojo extends KotlinCompileMojoBase<K2JSCompilerArgument
     private boolean sourceMap;
 
     /**
+     * Main invocation behaviour. Possible values are <b>call</b> and <b>noCall</b>.
+     */
+    @Parameter
+    private String main;
+
+    /**
      * <p>Specifies which JS module system to generate compatible sources for. Options are:</p>
      * <ul>
      *     <li><b>amd</b> &mdash;
@@ -90,6 +96,7 @@ public class K2JSCompilerMojo extends KotlinCompileMojoBase<K2JSCompilerArgument
         arguments.noStdlib = true;
         arguments.metaInfo = metaInfo;
         arguments.moduleKind = moduleKind;
+        arguments.main = main;
 
         List<String> libraries = null;
         try {

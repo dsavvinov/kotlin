@@ -19,11 +19,9 @@ package org.jetbrains.kotlin.kapt3.test
 import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.util.text.StringUtil
 import com.sun.tools.javac.tree.JCTree
-import org.jetbrains.kotlin.cli.common.messages.MessageRenderer
-import org.jetbrains.kotlin.cli.common.messages.PrintingMessageCollector
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.codegen.CodegenTestCase
-import org.jetbrains.kotlin.codegen.CodegenTestUtil
+import org.jetbrains.kotlin.codegen.GenerationUtils
 import org.jetbrains.kotlin.codegen.state.GenerationState
 import org.jetbrains.kotlin.diagnostics.rendering.DefaultErrorMessages
 import org.jetbrains.kotlin.kapt3.AbstractKapt3Extension
@@ -53,7 +51,6 @@ import com.sun.tools.javac.util.List as JavacList
 abstract class AbstractKotlinKapt3IntegrationTest : CodegenTestCase() {
     private companion object {
         val TEST_DATA_DIR = File("plugins/kapt3/testData/kotlinRunner")
-        val messageCollector = PrintingMessageCollector(System.err, MessageRenderer.PLAIN_FULL_PATHS, false)
     }
 
     private lateinit var processors: List<Processor>
@@ -65,12 +62,6 @@ abstract class AbstractKotlinKapt3IntegrationTest : CodegenTestCase() {
             options: Map<String, String> = emptyMap(),
             process: (Set<TypeElement>, RoundEnvironment, ProcessingEnvironment) -> Unit
     ) = testAP(true, name, options, process, *supportedAnnotations)
-
-    protected fun testShouldNotRun(
-            name: String,
-            vararg supportedAnnotations: String,
-            options: Map<String, String> = emptyMap()
-    ) = testAP(false, name, options, { _, _, _ -> fail("Should not run") }, *supportedAnnotations)
 
     protected fun testAP(
             shouldRun: Boolean,
@@ -141,8 +132,7 @@ abstract class AbstractKotlinKapt3IntegrationTest : CodegenTestCase() {
         try {
             loadMultiFiles(files)
 
-            val classBuilderFactory = Kapt3BuilderFactory()
-            CodegenTestUtil.generateFiles(myEnvironment, myFiles, classBuilderFactory)
+            GenerationUtils.compileFiles(myFiles.psiFiles, myEnvironment, Kapt3BuilderFactory()).factory
 
             val actualRaw = kapt3Extension.savedStubs ?: error("Stubs were not saved")
             val actual = StringUtil.convertLineSeparators(actualRaw.trim({ it <= ' ' })).trimTrailingWhitespacesAndAddNewlineAtEOF()
@@ -160,9 +150,9 @@ abstract class AbstractKotlinKapt3IntegrationTest : CodegenTestCase() {
             options: Map<String, String>,
             stubsOutputDir: File,
             incrementalDataOutputDir: File
-    ) : AbstractKapt3Extension(PathUtil.getJdkClassesRoots() + PathUtil.getKotlinPathsForIdeaPlugin().runtimePath,
+    ) : AbstractKapt3Extension(PathUtil.getJdkClassesRoots() + PathUtil.getKotlinPathsForIdeaPlugin().stdlibPath,
                                emptyList(), javaSourceRoots, outputDir, outputDir,
-                               stubsOutputDir, incrementalDataOutputDir, options, "", true, System.currentTimeMillis(),
+                               stubsOutputDir, incrementalDataOutputDir, options, emptyMap(), "", true, System.currentTimeMillis(),
                                KaptLogger(true), correctErrorTypes = true
     ) {
         internal var savedStubs: String? = null

@@ -278,8 +278,8 @@ class ControlFlowInformationProvider private constructor(
 
         pseudocode.traverse(TraversalOrder.FORWARD, initializers) {
             instruction: Instruction,
-            enterData: Map<VariableDescriptor, VariableControlFlowState>,
-            exitData: Map<VariableDescriptor, VariableControlFlowState> ->
+            enterData: ImmutableMap<VariableDescriptor, VariableControlFlowState>,
+            exitData: ImmutableMap<VariableDescriptor, VariableControlFlowState> ->
 
             val ctxt = VariableInitContext(instruction, reportedDiagnosticMap, enterData, exitData, blockScopeVariableInfo)
             if (ctxt.variableDescriptor == null) return@traverse
@@ -559,7 +559,7 @@ class ControlFlowInformationProvider private constructor(
         val declaredVariables = pseudocodeVariablesData.getDeclaredVariables(pseudocode, false)
         for (variable in declaredVariables) {
             if (variable is PropertyDescriptor) {
-                if (initializers.incoming[variable]?.definitelyInitialized() ?: false) continue
+                if (initializers.incoming.getOrNull(variable)?.definitelyInitialized() ?: false) continue
                 trace.record(BindingContext.IS_UNINITIALIZED, variable)
             }
         }
@@ -575,8 +575,8 @@ class ControlFlowInformationProvider private constructor(
         val usedValueExpressions = hashSetOf<KtExpression>()
         pseudocode.traverse(TraversalOrder.BACKWARD, variableStatusData) {
             instruction: Instruction,
-            enterData: Map<VariableDescriptor, VariableUseState>,
-            _: Map<VariableDescriptor, VariableUseState> ->
+            enterData: ImmutableMap<VariableDescriptor, VariableUseState>,
+            _: ImmutableMap<VariableDescriptor, VariableUseState> ->
 
             val ctxt = VariableUseContext(instruction, reportedDiagnosticMap)
             val declaredVariables = pseudocodeVariablesData.getDeclaredVariables(instruction.owner, false)
@@ -587,7 +587,7 @@ class ControlFlowInformationProvider private constructor(
                 || !ExpressionTypingUtils.isLocal(variableDescriptor.containingDeclaration, variableDescriptor)) {
                 return@traverse
             }
-            val variableUseState = enterData[variableDescriptor]
+            val variableUseState = enterData.getOrNull(variableDescriptor)
             when (instruction) {
                 is WriteValueInstruction -> {
                     if (trace.get(CAPTURED_IN_CLOSURE, variableDescriptor) != null) return@traverse
@@ -673,8 +673,8 @@ class ControlFlowInformationProvider private constructor(
                 }
             }
             is KtFunction -> {
-                if (owner is KtFunctionLiteral &&
-                    !languageVersionSettings.supportsFeature(LanguageFeature.SingleUnderscoreForParameterName)) {
+                val anonymous = owner is KtFunctionLiteral || owner is KtNamedFunction && owner.name == null
+                if (anonymous && !languageVersionSettings.supportsFeature(LanguageFeature.SingleUnderscoreForParameterName)) {
                     return
                 }
                 val mainFunctionDetector = MainFunctionDetector(trace.bindingContext)
@@ -693,7 +693,12 @@ class ControlFlowInformationProvider private constructor(
                     || OperatorNameConventions.PROVIDE_DELEGATE == functionName) {
                     return
                 }
-                report(UNUSED_PARAMETER.on(element, variableDescriptor), ctxt)
+                if (anonymous) {
+                    report(UNUSED_ANONYMOUS_PARAMETER.on(element, variableDescriptor), ctxt)
+                }
+                else {
+                    report(UNUSED_PARAMETER.on(element, variableDescriptor), ctxt)
+                }
             }
         }
     }
@@ -1039,8 +1044,8 @@ class ControlFlowInformationProvider private constructor(
     private inner class VariableInitContext(
             instruction: Instruction,
             map: MutableMap<Instruction, DiagnosticFactory<*>>,
-            `in`: Map<VariableDescriptor, VariableControlFlowState>,
-            out: Map<VariableDescriptor, VariableControlFlowState>,
+            `in`: ImmutableMap<VariableDescriptor, VariableControlFlowState>,
+            out: ImmutableMap<VariableDescriptor, VariableControlFlowState>,
             blockScopeVariableInfo: BlockScopeVariableInfo
     ) : VariableContext(instruction, map) {
         internal val enterInitState = initialize(variableDescriptor, blockScopeVariableInfo, `in`)
@@ -1049,9 +1054,9 @@ class ControlFlowInformationProvider private constructor(
         private fun initialize(
                 variableDescriptor: VariableDescriptor?,
                 blockScopeVariableInfo: BlockScopeVariableInfo,
-                map: Map<VariableDescriptor, VariableControlFlowState>
+                map: ImmutableMap<VariableDescriptor, VariableControlFlowState>
         ): VariableControlFlowState? {
-            val state = map[variableDescriptor ?: return null]
+            val state = map.getOrNull(variableDescriptor ?: return null)
             if (state != null) return state
             return PseudocodeVariablesData.getDefaultValueForInitializers(variableDescriptor, instruction, blockScopeVariableInfo)
         }
@@ -1148,6 +1153,7 @@ class ControlFlowInformationProvider private constructor(
         private fun mustBeReportedOnAllCopies(diagnosticFactory: DiagnosticFactory<*>) =
                 diagnosticFactory === UNUSED_VARIABLE
                 || diagnosticFactory === UNUSED_PARAMETER
+                || diagnosticFactory === UNUSED_ANONYMOUS_PARAMETER
                 || diagnosticFactory === UNUSED_CHANGED_VALUE
     }
 }

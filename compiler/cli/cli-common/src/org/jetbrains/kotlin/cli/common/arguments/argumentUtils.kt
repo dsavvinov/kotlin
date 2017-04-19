@@ -16,23 +16,21 @@
 
 package org.jetbrains.kotlin.cli.common.arguments
 
-import com.intellij.util.xmlb.XmlSerializerUtil
-import org.jetbrains.kotlin.cli.common.parser.com.sampullara.cli.Args
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.util.*
 
-@JvmOverloads fun <A : CommonCompilerArguments> parseArguments(args: Array<String>, arguments: A, ignoreInvalidArguments: Boolean = false) {
-    val unparsedArgs = Args.parse(arguments, args, false)
-    val (unknownExtraArgs, unknownArgs) = unparsedArgs.partition { it.startsWith("-X") }
-    arguments.unknownExtraFlags = unknownExtraArgs
-    arguments.freeArgs = if (ignoreInvalidArguments) unknownArgs.filterNot { it.startsWith("-") } else unknownArgs
+@JvmOverloads
+fun <A : CommonCompilerArguments> parseArguments(args: Array<String>, arguments: A, ignoreInvalidArguments: Boolean = false) {
+    parseCommandLineArguments(args, arguments)
 
-    if (!ignoreInvalidArguments) {
-        for (argument in unknownArgs) {
-            if (argument.startsWith("-")) {
-                throw IllegalArgumentException("Invalid argument: " + argument)
-            }
+    if (ignoreInvalidArguments) {
+        arguments.freeArgs.removeAll { it.startsWith("-") }
+    }
+
+    for (argument in arguments.freeArgs) {
+        if (argument.startsWith("-")) {
+            throw IllegalArgumentException("Invalid argument: " + argument)
         }
     }
 }

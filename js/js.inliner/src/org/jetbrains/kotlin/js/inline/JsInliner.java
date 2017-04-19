@@ -49,24 +49,17 @@ public class JsInliner extends JsVisitorWithContextImpl {
 
     private final Map<JsName, JsFunction> functions;
     private final Map<String, JsFunction> accessors;
-    private final Stack<JsInliningContext> inliningContexts = new Stack<JsInliningContext>();
+    private final Stack<JsInliningContext> inliningContexts = new Stack<>();
     private final Set<JsFunction> processedFunctions = CollectionUtilsKt.IdentitySet();
     private final Set<JsFunction> inProcessFunctions = CollectionUtilsKt.IdentitySet();
     private final FunctionReader functionReader;
     private final DiagnosticSink trace;
 
     // these are needed for error reporting, when inliner detects cycle
-    private final Stack<JsFunction> namedFunctionsStack = new Stack<JsFunction>();
-    private final LinkedList<JsCallInfo> inlineCallInfos = new LinkedList<JsCallInfo>();
-    private final Function1<JsNode, Boolean> canBeExtractedByInliner = new Function1<JsNode, Boolean>() {
-        @Override
-        public Boolean invoke(JsNode node) {
-            if (!(node instanceof JsInvocation)) return false;
-
-            JsInvocation call = (JsInvocation) node;
-            return hasToBeInlined(call);
-        }
-    };
+    private final Stack<JsFunction> namedFunctionsStack = new Stack<>();
+    private final LinkedList<JsCallInfo> inlineCallInfos = new LinkedList<>();
+    private final Function1<JsNode, Boolean> canBeExtractedByInliner =
+            node -> node instanceof JsInvocation && hasToBeInlined((JsInvocation) node);
 
     public static JsProgram process(@NotNull TranslationContext context) {
         JsProgram program = context.program();
@@ -220,12 +213,10 @@ public class JsInliner extends JsVisitorWithContextImpl {
     }
 
     private void inlineSuspendWithCurrentContinuation(@NotNull JsInvocation call, @NotNull JsContext context) {
-        JsInliningContext inliningContext = getInliningContext();
-        JsFunction containingFunction = inliningContext.function;
         JsExpression lambda = call.getArguments().get(0);
-        JsParameter continuationParam = containingFunction.getParameters().get(containingFunction.getParameters().size() - 1);
+        JsExpression continuationArg = call.getArguments().get(call.getArguments().size() - 1);
 
-        JsInvocation invocation = new JsInvocation(lambda, continuationParam.getName().makeRef());
+        JsInvocation invocation = new JsInvocation(lambda, continuationArg);
         MetadataProperties.setSuspend(invocation, true);
         context.replaceMe(accept(invocation));
     }
@@ -275,11 +266,7 @@ public class JsInliner extends JsVisitorWithContextImpl {
     private class JsInliningContext implements InliningContext {
         private final FunctionContext functionContext;
 
-        @NotNull
-        public final JsFunction function;
-
         JsInliningContext(@NotNull JsFunction function) {
-            this.function = function;
             functionContext = new FunctionContext(function, functionReader) {
                 @Nullable
                 @Override

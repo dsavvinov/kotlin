@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.jetbrains.kotlin.checkers
 
-import com.google.common.base.Predicate
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.util.text.StringUtil
 import com.intellij.psi.search.GlobalSearchScope
@@ -33,7 +32,10 @@ import org.jetbrains.kotlin.context.ModuleContext
 import org.jetbrains.kotlin.context.SimpleGlobalContext
 import org.jetbrains.kotlin.context.withModule
 import org.jetbrains.kotlin.context.withProject
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PackagePartProvider
+import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
 import org.jetbrains.kotlin.descriptors.impl.CompositePackageFragmentProvider
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.Diagnostic
@@ -65,10 +67,10 @@ import org.jetbrains.kotlin.test.util.DescriptorValidator
 import org.jetbrains.kotlin.test.util.RecursiveDescriptorComparator
 import org.jetbrains.kotlin.test.util.RecursiveDescriptorComparator.RECURSIVE
 import org.jetbrains.kotlin.test.util.RecursiveDescriptorComparator.RECURSIVE_ALL
-import org.jetbrains.kotlin.utils.keysToMap
 import org.junit.Assert
 import java.io.File
 import java.util.*
+import java.util.function.Predicate
 
 abstract class AbstractDiagnosticsTest : BaseDiagnosticsTest() {
     override fun analyzeAndCheck(testDataFile: File, files: List<TestFile>) {
@@ -409,7 +411,7 @@ abstract class AbstractDiagnosticsTest : BaseDiagnosticsTest() {
         val packagesNames = getTopLevelPackagesFromFileList(getKtFiles(testFiles, false))
 
         val stepIntoFilter = Predicate<DeclarationDescriptor> { descriptor ->
-            val module = DescriptorUtils.getContainingModuleOrNull(descriptor!!)
+            val module = DescriptorUtils.getContainingModuleOrNull(descriptor)
             if (module !in modules) return@Predicate false
 
             if (descriptor is PackageViewDescriptor) {
@@ -469,10 +471,7 @@ abstract class AbstractDiagnosticsTest : BaseDiagnosticsTest() {
         val platform =
                 if (nameSuffix.isEmpty()) null
                 else if (nameSuffix == "common") MultiTargetPlatform.Common else MultiTargetPlatform.Specific(nameSuffix.toUpperCase())
-        return ModuleDescriptorImpl(
-                Name.special("<$moduleName>"), storageManager, JvmBuiltIns(storageManager),
-                platform, SourceKind.TEST
-        )
+        return ModuleDescriptorImpl(Name.special("<$moduleName>"), storageManager, JvmBuiltIns(storageManager), platform)
     }
 
     protected open fun createSealedModule(storageManager: StorageManager): ModuleDescriptorImpl =

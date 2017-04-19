@@ -272,6 +272,12 @@ public class KotlinSteppingTestGenerated extends AbstractKotlinSteppingTest {
             doStepIntoTest(fileName);
         }
 
+        @TestMetadata("siSuspendFun.kt")
+        public void testSiSuspendFun() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepInto/siSuspendFun.kt");
+            doStepIntoTest(fileName);
+        }
+
         @TestMetadata("skipSimpleGetter.kt")
         public void testSkipSimpleGetter() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepInto/skipSimpleGetter.kt");
@@ -350,6 +356,12 @@ public class KotlinSteppingTestGenerated extends AbstractKotlinSteppingTest {
         @TestMetadata("inapplicableFieldWatchpoints.kt")
         public void testInapplicableFieldWatchpoints() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOut/inapplicableFieldWatchpoints.kt");
+            doStepOutTest(fileName);
+        }
+
+        @TestMetadata("souSuspendFun.kt")
+        public void testSouSuspendFun() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/stepOut/souSuspendFun.kt");
             doStepOutTest(fileName);
         }
 
@@ -998,6 +1010,12 @@ public class KotlinSteppingTestGenerated extends AbstractKotlinSteppingTest {
             KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/debugger/tinyApp/src/stepping/custom"), Pattern.compile("^([^.]+)\\.kt$"), TargetBackend.ANY, true);
         }
 
+        @TestMetadata("anonymousFunAsParamDefaultValue.kt")
+        public void testAnonymousFunAsParamDefaultValue() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/anonymousFunAsParamDefaultValue.kt");
+            doCustomTest(fileName);
+        }
+
         @TestMetadata("coroutine.kt")
         public void testCoroutine() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/coroutine.kt");
@@ -1049,6 +1067,36 @@ public class KotlinSteppingTestGenerated extends AbstractKotlinSteppingTest {
         @TestMetadata("inlineInObjectSameFileDex.kt")
         public void testInlineInObjectSameFileDex() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/inlineInObjectSameFileDex.kt");
+            doCustomTest(fileName);
+        }
+
+        @TestMetadata("inlineProperties.kt")
+        public void testInlineProperties() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/inlineProperties.kt");
+            doCustomTest(fileName);
+        }
+
+        @TestMetadata("inlinePropertyAccessors.kt")
+        public void testInlinePropertyAccessors() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/inlinePropertyAccessors.kt");
+            doCustomTest(fileName);
+        }
+
+        @TestMetadata("kt15823.kt")
+        public void testKt15823() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/kt15823.kt");
+            doCustomTest(fileName);
+        }
+
+        @TestMetadata("kt17144.kt")
+        public void testKt17144() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/kt17144.kt");
+            doCustomTest(fileName);
+        }
+
+        @TestMetadata("kt17295.kt")
+        public void testKt17295() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/debugger/tinyApp/src/stepping/custom/kt17295.kt");
             doCustomTest(fileName);
         }
 

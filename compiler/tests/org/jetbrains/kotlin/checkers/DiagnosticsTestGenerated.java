@@ -764,6 +764,36 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             doTest(fileName);
         }
 
+        @TestMetadata("UnderscoreUsageInAnnotation.kt")
+        public void testUnderscoreUsageInAnnotation() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/UnderscoreUsageInAnnotation.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("UnderscoreUsageInCall.kt")
+        public void testUnderscoreUsageInCall() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/UnderscoreUsageInCall.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("UnderscoreUsageInCallableRefTypeLHS.kt")
+        public void testUnderscoreUsageInCallableRefTypeLHS() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/UnderscoreUsageInCallableRefTypeLHS.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("UnderscoreUsageInType.kt")
+        public void testUnderscoreUsageInType() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/UnderscoreUsageInType.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("UnderscoreUsageInVariableAsFunctionCall.kt")
+        public void testUnderscoreUsageInVariableAsFunctionCall() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/UnderscoreUsageInVariableAsFunctionCall.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("UnitByDefaultForFunctionTypes.kt")
         public void testUnitByDefaultForFunctionTypes() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/UnitByDefaultForFunctionTypes.kt");
@@ -2650,6 +2680,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("AsInBlockWithReturnType.kt")
+            public void testAsInBlockWithReturnType() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/AsInBlockWithReturnType.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("AsInPropertyAndPropertyAccessor.kt")
+            public void testAsInPropertyAndPropertyAccessor() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/AsInPropertyAndPropertyAccessor.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("AsNothing.kt")
             public void testAsNothing() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/AsNothing.kt");
@@ -2665,6 +2707,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("AsWithOtherParameter.kt")
             public void testAsWithOtherParameter() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/AsWithOtherParameter.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("checkCastToNullableType.kt")
+            public void testCheckCastToNullableType() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/checkCastToNullableType.kt");
                 doTest(fileName);
             }
 
@@ -2872,6 +2920,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("IsErasedUpcastToNonReified.kt")
+            public void testIsErasedUpcastToNonReified() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/IsErasedUpcastToNonReified.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("IsForTypeWithComplexUpperBound.kt")
+            public void testIsForTypeWithComplexUpperBound() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/IsForTypeWithComplexUpperBound.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("IsRecursionSustainable.kt")
             public void testIsRecursionSustainable() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/IsRecursionSustainable.kt");
@@ -2884,6 +2944,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("IsWithCycleUpperBounds.kt")
+            public void testIsWithCycleUpperBounds() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/IsWithCycleUpperBounds.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("kt15161.kt")
+            public void testKt15161() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/kt15161.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("kt614.kt")
             public void testKt614() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/kt614.kt");
@@ -2893,6 +2965,18 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("NullableToNullable.kt")
             public void testNullableToNullable() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/NullableToNullable.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("StableTypeForUselessCast.kt")
+            public void testStableTypeForUselessCast() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/StableTypeForUselessCast.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("UselessSafeCast.kt")
+            public void testUselessSafeCast() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/cast/UselessSafeCast.kt");
                 doTest(fileName);
             }
 
@@ -3361,6 +3445,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("collectionLiteralsAsPrimitiveArrays.kt")
             public void testCollectionLiteralsAsPrimitiveArrays() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/collectionLiterals/collectionLiteralsAsPrimitiveArrays.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("collectionLiteralsWithVarargs.kt")
+            public void testCollectionLiteralsWithVarargs() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/collectionLiterals/collectionLiteralsWithVarargs.kt");
                 doTest(fileName);
             }
 
@@ -4000,6 +4090,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("unusedInAnonymous.kt")
+            public void testUnusedInAnonymous() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/controlFlowAnalysis/unusedInAnonymous.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("useUninitializedInLambda.kt")
             public void testUseUninitializedInLambda() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/controlFlowAnalysis/useUninitializedInLambda.kt");
@@ -4294,9 +4390,21 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("catchWithDefault.kt")
+            public void testCatchWithDefault() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/controlStructures/catchWithDefault.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("commonSupertypeOfT.kt")
             public void testCommonSupertypeOfT() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/controlStructures/commonSupertypeOfT.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("continueAndBreakLabelWithSameFunctionName.kt")
+            public void testContinueAndBreakLabelWithSameFunctionName() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/controlStructures/continueAndBreakLabelWithSameFunctionName.kt");
                 doTest(fileName);
             }
 
@@ -4435,6 +4543,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("lambdasInExclExclAndElvis.kt")
             public void testLambdasInExclExclAndElvis() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/controlStructures/lambdasInExclExclAndElvis.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("localReturnInsidePropertyAccessor.kt")
+            public void testLocalReturnInsidePropertyAccessor() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/controlStructures/localReturnInsidePropertyAccessor.kt");
                 doTest(fileName);
             }
 
@@ -6222,12 +6336,6 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                     doTest(fileName);
                 }
 
-                @TestMetadata("simple1.0.kt")
-                public void testSimple1_0() throws Exception {
-                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/delegation/memberHidesSupertypeOverride/simple1.0.kt");
-                    doTest(fileName);
-                }
-
                 @TestMetadata("simpleNoOverride.kt")
                 public void testSimpleNoOverride() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/delegation/memberHidesSupertypeOverride/simpleNoOverride.kt");
@@ -7522,6 +7630,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("longOverflow.kt")
             public void testLongOverflow() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/evaluate/longOverflow.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("noOverflowWithZero.kt")
+            public void testNoOverflowWithZero() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/evaluate/noOverflowWithZero.kt");
                 doTest(fileName);
             }
 
@@ -9406,6 +9520,24 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("ImportOverloadFunctions.kt")
             public void testImportOverloadFunctions() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/imports/ImportOverloadFunctions.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("ImportPrivateMember.kt")
+            public void testImportPrivateMember() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/imports/ImportPrivateMember.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("ImportPrivateMemberFromOtherFile.kt")
+            public void testImportPrivateMemberFromOtherFile() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/imports/ImportPrivateMemberFromOtherFile.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("ImportPrivateMembersWithStar.kt")
+            public void testImportPrivateMembersWithStar() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/imports/ImportPrivateMembersWithStar.kt");
                 doTest(fileName);
             }
 
@@ -12478,6 +12610,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/labels"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
             }
 
+            @TestMetadata("automaticLabelFromInfixOperator.kt")
+            public void testAutomaticLabelFromInfixOperator() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/labels/automaticLabelFromInfixOperator.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("kt1703.kt")
             public void testKt1703() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/labels/kt1703.kt");
@@ -12529,6 +12667,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("labelReferencesInsideObjectExpressions.kt")
             public void testLabelReferencesInsideObjectExpressions() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/labels/labelReferencesInsideObjectExpressions.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("labeledFunctionLiteral.kt")
+            public void testLabeledFunctionLiteral() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/labels/labeledFunctionLiteral.kt");
                 doTest(fileName);
             }
 
@@ -13102,6 +13246,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("implDynamic.kt")
+            public void testImplDynamic() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/multiplatform/implDynamic.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("implFakeOverride.kt")
             public void testImplFakeOverride() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/multiplatform/implFakeOverride.kt");
@@ -13111,6 +13261,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("modifierApplicability.kt")
             public void testModifierApplicability() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/multiplatform/modifierApplicability.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("namedArguments.kt")
+            public void testNamedArguments() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/multiplatform/namedArguments.kt");
                 doTest(fileName);
             }
 
@@ -13233,6 +13389,27 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 @TestMetadata("superClass.kt")
                 public void testSuperClass() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/multiplatform/headerClass/superClass.kt");
+                    doTest(fileName);
+                }
+            }
+
+            @TestMetadata("compiler/testData/diagnostics/tests/multiplatform/java")
+            @TestDataPath("$PROJECT_ROOT")
+            @RunWith(JUnit3RunnerWithInners.class)
+            public static class Java extends AbstractDiagnosticsTest {
+                public void testAllFilesPresentInJava() throws Exception {
+                    KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/multiplatform/java"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                }
+
+                @TestMetadata("flexibleTypes.kt")
+                public void testFlexibleTypes() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/multiplatform/java/flexibleTypes.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("parameterNames.kt")
+                public void testParameterNames() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/multiplatform/java/parameterNames.kt");
                     doTest(fileName);
                 }
             }
@@ -13624,6 +13801,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("smartCastsAndBooleanExpressions.kt")
             public void testSmartCastsAndBooleanExpressions() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/nullabilityAndSmartCasts/smartCastsAndBooleanExpressions.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("unnecessaryNotNullAssertion.kt")
+            public void testUnnecessaryNotNullAssertion() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/nullabilityAndSmartCasts/unnecessaryNotNullAssertion.kt");
                 doTest(fileName);
             }
         }
@@ -15790,6 +15973,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("interfaceTypeParameters.kt")
+            public void testInterfaceTypeParameters() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/redeclarations/interfaceTypeParameters.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("kt2418.kt")
             public void testKt2418() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/redeclarations/kt2418.kt");
@@ -16915,6 +17104,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("anonymousObjectFromTopLevelMember.kt")
+            public void testAnonymousObjectFromTopLevelMember() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/anonymousObjectFromTopLevelMember.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("capturedTypesInLambdaParameter.kt")
             public void testCapturedTypesInLambdaParameter() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/capturedTypesInLambdaParameter.kt");
@@ -16975,6 +17170,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("parameterAsDefaultValueInLocalFunction.kt")
+            public void testParameterAsDefaultValueInLocalFunction() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/parameterAsDefaultValueInLocalFunction.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("resolveAnnotatedLambdaArgument.kt")
             public void testResolveAnnotatedLambdaArgument() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/resolveAnnotatedLambdaArgument.kt");
@@ -17026,6 +17227,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
             @TestMetadata("resolveWithoutGenerics.kt")
             public void testResolveWithoutGenerics() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/resolveWithoutGenerics.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("typeParameterInDefaultValueInLocalFunction.kt")
+            public void testTypeParameterInDefaultValueInLocalFunction() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/typeParameterInDefaultValueInLocalFunction.kt");
                 doTest(fileName);
             }
 
@@ -18965,6 +19172,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
         public static class Shadowing extends AbstractDiagnosticsTest {
             public void testAllFilesPresentInShadowing() throws Exception {
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/shadowing"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+            }
+
+            @TestMetadata("ShadowLambdaParameter.kt")
+            public void testShadowLambdaParameter() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/shadowing/ShadowLambdaParameter.kt");
+                doTest(fileName);
             }
 
             @TestMetadata("ShadowMultiDeclarationWithFunParameter.kt")

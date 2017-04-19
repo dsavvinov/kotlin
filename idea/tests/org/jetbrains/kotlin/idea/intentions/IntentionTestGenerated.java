@@ -531,6 +531,99 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
         }
     }
 
+    @TestMetadata("idea/testData/intentions/addOpenModifier")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class AddOpenModifier extends AbstractIntentionTest {
+        @TestMetadata("abstractClass.kt")
+        public void testAbstractClass() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/abstractClass.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("abstractFunction.kt")
+        public void testAbstractFunction() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/abstractFunction.kt");
+            doTest(fileName);
+        }
+
+        public void testAllFilesPresentInAddOpenModifier() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/intentions/addOpenModifier"), Pattern.compile("^([\\w\\-_]+)\\.kt$"), TargetBackend.ANY, true);
+        }
+
+        @TestMetadata("alreadyOpen.kt")
+        public void testAlreadyOpen() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/alreadyOpen.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("destructuringDeclaration.kt")
+        public void testDestructuringDeclaration() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/destructuringDeclaration.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("enumClass.kt")
+        public void testEnumClass() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/enumClass.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("function.kt")
+        public void testFunction() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/function.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("interface.kt")
+        public void testInterface() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/interface.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("localFunction.kt")
+        public void testLocalFunction() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/localFunction.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("localProperty.kt")
+        public void testLocalProperty() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/localProperty.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("notOpen.kt")
+        public void testNotOpen() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/notOpen.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("parameter.kt")
+        public void testParameter() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/parameter.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("private.kt")
+        public void testPrivate() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/private.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("property.kt")
+        public void testProperty() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/property.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("sealedClass.kt")
+        public void testSealedClass() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/addOpenModifier/sealedClass.kt");
+            doTest(fileName);
+        }
+    }
+
     @TestMetadata("idea/testData/intentions/addOperatorModifier")
     @TestDataPath("$PROJECT_ROOT")
     @RunWith(JUnit3RunnerWithInners.class)
@@ -7645,6 +7738,18 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
             doTest(fileName);
         }
 
+        @TestMetadata("mapIndexedExceptFirst.kt")
+        public void testMapIndexedExceptFirst() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/destructuringInLambda/mapIndexedExceptFirst.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("mapIndexedLast.kt")
+        public void testMapIndexedLast() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/destructuringInLambda/mapIndexedLast.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("noIt.kt")
         public void testNoIt() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/destructuringInLambda/noIt.kt");
@@ -7669,9 +7774,21 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
             doTest(fileName);
         }
 
+        @TestMetadata("pair.kt")
+        public void testPair() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/destructuringInLambda/pair.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("simple.kt")
         public void testSimple() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/destructuringInLambda/simple.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("twoOfThree.kt")
+        public void testTwoOfThree() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/destructuringInLambda/twoOfThree.kt");
             doTest(fileName);
         }
 
@@ -9143,6 +9260,12 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
         @TestMetadata("MapNoProperties.kt")
         public void testMapNoProperties() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/iterationOverMap/MapNoProperties.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("NoKeyOrValue.kt")
+        public void testNoKeyOrValue() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/iterationOverMap/NoKeyOrValue.kt");
             doTest(fileName);
         }
 
@@ -11148,6 +11271,12 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
             KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/intentions/moveOutOfCompanion"), Pattern.compile("^([\\w\\-_]+)\\.kt$"), TargetBackend.ANY, true);
         }
 
+        @TestMetadata("companionAsImplicitReceiver.kt")
+        public void testCompanionAsImplicitReceiver() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/moveOutOfCompanion/companionAsImplicitReceiver.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("moveAndDropCompanion.kt")
         public void testMoveAndDropCompanion() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/moveOutOfCompanion/moveAndDropCompanion.kt");
@@ -11250,9 +11379,27 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
             doTest(fileName);
         }
 
+        @TestMetadata("functionReference.kt")
+        public void testFunctionReference() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/movePropertyToConstructor/functionReference.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("getter.kt")
         public void testGetter() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/movePropertyToConstructor/getter.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("lambda.kt")
+        public void testLambda() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/movePropertyToConstructor/lambda.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("lambdaWithoutParameters.kt")
+        public void testLambdaWithoutParameters() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/movePropertyToConstructor/lambdaWithoutParameters.kt");
             doTest(fileName);
         }
 
@@ -11265,6 +11412,18 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
         @TestMetadata("local.kt")
         public void testLocal() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/movePropertyToConstructor/local.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("map.kt")
+        public void testMap() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/movePropertyToConstructor/map.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("methodReference.kt")
+        public void testMethodReference() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/movePropertyToConstructor/methodReference.kt");
             doTest(fileName);
         }
 
@@ -14248,6 +14407,12 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
             KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/intentions/specifyExplicitLambdaSignature"), Pattern.compile("^([\\w\\-_]+)\\.kt$"), TargetBackend.ANY, true);
         }
 
+        @TestMetadata("anonymous.kt")
+        public void testAnonymous() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/specifyExplicitLambdaSignature/anonymous.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("coercionToUnit.kt")
         public void testCoercionToUnit() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/specifyExplicitLambdaSignature/coercionToUnit.kt");
@@ -14257,6 +14422,12 @@ public class IntentionTestGenerated extends AbstractIntentionTest {
         @TestMetadata("delegate.kt")
         public void testDelegate() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/specifyExplicitLambdaSignature/delegate.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("destructuring.kt")
+        public void testDestructuring() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/intentions/specifyExplicitLambdaSignature/destructuring.kt");
             doTest(fileName);
         }
 

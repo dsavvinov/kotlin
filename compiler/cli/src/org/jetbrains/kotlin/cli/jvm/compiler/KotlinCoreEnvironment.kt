@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,6 @@ import org.jetbrains.kotlin.asJava.finder.JavaElementFinder
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.CliModuleVisibilityManagerImpl
 import org.jetbrains.kotlin.cli.common.KOTLIN_COMPILER_ENVIRONMENT_KEEPALIVE_PROPERTY
-import org.jetbrains.kotlin.cli.common.messages.CompilerMessageLocation
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.ERROR
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity.STRONG_WARNING
@@ -105,9 +104,9 @@ import org.jetbrains.kotlin.resolve.lazy.declarations.CliDeclarationProviderFact
 import org.jetbrains.kotlin.resolve.lazy.declarations.DeclarationProviderFactoryService
 import org.jetbrains.kotlin.script.KotlinScriptDefinitionProvider
 import org.jetbrains.kotlin.script.KotlinScriptExternalImportsProvider
+import org.jetbrains.kotlin.script.KotlinScriptExternalImportsProviderImpl
 import org.jetbrains.kotlin.utils.PathUtil
 import java.io.File
-import java.util.*
 
 class KotlinCoreEnvironment private constructor(
         parentDisposable: Disposable,
@@ -142,7 +141,7 @@ class KotlinCoreEnvironment private constructor(
             super.registerJavaPsiFacade()
         }
     }
-    private val sourceFiles = ArrayList<KtFile>()
+    private val sourceFiles = mutableListOf<KtFile>()
     private val rootsIndex: JvmDependenciesDynamicCompoundIndex
 
     val configuration: CompilerConfiguration = configuration.copy()
@@ -173,11 +172,11 @@ class KotlinCoreEnvironment private constructor(
         registerProjectServicesForCLI(projectEnvironment)
         registerProjectServices(projectEnvironment)
 
-        sourceFiles.addAll(CompileEnvironmentUtil.getKtFiles(project, getSourceRootsCheckingForDuplicates(), this.configuration, {
+        sourceFiles += CompileEnvironmentUtil.getKtFiles(project, getSourceRootsCheckingForDuplicates(), this.configuration, {
             message ->
             report(ERROR, message)
-        }))
-        sourceFiles.sortedWith(Comparator<KtFile> { o1, o2 -> o1.virtualFile.path.compareTo(o2.virtualFile.path, ignoreCase = true) })
+        })
+        sourceFiles.sortBy { it.virtualFile.path }
 
         KotlinScriptDefinitionProvider.getInstance(project).let { scriptDefinitionProvider ->
             scriptDefinitionProvider.setScriptDefinitions(
@@ -307,15 +306,8 @@ class KotlinCoreEnvironment private constructor(
     internal fun findLocalDirectory(absolutePath: String): VirtualFile? =
             applicationEnvironment.localFileSystem.findFileByPath(absolutePath)
 
-    private fun findJarRoot(root: JvmClasspathRoot): VirtualFile? {
-        val path = root.file
-        val jarFile = applicationEnvironment.jarFileSystem.findFileByPath("$path${URLUtil.JAR_SEPARATOR}")
-        if (jarFile == null) {
-            report(STRONG_WARNING, "Classpath entry points to a file that is not a JAR archive: $path")
-            return null
-        }
-        return jarFile
-    }
+    private fun findJarRoot(root: JvmClasspathRoot): VirtualFile? =
+            applicationEnvironment.jarFileSystem.findFileByPath("${root.file}${URLUtil.JAR_SEPARATOR}")
 
     private fun getSourceRootsCheckingForDuplicates(): Collection<String> {
         val uniqueSourceRoots = Sets.newLinkedHashSet<String>()
@@ -332,8 +324,7 @@ class KotlinCoreEnvironment private constructor(
     fun getSourceFiles(): List<KtFile> = sourceFiles
 
     private fun report(severity: CompilerMessageSeverity, message: String) {
-        val messageCollector = configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY)
-        messageCollector.report(severity, message, CompilerMessageLocation.NO_LOCATION)
+        configuration.getNotNull(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY).report(severity, message)
     }
 
     companion object {
@@ -445,8 +436,10 @@ class KotlinCoreEnvironment private constructor(
         }
 
         private fun registerApplicationExtensionPointsAndExtensionsFrom(configuration: CompilerConfiguration, configFilePath: String) {
-            val locator = configuration.get(CLIConfigurationKeys.COMPILER_JAR_LOCATOR)
-            var pluginRoot = if (locator == null) PathUtil.getPathUtilJar() else locator.compilerJar
+            var pluginRoot =
+                    configuration.get(CLIConfigurationKeys.INTELLIJ_PLUGIN_ROOT)?.let(::File)
+                    ?: configuration.get(CLIConfigurationKeys.COMPILER_JAR_LOCATOR)?.compilerJar
+                    ?: PathUtil.getPathUtilJar()
 
             val app = ApplicationManager.getApplication()
             val parentFile = pluginRoot.parentFile
@@ -489,7 +482,7 @@ class KotlinCoreEnvironment private constructor(
             with (projectEnvironment.project) {
                 val kotlinScriptDefinitionProvider = KotlinScriptDefinitionProvider()
                 registerService(KotlinScriptDefinitionProvider::class.java, kotlinScriptDefinitionProvider)
-                registerService(KotlinScriptExternalImportsProvider::class.java, KotlinScriptExternalImportsProvider(projectEnvironment.project, kotlinScriptDefinitionProvider))
+                registerService(KotlinScriptExternalImportsProvider::class.java, KotlinScriptExternalImportsProviderImpl(projectEnvironment.project, kotlinScriptDefinitionProvider))
                 registerService(KotlinJavaPsiFacade::class.java, KotlinJavaPsiFacade(this))
                 registerService(KtLightClassForFacade.FacadeStubCache::class.java, KtLightClassForFacade.FacadeStubCache(this))
             }

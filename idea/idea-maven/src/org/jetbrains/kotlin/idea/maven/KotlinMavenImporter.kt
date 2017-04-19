@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,6 +118,11 @@ class KotlinMavenImporter : MavenImporter(KOTLIN_PLUGIN_GROUP_ID, KOTLIN_PLUGIN_
         arguments.languageVersion = configuration.getChild("languageVersion")?.text
         arguments.multiPlatform = configuration.getChild("multiPlatform")?.text?.trim()?.toBoolean() ?: false
         arguments.suppressWarnings = configuration.getChild("nowarn")?.text?.trim()?.toBoolean() ?: false
+
+        configuration.getChild("experimentalCoroutines")?.text?.trim()?.let {
+            arguments.coroutinesState = it
+        }
+
         when (arguments) {
             is K2JVMCompilerArguments -> {
                 arguments.classpath = configuration.getChild("classpath")?.text
@@ -129,6 +134,7 @@ class KotlinMavenImporter : MavenImporter(KOTLIN_PLUGIN_GROUP_ID, KOTLIN_PLUGIN_
                 arguments.outputFile = configuration.getChild("outputFile")?.text
                 arguments.metaInfo = configuration.getChild("metaInfo")?.text?.trim()?.toBoolean() ?: false
                 arguments.moduleKind = configuration.getChild("moduleKind")?.text
+                arguments.main = configuration.getChild("main")?.text
             }
         }
 
@@ -146,7 +152,7 @@ class KotlinMavenImporter : MavenImporter(KOTLIN_PLUGIN_GROUP_ID, KOTLIN_PLUGIN_
 
     private fun configureFacet(mavenProject: MavenProject, modifiableModelsProvider: IdeModifiableModelsProvider, module: Module) {
         val mavenPlugin = mavenProject.findPlugin(KotlinMavenConfigurator.GROUP_ID, KotlinMavenConfigurator.MAVEN_PLUGIN_ID) ?: return
-        val compilerVersion = mavenPlugin.version ?: LanguageVersion.LATEST.versionString
+        val compilerVersion = mavenPlugin.version ?: LanguageVersion.LATEST_STABLE.versionString
         val kotlinFacet = module.getOrCreateFacet(modifiableModelsProvider, false)
         val platform = detectPlatformByExecutions(mavenProject) ?: detectPlatformByLibraries(mavenProject)
 

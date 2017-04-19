@@ -41,7 +41,8 @@ import java.util.List;
 
 @Mojo(name = "test-compile",
         defaultPhase = LifecyclePhase.TEST_COMPILE,
-        requiresDependencyResolution = ResolutionScope.TEST
+        requiresDependencyResolution = ResolutionScope.TEST,
+        threadSafe = false
 )
 public class KotlinTestCompileMojo extends K2JVMCompileMojo {
     /**
@@ -90,7 +91,6 @@ public class KotlinTestCompileMojo extends K2JVMCompileMojo {
 
     @Override
     protected void configureSpecificCompilerArguments(@NotNull K2JVMCompilerArguments arguments) throws MojoExecutionException {
-        module = testModule;
         classpath = testClasspath;
         arguments.friendPaths = new String[] { output };
         output = testOutput;

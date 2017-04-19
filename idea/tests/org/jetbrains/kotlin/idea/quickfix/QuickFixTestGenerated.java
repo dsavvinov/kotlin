@@ -6792,25 +6792,6 @@ public class QuickFixTestGenerated extends AbstractQuickFixTest {
                 String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/withConstructor.kt");
                 doTest(fileName);
             }
-
-            @TestMetadata("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaClass")
-            @TestDataPath("$PROJECT_ROOT")
-            @RunWith(JUnit3RunnerWithInners.class)
-            public static class FinalJavaClass extends AbstractQuickFixTest {
-                public void testAllFilesPresentInFinalJavaClass() throws Exception {
-                    KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaClass"), Pattern.compile("^([\\w\\-_]+)\\.kt$"), TargetBackend.ANY, true);
-                }
-
-                @TestMetadata("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaClass/javaCode")
-                @TestDataPath("$PROJECT_ROOT")
-                @RunWith(JUnit3RunnerWithInners.class)
-                public static class JavaCode extends AbstractQuickFixTest {
-                    public void testAllFilesPresentInJavaCode() throws Exception {
-                        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("idea/testData/quickfix/modifiers/addOpenToClassDeclaration/finalJavaClass/javaCode"), Pattern.compile("^([\\w\\-_]+)\\.kt$"), TargetBackend.ANY, true);
-                    }
-
-                }
-            }
         }
 
         @TestMetadata("idea/testData/quickfix/modifiers/suspend")
@@ -10659,6 +10640,12 @@ public class QuickFixTestGenerated extends AbstractQuickFixTest {
             doTest(fileName);
         }
 
+        @TestMetadata("breakInWhenInLabeled.kt")
+        public void testBreakInWhenInLabeled() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/when/breakInWhenInLabeled.kt");
+            doTest(fileName);
+        }
+
         @TestMetadata("commasInConditionWithNoArguments.kt")
         public void testCommasInConditionWithNoArguments() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/when/commasInConditionWithNoArguments.kt");
@@ -10674,6 +10661,12 @@ public class QuickFixTestGenerated extends AbstractQuickFixTest {
         @TestMetadata("continueInWhen.kt")
         public void testContinueInWhen() throws Exception {
             String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/when/continueInWhen.kt");
+            doTest(fileName);
+        }
+
+        @TestMetadata("continueInWhenInLabeled.kt")
+        public void testContinueInWhenInLabeled() throws Exception {
+            String fileName = KotlinTestUtils.navigationMetadata("idea/testData/quickfix/when/continueInWhenInLabeled.kt");
             doTest(fileName);
         }
 

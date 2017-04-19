@@ -22,7 +22,6 @@ import kotlin.Pair;
 import kotlin.Unit;
 import kotlin.collections.CollectionsKt;
 import kotlin.jvm.functions.Function2;
-import kotlin.jvm.functions.Function3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.BuiltInsPackageFragment;
@@ -270,7 +269,7 @@ public class KotlinTypeMapper {
             return implClassId;
         }
 
-        @Nullable
+        @NotNull
         private static ContainingClassesInfo forPackageMember(
                 @NotNull FqName packageFqName,
                 @NotNull String facadeClassName,
@@ -464,18 +463,16 @@ public class KotlinTypeMapper {
     @NotNull
     public Type mapType(
             @NotNull KotlinType kotlinType,
-            @Nullable final JvmSignatureWriter signatureVisitor,
+            @Nullable JvmSignatureWriter signatureVisitor,
             @NotNull TypeMappingMode mode
     ) {
         return TypeSignatureMappingKt.mapType(
                 kotlinType, AsmTypeFactory.INSTANCE, mode, typeMappingConfiguration, signatureVisitor,
-                new Function3<KotlinType, Type, TypeMappingMode, Unit>() {
-                    @Override
-                    public Unit invoke(KotlinType kotlinType, Type type, TypeMappingMode mode) {
-                        writeGenericType(kotlinType, type, signatureVisitor, mode);
-                        return Unit.INSTANCE;
-                    }
-                });
+                (ktType, asmType, typeMappingMode) -> {
+                    writeGenericType(ktType, asmType, signatureVisitor, typeMappingMode);
+                    return Unit.INSTANCE;
+                }
+        );
     }
 
     @NotNull
@@ -552,7 +549,7 @@ public class KotlinTypeMapper {
         signatureVisitor.writeClassEnd();
     }
 
-    @Nullable
+    @NotNull
     private static String getJvmShortName(@NotNull ClassDescriptor klass) {
         ClassId classId = JavaToKotlinClassMap.INSTANCE.mapKotlinToJava(DescriptorUtils.getFqName(klass));
         if (classId != null) {
@@ -962,7 +959,7 @@ public class KotlinTypeMapper {
         if (!(descriptor instanceof ConstructorDescriptor) &&
             descriptor.getVisibility() == Visibilities.INTERNAL &&
             !DescriptorUtilsKt.isPublishedApi(descriptor)) {
-            return name + "$" + NameUtils.sanitizeAsJavaIdentifier(moduleName);
+            return InternalNameMapper.mangleInternalName(name, moduleName);
         }
 
         return name;
@@ -992,7 +989,7 @@ public class KotlinTypeMapper {
 
     @NotNull
     public Method mapAsmMethod(@NotNull FunctionDescriptor descriptor) {
-        return mapSignature(descriptor, true).getAsmMethod();
+        return mapSignature(descriptor).getAsmMethod();
     }
 
     @NotNull
@@ -1001,8 +998,8 @@ public class KotlinTypeMapper {
     }
 
     @NotNull
-    private JvmMethodGenericSignature mapSignature(@NotNull FunctionDescriptor f, boolean skipGenericSignature) {
-        return mapSignature(f, OwnerKind.IMPLEMENTATION, skipGenericSignature);
+    private JvmMethodGenericSignature mapSignature(@NotNull FunctionDescriptor f) {
+        return mapSignature(f, OwnerKind.IMPLEMENTATION, true);
     }
 
     @NotNull
@@ -1512,5 +1509,25 @@ public class KotlinTypeMapper {
             return recordedType.getInternalName();
         }
         return TypeSignatureMappingKt.computeInternalName(classDescriptor, typeMappingConfiguration);
+    }
+
+    public static class InternalNameMapper {
+        public static String mangleInternalName(@NotNull String name, @NotNull String moduleName) {
+            return name + "$" + NameUtils.sanitizeAsJavaIdentifier(moduleName);
+        }
+
+        public static boolean canBeMangledInternalName(@NotNull String name) {
+            return name.indexOf('$') != -1;
+        }
+
+        @Nullable
+        public static String internalNameWithoutModuleSuffix(@NotNull String name) {
+            int indexOfDollar = name.indexOf('$');
+            if (indexOfDollar == -1) {
+                return null;
+            }
+
+            return name.substring(0, indexOfDollar) + '$';
+        }
     }
 }

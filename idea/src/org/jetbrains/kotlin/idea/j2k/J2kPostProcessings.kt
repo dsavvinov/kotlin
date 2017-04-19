@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.idea.caches.resolve.analyzeAndGetResult
+import org.jetbrains.kotlin.idea.caches.resolve.analyze
 import org.jetbrains.kotlin.idea.core.setVisibility
 import org.jetbrains.kotlin.idea.inspections.RedundantSamConstructorInspection
 import org.jetbrains.kotlin.idea.intentions.*
@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.idea.intentions.conventionNameCalls.ReplaceGetOrSetI
 import org.jetbrains.kotlin.idea.quickfix.RemoveModifierFix
 import org.jetbrains.kotlin.idea.quickfix.RemoveUselessCastFix
 import org.jetbrains.kotlin.idea.references.mainReference
+import org.jetbrains.kotlin.idea.util.application.runWriteAction
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierType
@@ -69,8 +70,8 @@ object J2KPostProcessingRegistrar {
         _processings.add(RemoveRedundantCastToNullableProcessing())
 
         registerIntentionBasedProcessing(ConvertToExpressionBodyIntention(convertEmptyToUnit = false)) { it is KtPropertyAccessor }
-        registerIntentionBasedProcessing(IfThenToSafeAccessIntention(fromJ2K = true))
-        registerIntentionBasedProcessing(IfThenToElvisIntention(fromJ2K = true))
+        registerIntentionBasedProcessing(IfThenToSafeAccessIntention())
+        registerIntentionBasedProcessing(IfThenToElvisIntention())
         registerIntentionBasedProcessing(FoldInitializerAndIfToElvisIntention())
         registerIntentionBasedProcessing(SimplifyNegatedBinaryExpressionIntention())
         registerIntentionBasedProcessing(ReplaceGetOrSetIntention(), additionalChecker = ReplaceGetOrSetInspection.additionalChecker)
@@ -136,7 +137,12 @@ object J2KPostProcessingRegistrar {
                 if (!additionalChecker(tElement)) return null
                 return {
                     if (intention.applicabilityRange(tElement) != null) { // check availability of the intention again because something could change
-                        intention.applyTo(element, null)
+                        val apply = { intention.applyTo(element, null) }
+
+                        if (intention.startInWriteAction())
+                            runWriteAction(apply)
+                        else
+                            apply()
                     }
                 }
             }
@@ -231,7 +237,7 @@ object J2KPostProcessingRegistrar {
         override fun createAction(element: KtElement, diagnostics: Diagnostics): (() -> Unit)? {
             if (element !is KtBinaryExpressionWithTypeRHS) return null
 
-            val context = element.analyzeAndGetResult().bindingContext
+            val context = element.analyze()
             val leftType = context.getType(element.left) ?: return null
             val rightType = context.get(BindingContext.TYPE, element.right) ?: return null
 
@@ -256,7 +262,7 @@ object J2KPostProcessingRegistrar {
                 })
                 return null
 
-            val bindingContext = element.analyzeAndGetResult().bindingContext
+            val bindingContext = element.analyze()
             val rightType = element.right?.getType(bindingContext) ?: return null
 
             if (KotlinBuiltIns.isString(rightType)) {

@@ -276,11 +276,11 @@ public class ArgumentTypeResolver {
         }
 
         if (expectedTypeIsUnknown) {
-            return functionPlaceholders.createFunctionPlaceholderType(Collections.<KotlinType>emptyList(), false);
+            return functionPlaceholders.createFunctionPlaceholderType(Collections.emptyList(), false);
         }
 
         return FunctionTypesKt.createFunctionType(
-                builtIns, Annotations.Companion.getEMPTY(), null, Collections.<KotlinType>emptyList(), null, TypeUtils.DONT_CARE
+                builtIns, Annotations.Companion.getEMPTY(), null, Collections.emptyList(), null, TypeUtils.DONT_CARE
         );
     }
 
@@ -308,17 +308,16 @@ public class ArgumentTypeResolver {
         boolean isFunctionLiteral = function instanceof KtFunctionLiteral;
         if (function.getValueParameterList() == null && isFunctionLiteral) {
             return expectedTypeIsUnknown
-                   ? functionPlaceholders
-                           .createFunctionPlaceholderType(Collections.<KotlinType>emptyList(), /* hasDeclaredArguments = */ false)
+                   ? functionPlaceholders.createFunctionPlaceholderType(Collections.emptyList(), /* hasDeclaredArguments = */ false)
                    : FunctionTypesKt.createFunctionType(
-                           builtIns, Annotations.Companion.getEMPTY(), null, Collections.<KotlinType>emptyList(), null, DONT_CARE
+                           builtIns, Annotations.Companion.getEMPTY(), null, Collections.emptyList(), null, DONT_CARE
                    );
         }
         List<KtParameter> valueParameters = function.getValueParameters();
         TemporaryBindingTrace temporaryTrace = TemporaryBindingTrace.create(
                 trace, "trace to resolve function literal parameter types");
-        List<KotlinType> parameterTypes = new ArrayList<KotlinType>(valueParameters.size());
-        List<Name> parameterNames = new ArrayList<Name>(valueParameters.size());
+        List<KotlinType> parameterTypes = new ArrayList<>(valueParameters.size());
+        List<Name> parameterNames = new ArrayList<>(valueParameters.size());
         for (KtParameter parameter : valueParameters) {
             parameterTypes.add(resolveTypeRefWithDefault(parameter.getTypeReference(), scope, temporaryTrace, DONT_CARE));
             Name name = parameter.getNameAsName();

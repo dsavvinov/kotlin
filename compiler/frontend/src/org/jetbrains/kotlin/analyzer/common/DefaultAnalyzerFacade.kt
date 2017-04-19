@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import org.jetbrains.kotlin.load.kotlin.MetadataFinderFactory
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.*
-import org.jetbrains.kotlin.resolve.lazy.FileScopeProviderImpl
 import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 import org.jetbrains.kotlin.resolve.lazy.declarations.DeclarationProviderFactory
 import org.jetbrains.kotlin.resolve.lazy.declarations.DeclarationProviderFactoryService
@@ -49,7 +48,7 @@ import org.jetbrains.kotlin.serialization.deserialization.MetadataPackageFragmen
  */
 object DefaultAnalyzerFacade : AnalyzerFacade<PlatformAnalysisParameters>() {
     private val languageVersionSettings = LanguageVersionSettingsImpl(
-            LanguageVersion.LATEST, ApiVersion.LATEST,
+            LanguageVersion.LATEST_STABLE, ApiVersion.LATEST_STABLE,
             specificFeatures = mapOf(LanguageFeature.MultiPlatformProjects to LanguageFeature.State.ENABLED)
     )
 
@@ -61,7 +60,7 @@ object DefaultAnalyzerFacade : AnalyzerFacade<PlatformAnalysisParameters>() {
         override fun dependencies() = listOf(this)
 
         override fun dependencyOnBuiltIns(): ModuleInfo.DependencyOnBuiltIns =
-                if (dependOnOldBuiltIns) ModuleInfo.DependenciesOnBuiltIns.LAST else ModuleInfo.DependenciesOnBuiltIns.NONE
+                if (dependOnOldBuiltIns) ModuleInfo.DependencyOnBuiltIns.LAST else ModuleInfo.DependencyOnBuiltIns.NONE
     }
 
     fun analyzeFiles(
@@ -73,7 +72,7 @@ object DefaultAnalyzerFacade : AnalyzerFacade<PlatformAnalysisParameters>() {
         val project = files.firstOrNull()?.project ?: throw AssertionError("No files to analyze")
         val resolver = setupResolverForProject(
                 "sources for metadata serializer",
-                ProjectContext(project), listOf(moduleInfo),
+                ProjectContext(project), listOf(moduleInfo), { DefaultAnalyzerFacade },
                 { ModuleContent(files, GlobalSearchScope.allScope(project)) },
                 object : PlatformAnalysisParameters {},
                 packagePartProviderFactory = packagePartProviderFactory,
@@ -102,7 +101,8 @@ object DefaultAnalyzerFacade : AnalyzerFacade<PlatformAnalysisParameters>() {
         val project = moduleContext.project
         val declarationProviderFactory = DeclarationProviderFactoryService.createDeclarationProviderFactory(
                 project, moduleContext.storageManager, syntheticFiles,
-                if (moduleInfo.isLibrary) GlobalSearchScope.EMPTY_SCOPE else moduleContentScope
+                if (moduleInfo.isLibrary) GlobalSearchScope.EMPTY_SCOPE else moduleContentScope,
+                moduleInfo
         )
 
         val trace = CodeAnalyzerInitializer.getInstance(project).createTrace()
@@ -132,7 +132,6 @@ object DefaultAnalyzerFacade : AnalyzerFacade<PlatformAnalysisParameters>() {
         useInstance(LookupTracker.DO_NOTHING)
         useImpl<ResolveSession>()
         useImpl<LazyTopDownAnalyzer>()
-        useImpl<FileScopeProviderImpl>()
         useInstance(languageVersionSettings)
         useImpl<AnnotationResolverImpl>()
         useImpl<CompilerDeserializationConfiguration>()

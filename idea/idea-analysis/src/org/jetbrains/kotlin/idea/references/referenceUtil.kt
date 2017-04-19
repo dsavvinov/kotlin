@@ -80,10 +80,17 @@ fun PsiReference.matchesTarget(candidateTarget: PsiElement): Boolean {
         is KtDestructuringDeclarationReference -> {
             if (candidateTarget !is KtNamedFunction && candidateTarget !is KtParameter && candidateTarget !is PsiMethod) return false
         }
+        is KtSimpleNameReference -> {
+            if (unwrappedCandidate is PsiMethod && !canBePsiMethodReference()) return false
+        }
     }
 
     val targets = unwrappedTargets
-    if (unwrappedCandidate in targets) return true
+
+    val manager = candidateTarget.manager
+    if (targets.any { manager.areElementsEquivalent(unwrappedCandidate, it) }) {
+        return true
+    }
 
     if (element is KtLabelReferenceExpression && (element.parent as? KtContainerNode)?.parent is KtReturnExpression) {
         targets.forEach {
@@ -93,9 +100,6 @@ fun PsiReference.matchesTarget(candidateTarget: PsiElement): Boolean {
             if (calleeReference.matchesTarget(candidateTarget)) return true
         }
     }
-
-    // TODO: Investigate why PsiCompiledElement identity changes
-    if (unwrappedCandidate is PsiCompiledElement && targets.any { it.isEquivalentTo(unwrappedCandidate) }) return true
 
     if (this is KtReference) {
         return targets.any {
@@ -121,6 +125,24 @@ fun PsiReference.matchesTarget(candidateTarget: PsiElement): Boolean {
             } ?: false
         }
     }
+    return false
+}
+
+fun KtSimpleNameReference.canBePsiMethodReference(): Boolean {
+    // NOTE: Accessor references are handled separately, see SyntheticPropertyAccessorReference
+    if (element == (element.parent as? KtCallExpression)?.calleeExpression) return true
+
+    val callableReference = element.getParentOfTypeAndBranch<KtCallableReferenceExpression> { callableReference }
+    if (callableReference != null) return true
+
+    val binaryOperator = element.getParentOfTypeAndBranch<KtBinaryExpression> { operationReference }
+    if (binaryOperator != null) return true
+
+    val unaryOperator = element.getParentOfTypeAndBranch<KtUnaryExpression> { operationReference }
+    if (unaryOperator != null) return true
+
+    if (element.getNonStrictParentOfType<KtImportDirective>() != null) return true
+
     return false
 }
 

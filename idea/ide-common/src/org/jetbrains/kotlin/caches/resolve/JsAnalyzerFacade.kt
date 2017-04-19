@@ -51,7 +51,11 @@ object JsAnalyzerFacade : AnalyzerFacade<PlatformAnalysisParameters>() {
         val (syntheticFiles, moduleContentScope) = moduleContent
         val project = moduleContext.project
         val declarationProviderFactory = DeclarationProviderFactoryService.createDeclarationProviderFactory(
-                project, moduleContext.storageManager, syntheticFiles, if (moduleInfo.isLibrary) GlobalSearchScope.EMPTY_SCOPE else moduleContentScope
+                project,
+                moduleContext.storageManager,
+                syntheticFiles,
+                if (moduleInfo.isLibrary) GlobalSearchScope.EMPTY_SCOPE else moduleContentScope,
+                moduleInfo
         )
 
         val languageVersionSettings = LanguageSettingsProvider.getInstance(project).getLanguageVersionSettings(moduleInfo, project)
@@ -67,7 +71,7 @@ object JsAnalyzerFacade : AnalyzerFacade<PlatformAnalysisParameters>() {
         )
         var packageFragmentProvider = container.get<ResolveSession>().packageFragmentProvider
 
-        if (moduleInfo is LibraryModuleInfo && moduleInfo.isJsLibrary()) {
+        if (moduleInfo is LibraryModuleInfo && moduleInfo.platform == JsPlatform) {
             val providers = moduleInfo.getLibraryRoots()
                     .flatMap { KotlinJavascriptMetadataUtils.loadMetadata(it) }
                     .filter { it.version.isCompatible() }

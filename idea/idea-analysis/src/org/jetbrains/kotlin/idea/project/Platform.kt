@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ModuleRootManager
 import com.intellij.openapi.roots.ProjectFileIndex
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.cli.common.arguments.Argument
 import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
-import org.jetbrains.kotlin.cli.common.parser.com.sampullara.cli.Argument
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.idea.caches.resolve.getResolutionFacade
 import org.jetbrains.kotlin.idea.compiler.configuration.KotlinCommonCompilerArgumentsHolder
@@ -40,7 +40,7 @@ val KtElement.builtIns: KotlinBuiltIns
     get() = getResolutionFacade().moduleDescriptor.builtIns
 
 private val multiPlatformProjectsArg: String by lazy {
-    "-" + CommonCompilerArguments::multiPlatform.annotations.filterIsInstance<Argument>().single().value
+    CommonCompilerArguments::multiPlatform.annotations.filterIsInstance<Argument>().single().value
 }
 
 fun Module.getAndCacheLanguageLevelByDependencies(): LanguageVersion {
@@ -77,7 +77,7 @@ fun Project.getLanguageVersionSettings(contextModule: Module? = null): LanguageV
     val languageVersion =
             LanguageVersion.fromVersionString(arguments.languageVersion)
             ?: contextModule?.getAndCacheLanguageLevelByDependencies()
-            ?: LanguageVersion.LATEST
+            ?: LanguageVersion.LATEST_STABLE
     val apiVersion = ApiVersion.createByLanguageVersion(LanguageVersion.fromVersionString(arguments.apiVersion) ?: languageVersion)
     val compilerSettings = KotlinCompilerSettings.getInstance(this).settings
     val extraLanguageFeatures = getExtraLanguageFeatures(

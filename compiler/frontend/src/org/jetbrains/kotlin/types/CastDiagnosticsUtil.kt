@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 package org.jetbrains.kotlin.types
 
-import com.google.common.base.Predicates
 import com.google.common.collect.Maps
-import org.jetbrains.kotlin.platform.PlatformToKotlinClassMap
+import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.platform.PlatformToKotlinClassMap
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.types.checker.KotlinTypeChecker
 import org.jetbrains.kotlin.types.checker.TypeCheckingProcedure
-import org.jetbrains.kotlin.builtins.KotlinBuiltIns
-import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
 object CastDiagnosticsUtil {
 
@@ -89,16 +89,28 @@ object CastDiagnosticsUtil {
      */
     @JvmStatic
     fun isCastErased(supertype: KotlinType, subtype: KotlinType, typeChecker: KotlinTypeChecker): Boolean {
+        val isNonReifiedTypeParameter = TypeUtils.isNonReifiedTypeParameter(subtype)
+        val isUpcast = typeChecker.isSubtypeOf(supertype, subtype)
+
+        // here we want to restrict cases such as `x is T` for x = T?, when T might have nullable upper bound
+        if (isNonReifiedTypeParameter && !isUpcast) {
+            // hack to save previous behavior in case when `x is T`, where T is not nullable, see IsErasedNullableTasT.kt
+            val nullableToDefinitelyNotNull = !TypeUtils.isNullableType(subtype) && supertype.makeNotNullable() == subtype
+            if (!nullableToDefinitelyNotNull) {
+                return true
+            }
+        }
+
         // cast between T and T? is always OK
         if (supertype.isMarkedNullable || subtype.isMarkedNullable) {
             return isCastErased(TypeUtils.makeNotNullable(supertype), TypeUtils.makeNotNullable(subtype), typeChecker)
         }
 
         // if it is a upcast, it's never erased
-        if (typeChecker.isSubtypeOf(supertype, subtype)) return false
+        if (isUpcast) return false
 
         // downcasting to a non-reified type parameter is always erased
-        if (TypeUtils.isNonReifiedTypeParameter(subtype)) return true
+        if (isNonReifiedTypeParameter) return true
 
         // Check that we are actually casting to a generic type
         // NOTE: this does not account for 'as Array<List<T>>'
@@ -150,8 +162,8 @@ object CastDiagnosticsUtil {
         if (supertypeWithVariables != null) {
             // Now, let's try to unify Collection<T> and Collection<Foo> solution is a map from T to Foo
             val solution = TypeUnifier.unify(
-                    TypeProjectionImpl(supertype), TypeProjectionImpl(supertypeWithVariables),
-                    Predicates.`in`(variableConstructors))
+                    TypeProjectionImpl(supertype), TypeProjectionImpl(supertypeWithVariables), variableConstructors::contains
+            )
             substitution = Maps.newHashMap(solution.substitution)
         }
         else {

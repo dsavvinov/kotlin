@@ -47,7 +47,7 @@ public abstract class KtStubElementType<StubT extends StubElement, PsiT extends 
     @NotNull
     private final ArrayFactory<PsiT> arrayFactory;
 
-    public KtStubElementType(@NotNull @NonNls String debugName, @NotNull final Class<PsiT> psiClass, @NotNull Class<?> stubClass) {
+    public KtStubElementType(@NotNull @NonNls String debugName, @NotNull Class<PsiT> psiClass, @NotNull Class<?> stubClass) {
         super(debugName, KotlinLanguage.INSTANCE);
         try {
             byNodeConstructor = psiClass.getConstructor(ASTNode.class);
@@ -58,16 +58,12 @@ public abstract class KtStubElementType<StubT extends StubElement, PsiT extends 
         }
         //noinspection unchecked
         emptyArray = (PsiT[]) Array.newInstance(psiClass, 0);
-        arrayFactory = new ArrayFactory<PsiT>() {
-            @NotNull
-            @Override
-            public PsiT[] create(int count) {
-                if (count == 0) {
-                    return emptyArray;
-                }
-                //noinspection unchecked
-                return (PsiT[]) Array.newInstance(psiClass, count);
+        arrayFactory = count -> {
+            if (count == 0) {
+                return emptyArray;
             }
+            //noinspection unchecked
+            return (PsiT[]) Array.newInstance(psiClass, count);
         };
     }
 

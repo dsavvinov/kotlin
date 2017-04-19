@@ -24,6 +24,7 @@ import com.intellij.util.ArrayUtil;
 import kotlin.text.StringsKt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.utils.ExceptionUtilsKt;
 import org.junit.Assert;
 
 import java.io.BufferedReader;
@@ -68,7 +69,7 @@ public final class InTextDirectivesUtils {
 
     @NotNull
     public static List<String> findListWithPrefixes(@NotNull String fileText, @NotNull String... prefixes) {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
 
         for (String line : findLinesWithPrefixesRemoved(fileText, prefixes)) {
             String unquoted = StringUtil.unquoteString(line);
@@ -114,7 +115,7 @@ public final class InTextDirectivesUtils {
 
     @NotNull
     public static List<String> findLinesWithPrefixesRemoved(String fileText, boolean trim, String... prefixes) {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         List<String> cleanedPrefixes = cleanDirectivesFromComments(Arrays.asList(prefixes));
 
         for (String line : fileNonEmptyCommentedLines(fileText)) {
@@ -182,11 +183,10 @@ public final class InTextDirectivesUtils {
 
     @NotNull
     private static List<String> fileNonEmptyCommentedLines(String fileText) {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
 
         try {
-            BufferedReader reader = new BufferedReader(new StringReader(fileText));
-            try {
+            try (BufferedReader reader = new BufferedReader(new StringReader(fileText))) {
                 String line;
 
                 while ((line = reader.readLine()) != null) {
@@ -198,11 +198,10 @@ public final class InTextDirectivesUtils {
                         }
                     }
                 }
-            } finally {
-                reader.close();
             }
-        } catch(IOException e) {
-            throw new AssertionError(e);
+        }
+        catch (IOException e) {
+            throw ExceptionUtilsKt.rethrow(e);
         }
 
         return result;

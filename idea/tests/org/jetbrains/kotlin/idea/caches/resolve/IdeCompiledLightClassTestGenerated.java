@@ -33,12 +33,30 @@ import java.util.regex.Pattern;
 @RunWith(JUnit3RunnerWithInners.class)
 public class IdeCompiledLightClassTestGenerated extends AbstractIdeCompiledLightClassTest {
     public void testAllFilesPresentInLightClasses() throws Exception {
-        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/asJava/lightClasses"), Pattern.compile("^([^.]+)\\.kt$"), TargetBackend.ANY, true, "local", "compilationErrors");
+        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/asJava/lightClasses"), Pattern.compile("^([^.]+)\\.kt$"), TargetBackend.ANY, true, "local", "compilationErrors", "ideRegression");
     }
 
     @TestMetadata("AnnotationClass.kt")
     public void testAnnotationClass() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/AnnotationClass.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("DataClassWithCustomImplementedMembers.kt")
+    public void testDataClassWithCustomImplementedMembers() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/DataClassWithCustomImplementedMembers.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("DelegatedNested.kt")
+    public void testDelegatedNested() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/DelegatedNested.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("Delegation.kt")
+    public void testDelegation() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/Delegation.kt");
         doTest(fileName);
     }
 
@@ -60,6 +78,24 @@ public class IdeCompiledLightClassTestGenerated extends AbstractIdeCompiledLight
         doTest(fileName);
     }
 
+    @TestMetadata("ExtendingInterfaceWithDefaultImpls.kt")
+    public void testExtendingInterfaceWithDefaultImpls() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/ExtendingInterfaceWithDefaultImpls.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("HiddenDeprecated.kt")
+    public void testHiddenDeprecated() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/HiddenDeprecated.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("InheritingInterfaceDefaultImpls.kt")
+    public void testInheritingInterfaceDefaultImpls() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/InheritingInterfaceDefaultImpls.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("JvmNameOnMember.kt")
     public void testJvmNameOnMember() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/JvmNameOnMember.kt");
@@ -78,9 +114,21 @@ public class IdeCompiledLightClassTestGenerated extends AbstractIdeCompiledLight
         doTest(fileName);
     }
 
+    @TestMetadata("NonDataClassWithComponentFunctions.kt")
+    public void testNonDataClassWithComponentFunctions() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/NonDataClassWithComponentFunctions.kt");
+        doTest(fileName);
+    }
+
     @TestMetadata("PublishedApi.kt")
     public void testPublishedApi() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/PublishedApi.kt");
+        doTest(fileName);
+    }
+
+    @TestMetadata("VarArgs.kt")
+    public void testVarArgs() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/asJava/lightClasses/VarArgs.kt");
         doTest(fileName);
     }
 

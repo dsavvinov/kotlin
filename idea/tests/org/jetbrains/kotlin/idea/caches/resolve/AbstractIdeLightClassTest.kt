@@ -48,17 +48,31 @@ import kotlin.test.assertEquals
 
 abstract class AbstractIdeLightClassTest : KotlinLightCodeInsightFixtureTestCase() {
     fun doTest(testDataPath: String) {
-        myFixture.configureByFile(testDataPath)
+        val extraFilePath = testDataPath.replace(".kt", ".extra.kt")
+        val testFiles = if (File(extraFilePath).isFile) listOf(testDataPath, extraFilePath) else listOf(testDataPath)
+
+
+        val lazinessMode = lazinessModeByFileText(testDataPath)
+        myFixture.configureByFiles(*testFiles.toTypedArray())
+
         val ktFile = myFixture.file as KtFile
-        testLightClass(testDataPath, { LightClassTestCommon.removeEmptyDefaultImpls(it) }) { fqName ->
+        val testData = File(testDataPath)
+        testLightClass(KotlinTestUtils.replaceExtension(testData, "java"), testData, { LightClassTestCommon.removeEmptyDefaultImpls(it) }, { fqName ->
             val tracker = LightClassLazinessChecker.Tracker(fqName)
             project.withServiceRegistered<StubComputationTracker, PsiClass?>(tracker) {
                 findClass(fqName, ktFile, project)?.apply {
-                    LightClassLazinessChecker.check(this as KtLightClass, tracker)
+                    LightClassLazinessChecker.check(this as KtLightClass, tracker, lazinessMode)
                     tracker.allowLevel(EXACT)
                     PsiElementChecker.checkPsiElementStructure(this)
                 }
             }
+        })
+    }
+
+    private fun lazinessModeByFileText(testDataPath: String): LightClassLazinessChecker.Mode {
+        return File(testDataPath).readText().run {
+            val argument = substringAfter("LAZINESS:", "").substringBefore(" ")
+            LightClassLazinessChecker.Mode.values().firstOrNull { it.name == argument } ?: LightClassLazinessChecker.Mode.AllChecks
         }
     }
 
@@ -84,17 +98,22 @@ abstract class AbstractIdeCompiledLightClassTest : KotlinDaemonAnalyzerTestCase(
     private fun libName() = "libFor" + getTestName(false)
 
     fun doTest(testDataPath: String) {
-        testLightClass(testDataPath, { it }) {
+        val testDataFile = File(testDataPath)
+        val expectedFile = KotlinTestUtils.replaceExtension(
+                testDataFile, "compiled.java"
+        ).let { if (it.exists()) it else KotlinTestUtils.replaceExtension(testDataFile, "java") }
+        testLightClass(expectedFile, testDataFile, { it }, {
             findClass(it, null, project)?.apply {
                 PsiElementChecker.checkPsiElementStructure(this)
             }
-        }
+        })
     }
 }
 
-private fun testLightClass(testDataPath: String, normalize: (String) -> String, findLightClass: (String) -> PsiClass?) {
+private fun testLightClass(expected: File, testData: File, normalize: (String) -> String, findLightClass: (String) -> PsiClass?) {
     LightClassTestCommon.testLightClass(
-            File(testDataPath),
+            expected,
+            testData,
             findLightClass,
             normalizeText = { text ->
                 //NOTE: ide and compiler differ in names generated for parameters with unspecified names
@@ -103,6 +122,7 @@ private fun testLightClass(testDataPath: String, normalize: (String) -> String, 
                         .replace("java.lang.String s)", "java.lang.String p)")
                         .replace("java.lang.String s1", "java.lang.String p1")
                         .replace("java.lang.String s2", "java.lang.String p2")
+                        .replace("java.lang.Object o)", "java.lang.Object p)")
                         .removeLinesStartingWith("@" + JvmAnnotationNames.METADATA_FQ_NAME.asString())
                         .run(normalize)
             }
@@ -117,6 +137,12 @@ private fun findClass(fqName: String, ktFile: KtFile?, project: Project): PsiCla
 }
 
 object LightClassLazinessChecker {
+
+    enum class Mode {
+        AllChecks,
+        NoLaziness,
+        NoConsistency
+    }
 
     class Tracker(private val fqName: String) : StubComputationTracker {
 
@@ -157,15 +183,18 @@ object LightClassLazinessChecker {
         }
     }
 
-    fun check(lightClass: KtLightClass, tracker: Tracker) {
+    fun check(lightClass: KtLightClass, tracker: Tracker, lazinessMode: Mode) {
         // lighter classes not implemented for locals
         if (lightClass.kotlinOrigin?.isLocal ?: false) return
 
         tracker.allowLevel(LIGHT)
 
-        // collect method class results on light members that should not trigger exact context evaluation
-        val fieldsToInfo = lightClass.fields.asList().keysToMap { fieldInfo(it) }
-        val methodsToInfo = lightClass.methods.asList().keysToMap { methodInfo(it) }
+        if (lazinessMode != Mode.AllChecks) {
+            tracker.allowLevel(EXACT)
+        }
+
+        // collect api method call results on light members that should not trigger exact context evaluation
+        val lazinessInfo = LazinessInfo(lightClass, lazinessMode)
 
         tracker.allowLevel(EXACT)
 
@@ -173,15 +202,43 @@ object LightClassLazinessChecker {
 
         tracker.checkLevel(EXACT)
 
-        // check collected data against delegates which should contain correct data
-        for ((field, lightFieldInfo) in fieldsToInfo) {
-            val delegate = (field as KtLightField).clsDelegate
-            assertEquals(fieldInfo(delegate), lightFieldInfo)
+        lazinessInfo.checkConsistency()
+    }
+
+    private class LazinessInfo(private val lightClass: KtLightClass, private val lazinessMode: Mode) {
+        val classInfo = classInfo(lightClass)
+        val fieldsToInfo = lightClass.fields.asList().keysToMap { fieldInfo(it) }
+        val methodsToInfo = lightClass.methods.asList().keysToMap { methodInfo(it, lazinessMode) }
+        val innerClasses = lightClass.innerClasses.map { LazinessInfo(it as KtLightClass, lazinessMode) }
+
+        fun checkConsistency() {
+            // still collecting data to trigger possible exceptions
+            if (lazinessMode == Mode.NoConsistency) return
+
+            // check collected data against delegates which should contain correct data
+            for ((field, lightFieldInfo) in fieldsToInfo) {
+                val delegate = (field as KtLightField).clsDelegate
+                assertEquals(fieldInfo(delegate), lightFieldInfo)
+            }
+            for ((method, lightMethodInfo) in methodsToInfo) {
+                val delegate = (method as KtLightMethod).clsDelegate
+                assertEquals(methodInfo(delegate, lazinessMode), lightMethodInfo)
+            }
+
+            assertEquals(classInfo(lightClass.clsDelegate), classInfo)
+
+            innerClasses.forEach(LazinessInfo::checkConsistency)
         }
-        for ((method, lightMethodInfo) in methodsToInfo) {
-            val delegate = (method as KtLightMethod).clsDelegate
-            assertEquals(methodInfo(delegate), lightMethodInfo)
-        }
+    }
+
+    private data class ClassInfo(
+            val fieldNames: Collection<String>,
+            val methodNames: Collection<String>,
+            val modifiers: List<String>
+    )
+
+    private fun classInfo(psiClass: PsiClass) = with(psiClass) {
+        ClassInfo(fields.names(), methods.names(), PsiModifier.MODIFIERS.asList().filter { modifierList!!.hasModifierProperty(it) })
     }
 
     private data class FieldInfo(
@@ -191,7 +248,7 @@ object LightClassLazinessChecker {
 
     private fun fieldInfo(field: PsiField) = with(field) {
         FieldInfo(
-                name!!, PsiModifier.MODIFIERS.asList().filter { hasModifierProperty(it) }
+                name!!, PsiModifier.MODIFIERS.asList().filter { modifierList!!.hasModifierProperty(it) }
         )
     }
 
@@ -199,16 +256,33 @@ object LightClassLazinessChecker {
             val name: String,
             val modifiers: List<String>,
             val isConstructor: Boolean,
-            val parameterCount: Int
+            val parameterCount: Int,
+            val isVarargs: Boolean
     )
 
-    private fun methodInfo(method: PsiMethod) = with(method) {
+    private fun methodInfo(method: PsiMethod, lazinessMode: Mode) = with(method) {
         MethodInfo(
-                name, PsiModifier.MODIFIERS.asList().filter { hasModifierProperty(it) },
-                isConstructor, method.parameterList.parametersCount
+                name, relevantModifiers(lazinessMode),
+                isConstructor, method.parameterList.parametersCount, isVarArgs
         )
     }
+
+    private fun PsiMethod.relevantModifiers(lazinessMode: Mode) = when {
+        containingClass!!.isInterface -> PsiModifier.MODIFIERS.filter {
+            // we have custom strategy for interface members with implementation
+            it !in modifiersHackedForInterfaceMembersWithImplementation
+        }
+        else -> PsiModifier.MODIFIERS.asList()
+    }.filter {
+        // cannot compute visibility for overrides without proper resolve, we check consistency if laziness is turned off
+        lazinessMode == Mode.NoLaziness || it !in visibilityModifiers
+    }.filter { modifierList.hasModifierProperty(it) }
+
+    private fun Array<out PsiMember>.names() = mapTo(LinkedHashSet()) { it.name!! }
 }
+
+private val modifiersHackedForInterfaceMembersWithImplementation = listOf(PsiModifier.ABSTRACT, PsiModifier.DEFAULT)
+private val visibilityModifiers = listOf(PsiModifier.PRIVATE, PsiModifier.PROTECTED, PsiModifier.PUBLIC)
 
 private fun String.removeLinesStartingWith(prefix: String): String {
     return lines().filterNot { it.trimStart().startsWith(prefix) }.joinToString(separator = "\n")

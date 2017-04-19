@@ -65,7 +65,7 @@ fun KotlinFacetSettings.initializeIfNeeded(
 
     if (compilerArguments == null) {
         val targetPlatformKind = platformKind ?: getDefaultTargetPlatform(module, rootModel)
-        compilerArguments = targetPlatformKind.createCompilerArguments().apply {
+        compilerArguments = targetPlatformKind.createCompilerArguments {
             targetPlatformKind.getPlatformCompilerArgumentsByProject(module.project)?.let { mergeBeans(it, this) }
             mergeBeans(commonArguments, this)
         }
@@ -101,6 +101,13 @@ val TargetPlatformKind<*>.mavenLibraryIds: List<String>
         is TargetPlatformKind.Common -> listOf(MAVEN_COMMON_STDLIB_ID)
     }
 
+val mavenLibraryIdToPlatform: Map<String, TargetPlatformKind<*>> by lazy {
+    TargetPlatformKind.ALL_PLATFORMS
+            .flatMap { platform -> platform.mavenLibraryIds.map { it to platform } }
+            .sortedByDescending { it.first.length }
+            .toMap()
+}
+
 fun Module.getOrCreateFacet(modelsProvider: IdeModifiableModelsProvider, useProjectSettings: Boolean): KotlinFacet {
     val facetModel = modelsProvider.getModifiableFacetModel(this)
 
@@ -122,7 +129,7 @@ fun KotlinFacet.configureFacet(
         compilerArguments = null
         compilerSettings = null
         initializeIfNeeded(module, modelsProvider.getModifiableRootModel(module), platformKind)
-        languageLevel = LanguageVersion.fromFullVersionString(compilerVersion) ?: LanguageVersion.LATEST
+        languageLevel = LanguageVersion.fromFullVersionString(compilerVersion) ?: LanguageVersion.LATEST_STABLE
         // Both apiLevel and languageLevel should be initialized in the lines above
         if (apiLevel!! > languageLevel!!) {
             apiLevel = languageLevel
@@ -133,26 +140,24 @@ fun KotlinFacet.configureFacet(
 
 // "Primary" fields are written to argument beans directly and thus not presented in the "additional arguments" string
 // Update these lists when facet/project settings UI changes
-val commonUIExposedFields = listOf("languageVersion",
-                                   "apiVersion",
-                                   "suppressWarnings",
-                                   "coroutinesEnable",
-                                   "coroutinesWarn",
-                                   "coroutinesError")
-private val commonUIHiddenFields = listOf("pluginClasspaths",
-                                          "pluginOptions")
+val commonUIExposedFields = listOf(CommonCompilerArguments::languageVersion.name,
+                                   CommonCompilerArguments::apiVersion.name,
+                                   CommonCompilerArguments::suppressWarnings.name,
+                                   CommonCompilerArguments::coroutinesState.name)
+private val commonUIHiddenFields = listOf(CommonCompilerArguments::pluginClasspaths.name,
+                                          CommonCompilerArguments::pluginOptions.name)
 private val commonPrimaryFields = commonUIExposedFields + commonUIHiddenFields
 
-private val jvmSpecificUIExposedFields = listOf("jvmTarget",
-                                                "destination",
-                                                "classpath")
+private val jvmSpecificUIExposedFields = listOf(K2JVMCompilerArguments::jvmTarget.name,
+                                                K2JVMCompilerArguments::destination.name,
+                                                K2JVMCompilerArguments::classpath.name)
 val jvmUIExposedFields = commonUIExposedFields + jvmSpecificUIExposedFields
 private val jvmPrimaryFields = commonPrimaryFields + jvmSpecificUIExposedFields
 
-private val jsSpecificUIExposedFields = listOf("sourceMap",
-                                               "outputPrefix",
-                                               "outputPostfix",
-                                               "moduleKind")
+private val jsSpecificUIExposedFields = listOf(K2JSCompilerArguments::sourceMap.name,
+                                               K2JSCompilerArguments::outputPrefix.name,
+                                               K2JSCompilerArguments::outputPostfix.name,
+                                               K2JSCompilerArguments::moduleKind.name)
 val jsUIExposedFields = commonUIExposedFields + jsSpecificUIExposedFields
 private val jsPrimaryFields = commonPrimaryFields + jsSpecificUIExposedFields
 
@@ -171,16 +176,11 @@ fun parseCompilerArgumentsToFacet(arguments: List<String>, defaultArguments: Lis
 
         val defaultCompilerArguments = compilerArguments::class.java.newInstance()
         parseArguments(defaultArguments.toTypedArray(), defaultCompilerArguments, true)
-
-        val oldCoroutineSupport = CoroutineSupport.byCompilerArguments(compilerArguments)
-        compilerArguments.coroutinesEnable = false
-        compilerArguments.coroutinesWarn = false
-        compilerArguments.coroutinesError = false
+        defaultCompilerArguments.convertPathsToSystemIndependent()
 
         parseArguments(argumentArray, compilerArguments, true)
 
-        val restoreCoroutineSupport =
-                !compilerArguments.coroutinesEnable && !compilerArguments.coroutinesWarn && !compilerArguments.coroutinesError
+        compilerArguments.convertPathsToSystemIndependent()
 
         // Retain only fields exposed in facet configuration editor.
         // The rest is combined into string and stored in CompilerSettings.additionalArguments
@@ -202,10 +202,6 @@ fun parseCompilerArgumentsToFacet(arguments: List<String>, defaultArguments: Lis
 
         with(compilerArguments::class.java.newInstance()) {
             copyFieldsSatisfying(this, compilerArguments, ::exposeAsAdditionalArgument)
-        }
-
-        if (restoreCoroutineSupport) {
-            coroutineSupport = oldCoroutineSupport
         }
     }
 }

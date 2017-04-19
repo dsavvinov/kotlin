@@ -228,12 +228,6 @@ public class MoveTestGenerated extends AbstractMoveTest {
         doTest(fileName);
     }
 
-    @TestMetadata("kotlin/moveDirectory/moveDirectoryKeepPackageDirective/moveDirectoryKeepPackageDirective.test")
-    public void testKotlin_moveDirectory_moveDirectoryKeepPackageDirective_MoveDirectoryKeepPackageDirective() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveDirectory/moveDirectoryKeepPackageDirective/moveDirectoryKeepPackageDirective.test");
-        doTest(fileName);
-    }
-
     @TestMetadata("kotlin/moveDirectory/moveDirectoryWithPackageDirectiveChange/moveDirectoryWithPackageDirectiveChange.test")
     public void testKotlin_moveDirectory_moveDirectoryWithPackageDirectiveChange_MoveDirectoryWithPackageDirectiveChange() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveDirectory/moveDirectoryWithPackageDirectiveChange/moveDirectoryWithPackageDirectiveChange.test");
@@ -264,6 +258,12 @@ public class MoveTestGenerated extends AbstractMoveTest {
         doTest(fileName);
     }
 
+    @TestMetadata("kotlin/moveFile/moveFileAndDirWithJavaFileReferringToPackageFragementWithUnmatchedDir/moveFileAndDirWithJavaFileReferringToPackageFragementWithUnmatchedDir.test")
+    public void testKotlin_moveFile_moveFileAndDirWithJavaFileReferringToPackageFragementWithUnmatchedDir_MoveFileAndDirWithJavaFileReferringToPackageFragementWithUnmatchedDir() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveFile/moveFileAndDirWithJavaFileReferringToPackageFragementWithUnmatchedDir/moveFileAndDirWithJavaFileReferringToPackageFragementWithUnmatchedDir.test");
+        doTest(fileName);
+    }
+
     @TestMetadata("kotlin/moveFile/moveFileToFile/moveFileToFile.test")
     public void testKotlin_moveFile_moveFileToFile_MoveFileToFile() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveFile/moveFileToFile/moveFileToFile.test");
@@ -291,6 +291,12 @@ public class MoveTestGenerated extends AbstractMoveTest {
     @TestMetadata("kotlin/moveFile/moveLastFileInPackageWithPackageRename/moveLastFileInPackageWithPackageRename.test")
     public void testKotlin_moveFile_moveLastFileInPackageWithPackageRename_MoveLastFileInPackageWithPackageRename() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveFile/moveLastFileInPackageWithPackageRename/moveLastFileInPackageWithPackageRename.test");
+        doTest(fileName);
+    }
+
+    @TestMetadata("kotlin/moveFile/moveMultipleFIles/moveMultipleFiles.test")
+    public void testKotlin_moveFile_moveMultipleFIles_MoveMultipleFiles() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveFile/moveMultipleFIles/moveMultipleFiles.test");
         doTest(fileName);
     }
 
@@ -369,6 +375,12 @@ public class MoveTestGenerated extends AbstractMoveTest {
     @TestMetadata("kotlin/moveNestedClass/nonInnerToOuterClass2/nonInnerToOuterClass2.test")
     public void testKotlin_moveNestedClass_nonInnerToOuterClass2_NonInnerToOuterClass2() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveNestedClass/nonInnerToOuterClass2/nonInnerToOuterClass2.test");
+        doTest(fileName);
+    }
+
+    @TestMetadata("kotlin/moveNestedClass/nonInnerToSubclassWithCompanionAsImplicitDispatchReceiver/nonInnerToSubclassWithCompanionAsImplicitDispatchReceiver.test")
+    public void testKotlin_moveNestedClass_nonInnerToSubclassWithCompanionAsImplicitDispatchReceiver_NonInnerToSubclassWithCompanionAsImplicitDispatchReceiver() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveNestedClass/nonInnerToSubclassWithCompanionAsImplicitDispatchReceiver/nonInnerToSubclassWithCompanionAsImplicitDispatchReceiver.test");
         doTest(fileName);
     }
 
@@ -522,12 +534,6 @@ public class MoveTestGenerated extends AbstractMoveTest {
         doTest(fileName);
     }
 
-    @TestMetadata("kotlin/moveTopLevelDeclarations/misc/moveFileWithDeclarationsToUnrelatedModuleConflict/moveFileWithDeclarationsToUnrelatedModuleConflict.test")
-    public void testKotlin_moveTopLevelDeclarations_misc_moveFileWithDeclarationsToUnrelatedModuleConflict_MoveFileWithDeclarationsToUnrelatedModuleConflict() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/misc/moveFileWithDeclarationsToUnrelatedModuleConflict/moveFileWithDeclarationsToUnrelatedModuleConflict.test");
-        doTest(fileName);
-    }
-
     @TestMetadata("kotlin/moveTopLevelDeclarations/misc/moveFromDefaultPackage/moveFromDefaultPackage.test")
     public void testKotlin_moveTopLevelDeclarations_misc_moveFromDefaultPackage_MoveFromDefaultPackage() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/misc/moveFromDefaultPackage/moveFromDefaultPackage.test");
@@ -540,21 +546,9 @@ public class MoveTestGenerated extends AbstractMoveTest {
         doTest(fileName);
     }
 
-    @TestMetadata("kotlin/moveTopLevelDeclarations/misc/moveInternalToAnotherModule/moveInternalToAnotherModule.test")
-    public void testKotlin_moveTopLevelDeclarations_misc_moveInternalToAnotherModule_MoveInternalToAnotherModule() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/misc/moveInternalToAnotherModule/moveInternalToAnotherModule.test");
-        doTest(fileName);
-    }
-
-    @TestMetadata("kotlin/moveTopLevelDeclarations/misc/moveToModuleWithoutLibConflict/moveToModuleWithoutLibConflict.test")
-    public void testKotlin_moveTopLevelDeclarations_misc_moveToModuleWithoutLibConflict_MoveToModuleWithoutLibConflict() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/misc/moveToModuleWithoutLibConflict/moveToModuleWithoutLibConflict.test");
-        doTest(fileName);
-    }
-
-    @TestMetadata("kotlin/moveTopLevelDeclarations/misc/moveToUnrelatedModuleConflict/moveToUnrelatedModuleConflict.test")
-    public void testKotlin_moveTopLevelDeclarations_misc_moveToUnrelatedModuleConflict_MoveToUnrelatedModuleConflict() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/misc/moveToUnrelatedModuleConflict/moveToUnrelatedModuleConflict.test");
+    @TestMetadata("kotlin/moveTopLevelDeclarations/misc/mutualDependency/mutualDependency.test")
+    public void testKotlin_moveTopLevelDeclarations_misc_mutualDependency_MutualDependency() throws Exception {
+        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/misc/mutualDependency/mutualDependency.test");
         doTest(fileName);
     }
 
@@ -594,12 +588,6 @@ public class MoveTestGenerated extends AbstractMoveTest {
         doTest(fileName);
     }
 
-    @TestMetadata("kotlin/moveTopLevelDeclarations/misc/visibilityConflictInImport/visibilityConflictInImport.test")
-    public void testKotlin_moveTopLevelDeclarations_misc_visibilityConflictInImport_VisibilityConflictInImport() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/misc/visibilityConflictInImport/visibilityConflictInImport.test");
-        doTest(fileName);
-    }
-
     @TestMetadata("kotlin/moveTopLevelDeclarations/moveClassToFile/moveClassToFile.test")
     public void testKotlin_moveTopLevelDeclarations_moveClassToFile_MoveClassToFile() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/moveClassToFile/moveClassToFile.test");
@@ -633,18 +621,6 @@ public class MoveTestGenerated extends AbstractMoveTest {
     @TestMetadata("kotlin/moveTopLevelDeclarations/moveExtensionPropertyToFile/moveExtensionPropertyToFile.test")
     public void testKotlin_moveTopLevelDeclarations_moveExtensionPropertyToFile_MoveExtensionPropertyToFile() throws Exception {
         String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/moveExtensionPropertyToFile/moveExtensionPropertyToFile.test");
-        doTest(fileName);
-    }
-
-    @TestMetadata("kotlin/moveTopLevelDeclarations/moveFromJsModuleToJvmModule/moveFromJsModuleToJvmModule.test")
-    public void testKotlin_moveTopLevelDeclarations_moveFromJsModuleToJvmModule_MoveFromJsModuleToJvmModule() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/moveFromJsModuleToJvmModule/moveFromJsModuleToJvmModule.test");
-        doTest(fileName);
-    }
-
-    @TestMetadata("kotlin/moveTopLevelDeclarations/moveFromJvmModuleToJsModule/moveFromJvmModuleToJsModule.test")
-    public void testKotlin_moveTopLevelDeclarations_moveFromJvmModuleToJsModule_MoveFromJvmModuleToJsModule() throws Exception {
-        String fileName = KotlinTestUtils.navigationMetadata("idea/testData/refactoring/move/kotlin/moveTopLevelDeclarations/moveFromJvmModuleToJsModule/moveFromJvmModuleToJsModule.test");
         doTest(fileName);
     }
 

@@ -60,6 +60,7 @@
           <element id="module-output" name="backend.jvm" />
           <element id="module-output" name="ir.psi2ir" />
           <element id="module-output" name="annotation-based-compiler-plugins-ide-support" />
+          <element id="module-output" name="frontend.script" />
         </element>
         <element id="library" level="project" name="javax.inject" />
         <element id="directory" name="jps">
@@ -103,6 +104,8 @@
           <element id="module-output" name="kotlin-gradle-tooling" />
         </element>
         <element id="library" level="project" name="uast-java" />
+        <element id="library" level="project" name="kotlinx-coroutines-core" />
+        <element id="library" level="project" name="javaslang" />
       </element>
       <element id="directory" name="kotlinc">
         <element id="dir-copy" path="$PROJECT_DIR$/dist/kotlinc" />

@@ -22,7 +22,6 @@ import com.intellij.util.ArrayUtil;
 import kotlin.Pair;
 import kotlin.collections.CollectionsKt;
 import kotlin.io.FilesKt;
-import kotlin.jvm.functions.Function1;
 import kotlin.text.Charsets;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.kotlin.cli.common.CLICompiler;
@@ -55,7 +54,7 @@ public abstract class AbstractCliTest extends TestCaseWithTmpdir {
         try {
             System.setErr(new PrintStream(bytes));
             ExitCode exitCode = CLICompiler.doMainNoExit(compiler, ArrayUtil.toStringArray(args));
-            return new Pair<String, ExitCode>(bytes.toString("utf-8"), exitCode);
+            return new Pair<>(bytes.toString("utf-8"), exitCode);
         }
         catch (Exception e) {
             throw ExceptionUtilsKt.rethrow(e);
@@ -75,7 +74,6 @@ public abstract class AbstractCliTest extends TestCaseWithTmpdir {
                 .replace("expected version is " + JvmMetadataVersion.INSTANCE, "expected version is $ABI_VERSION$")
                 .replace("expected version is " + JsMetadataVersion.INSTANCE, "expected version is $ABI_VERSION$")
                 .replace("\\", "/")
-                .replaceAll("^.+running the Kotlin compiler under Java 6 or 7 is unsupported and will no longer be possible in a future update\\.\n", "")
                 .replace(KotlinCompilerVersion.VERSION, "$VERSION$");
 
         return normalizedOutputWithoutExitCode + exitCode;
@@ -98,7 +96,7 @@ public abstract class AbstractCliTest extends TestCaseWithTmpdir {
     }
 
     private void doTestAdditionalChecks(@NotNull File testConfigFile) throws IOException {
-        List<String> diagnostics = new ArrayList<String>(0);
+        List<String> diagnostics = new ArrayList<>(0);
         String content = FilesKt.readText(testConfigFile, Charsets.UTF_8);
 
         List<String> existsList = InTextDirectivesUtils.findListWithPrefixes(content, "// EXISTS: ");
@@ -127,26 +125,23 @@ public abstract class AbstractCliTest extends TestCaseWithTmpdir {
     }
 
     @NotNull
-    static List<String> readArgs(@NotNull final String argsFilePath, @NotNull final String tempDir) throws IOException {
+    static List<String> readArgs(@NotNull String argsFilePath, @NotNull String tempDir) throws IOException {
         List<String> lines = FilesKt.readLines(new File(argsFilePath), Charsets.UTF_8);
 
-        return CollectionsKt.mapNotNull(lines, new Function1<String, String>() {
-            @Override
-            public String invoke(String arg) {
-                if (arg.isEmpty()) {
-                    return null;
-                }
-
-                // Do not replace ':' after '\' (used in compiler plugin tests)
-                String argsWithColonsReplaced = arg
-                        .replace("\\:", "$COLON$")
-                        .replace(":", File.pathSeparator)
-                        .replace("$COLON$", ":");
-
-                return argsWithColonsReplaced
-                        .replace("$TEMP_DIR$", tempDir)
-                        .replace("$TESTDATA_DIR$", new File(argsFilePath).getParent());
+        return CollectionsKt.mapNotNull(lines, arg -> {
+            if (arg.isEmpty()) {
+                return null;
             }
+
+            // Do not replace ':' after '\' (used in compiler plugin tests)
+            String argsWithColonsReplaced = arg
+                    .replace("\\:", "$COLON$")
+                    .replace(":", File.pathSeparator)
+                    .replace("$COLON$", ":");
+
+            return argsWithColonsReplaced
+                    .replace("$TEMP_DIR$", tempDir)
+                    .replace("$TESTDATA_DIR$", new File(argsFilePath).getParent());
         });
     }
 

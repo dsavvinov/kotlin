@@ -28,7 +28,10 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ModuleContext
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.context.withModule
-import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentProvider
+import org.jetbrains.kotlin.descriptors.PackagePartProvider
 import org.jetbrains.kotlin.descriptors.impl.LazyModuleDependencies
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
 import org.jetbrains.kotlin.name.FqName
@@ -38,7 +41,9 @@ import org.jetbrains.kotlin.resolve.CompilerEnvironment
 import org.jetbrains.kotlin.resolve.MultiTargetPlatform
 import org.jetbrains.kotlin.resolve.TargetEnvironment
 import org.jetbrains.kotlin.resolve.TargetPlatform
+import org.jetbrains.kotlin.utils.keysToMap
 import java.util.*
+import kotlin.coroutines.experimental.buildSequence
 
 class ResolverForModule(
     val packageFragmentProvider: PackageFragmentProvider,
@@ -124,28 +129,24 @@ interface ModuleInfo {
         get() = false
     val name: Name
     fun dependencies(): List<ModuleInfo>
+    val platform: TargetPlatform? get() = null
     fun modulesWhoseInternalsAreVisible(): Collection<ModuleInfo> = listOf()
-    fun dependencyOnBuiltIns(): DependencyOnBuiltIns = DependenciesOnBuiltIns.LAST
     val capabilities: Map<ModuleDescriptor.Capability<*>, Any?>
         get() = mapOf(Capability to this)
 
-    //TODO: (module refactoring) provide dependency on builtins after runtime in IDEA
-    interface DependencyOnBuiltIns {
-        fun adjustDependencies(builtinsModule: ModuleDescriptorImpl, dependencies: MutableList<ModuleDescriptorImpl>)
-    }
+    // For common modules, we add built-ins at the beginning of the dependencies list, after the SDK.
+    // This is needed because if a JVM module depends on the common module, we should use JVM built-ins for resolution of both modules.
+    // The common module usually depends on kotlin-stdlib-common which may or may not have its own (common, non-JVM) built-ins,
+    // but if they are present, they should come after JVM built-ins in the dependencies list, because JVM built-ins contain
+    // additional members dependent on the JDK
+    fun dependencyOnBuiltIns(): ModuleInfo.DependencyOnBuiltIns =
+            if (platform == TargetPlatform.Default)
+                ModuleInfo.DependencyOnBuiltIns.AFTER_SDK
+            else
+                ModuleInfo.DependencyOnBuiltIns.LAST
 
-    enum class DependenciesOnBuiltIns : DependencyOnBuiltIns {
-        NONE {
-            override fun adjustDependencies(builtinsModule: ModuleDescriptorImpl, dependencies: MutableList<ModuleDescriptorImpl>) {
-                //do nothing
-            }
-        },
-        LAST {
-            override fun adjustDependencies(builtinsModule: ModuleDescriptorImpl, dependencies: MutableList<ModuleDescriptorImpl>) {
-                dependencies.add(builtinsModule)
-            }
-        };
-    }
+    //TODO: (module refactoring) provide dependency on builtins after runtime in IDEA
+    enum class DependencyOnBuiltIns { NONE, AFTER_SDK, LAST }
 
     companion object {
         val Capability = ModuleDescriptor.Capability<ModuleInfo>("ModuleInfo")
@@ -153,71 +154,66 @@ interface ModuleInfo {
 }
 
 abstract class AnalyzerFacade<in P : PlatformAnalysisParameters> {
-    fun <M : ModuleInfo> setupResolverForProject(
-            debugName: String,
-            projectContext: ProjectContext,
-            modules: Collection<M>,
-            modulesContent: (M) -> ModuleContent,
-            platformParameters: P,
-            targetEnvironment: TargetEnvironment = CompilerEnvironment,
-            builtIns: (M) -> KotlinBuiltIns = { DefaultBuiltIns.Instance },
-            delegateResolver: ResolverForProject<M> = EmptyResolverForProject(),
-            packagePartProviderFactory: (M, ModuleContent) -> PackagePartProvider = { _, _ -> PackagePartProvider.Empty },
-            firstDependency: M? = null,
-            modulePlatforms: (M) -> MultiTargetPlatform?,
-            moduleSources: (M) -> SourceKind = { SourceKind.NONE }
-    ): ResolverForProject<M> {
-        val storageManager = projectContext.storageManager
-        fun createResolverForProject(): ResolverForProjectImpl<M> {
-            val descriptorByModule = HashMap<M, ModuleDescriptorImpl>()
-            modules.forEach {
-                module ->
-                descriptorByModule[module] =
-                        ModuleDescriptorImpl(module.name, storageManager, builtIns(module),
-                                             modulePlatforms(module), moduleSources(module), module.capabilities)
+    companion object {
+        fun <P : PlatformAnalysisParameters, M : ModuleInfo> setupResolverForProject(
+                debugName: String,
+                projectContext: ProjectContext,
+                modules: Collection<M>,
+                analyzerFacade: (M) -> AnalyzerFacade<P>,
+                modulesContent: (M) -> ModuleContent,
+                platformParameters: P,
+                targetEnvironment: TargetEnvironment = CompilerEnvironment,
+                builtIns: (M) -> KotlinBuiltIns = { DefaultBuiltIns.Instance },
+                delegateResolver: ResolverForProject<M> = EmptyResolverForProject(),
+                packagePartProviderFactory: (M, ModuleContent) -> PackagePartProvider = { _, _ -> PackagePartProvider.Empty },
+                firstDependency: M? = null,
+                modulePlatforms: (M) -> MultiTargetPlatform?
+        ): ResolverForProject<M> {
+            val storageManager = projectContext.storageManager
+
+            val resolverForProject = ResolverForProjectImpl(debugName, modules.keysToMap { module ->
+                ModuleDescriptorImpl(module.name, storageManager, builtIns(module), modulePlatforms(module), module.capabilities)
+            }, delegateResolver)
+
+            for (module in modules) {
+                val moduleDescriptor = resolverForProject.descriptorForModule(module)
+                moduleDescriptor.setDependencies(LazyModuleDependencies(
+                        storageManager,
+                        computeDependencies = {
+                            buildSequence {
+                                if (firstDependency != null) {
+                                    yield(resolverForProject.descriptorForModule(firstDependency))
+                                }
+                                if (module.dependencyOnBuiltIns() == ModuleInfo.DependencyOnBuiltIns.AFTER_SDK) {
+                                    yield(moduleDescriptor.builtIns.builtInsModule)
+                                }
+                                for (dependency in module.dependencies()) {
+                                    yield(resolverForProject.descriptorForModule(dependency as M))
+                                }
+                                if (module.dependencyOnBuiltIns() == ModuleInfo.DependencyOnBuiltIns.LAST) {
+                                    yield(moduleDescriptor.builtIns.builtInsModule)
+                                }
+                            }.toList()
+                        },
+                        computeModulesWhoseInternalsAreVisible = {
+                            module.modulesWhoseInternalsAreVisible().mapTo(LinkedHashSet()) {
+                                resolverForProject.descriptorForModule(it as M)
+                            }
+                        },
+                        computeImplementingModules = {
+                            if (modulePlatforms(module) != MultiTargetPlatform.Common) emptySet()
+                            else modules
+                                    .filter { modulePlatforms(it) != MultiTargetPlatform.Common && module in it.dependencies() }
+                                    .mapTo(mutableSetOf(), resolverForProject::descriptorForModule)
+                        }
+                ))
             }
-            return ResolverForProjectImpl(debugName, descriptorByModule, delegateResolver)
-        }
 
-        val resolverForProject = createResolverForProject()
-
-        fun computeDependencyDescriptors(module: M): List<ModuleDescriptorImpl> {
-            val orderedDependencies = listOfNotNull(firstDependency) + module.dependencies()
-            val dependenciesDescriptors = orderedDependencies.mapTo(ArrayList<ModuleDescriptorImpl>()) {
-                dependencyInfo ->
-                resolverForProject.descriptorForModule(dependencyInfo as M)
-            }
-            module.dependencyOnBuiltIns().adjustDependencies(
-                    resolverForProject.descriptorForModule(module).builtIns.builtInsModule, dependenciesDescriptors)
-            return dependenciesDescriptors
-        }
-
-        fun computeModulesWhoseInternalsAreVisible(module: M): Set<ModuleDescriptorImpl> {
-            return module.modulesWhoseInternalsAreVisible().mapTo(LinkedHashSet()) { resolverForProject.descriptorForModule(it as M) }
-        }
-
-        fun setupModuleDependencies() {
-            modules.forEach {
-                module ->
-                resolverForProject.descriptorForModule(module).setDependencies(
-                        LazyModuleDependencies(
-                                storageManager,
-                                { computeDependencyDescriptors(module) },
-                                { computeModulesWhoseInternalsAreVisible(module) }
-                        )
-                )
-            }
-        }
-
-        setupModuleDependencies()
-
-        fun initializeResolverForProject() {
-            modules.forEach {
-                module ->
+            for (module in modules) {
                 val descriptor = resolverForProject.descriptorForModule(module)
                 val computeResolverForModule = storageManager.createLazyValue {
                     val content = modulesContent(module)
-                    createResolverForModule(
+                    analyzerFacade(module).createResolverForModule(
                             module, descriptor, projectContext.withModule(descriptor), modulesContent(module),
                             platformParameters, targetEnvironment, resolverForProject,
                             packagePartProviderFactory(module, content)
@@ -227,10 +223,9 @@ abstract class AnalyzerFacade<in P : PlatformAnalysisParameters> {
                 descriptor.initialize(DelegatingPackageFragmentProvider { computeResolverForModule().packageFragmentProvider })
                 resolverForProject.resolverByModuleDescriptor[descriptor] = computeResolverForModule
             }
-        }
 
-        initializeResolverForProject()
-        return resolverForProject
+            return resolverForProject
+        }
     }
 
     protected abstract fun <M : ModuleInfo> createResolverForModule(

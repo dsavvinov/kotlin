@@ -23,9 +23,11 @@ import com.sun.tools.javac.util.Log
 import org.jetbrains.kotlin.cli.common.messages.MessageRenderer
 import org.jetbrains.kotlin.cli.common.messages.PrintingMessageCollector
 import org.jetbrains.kotlin.codegen.CodegenTestCase
-import org.jetbrains.kotlin.codegen.CodegenTestUtil
+import org.jetbrains.kotlin.codegen.GenerationUtils
 import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
-import org.jetbrains.kotlin.kapt3.*
+import org.jetbrains.kotlin.kapt3.Kapt3BuilderFactory
+import org.jetbrains.kotlin.kapt3.KaptContext
+import org.jetbrains.kotlin.kapt3.doAnnotationProcessing
 import org.jetbrains.kotlin.kapt3.stubs.ClassFileToSourceStubConverter
 import org.jetbrains.kotlin.kapt3.util.KaptLogger
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
@@ -34,9 +36,9 @@ import org.jetbrains.kotlin.test.ConfigurationKind
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.test.util.trimTrailingWhitespacesAndAddNewlineAtEOF
 import org.jetbrains.kotlin.utils.PathUtil
-import com.sun.tools.javac.util.List as JavacList
 import java.io.File
 import java.nio.file.Files
+import com.sun.tools.javac.util.List as JavacList
 
 abstract class AbstractKotlinKapt3Test : CodegenTestCase() {
     companion object {
@@ -56,15 +58,15 @@ abstract class AbstractKotlinKapt3Test : CodegenTestCase() {
 
         val txtFile = File(wholeFile.parentFile, wholeFile.nameWithoutExtension + ".txt")
         val classBuilderFactory = Kapt3BuilderFactory()
-        val factory = CodegenTestUtil.generateFiles(myEnvironment, myFiles, classBuilderFactory)
-        val typeMapper = factory.generationState.typeMapper
+        val state = GenerationUtils.compileFiles(myFiles.psiFiles, myEnvironment, classBuilderFactory)
 
         val logger = KaptLogger(isVerbose = true, messageCollector = messageCollector)
-        val kaptContext = KaptContext(logger, factory.generationState.bindingContext, classBuilderFactory.compiledClasses,
+        val kaptContext = KaptContext(logger, state.bindingContext, classBuilderFactory.compiledClasses,
                                       classBuilderFactory.origins, processorOptions = emptyMap())
         try {
-            check(kaptContext, typeMapper, txtFile, wholeFile)
-        } finally {
+            check(kaptContext, state.typeMapper, txtFile, wholeFile)
+        }
+        finally {
             kaptContext.close()
         }
     }
@@ -116,7 +118,7 @@ abstract class AbstractKotlinKaptContextTest : AbstractKotlinKapt3Test() {
         val sourceOutputDir = Files.createTempDirectory("kaptRunner").toFile()
         try {
             kaptRunner.doAnnotationProcessing(emptyList(), listOf(JavaKaptContextTest.simpleProcessor()),
-                                              compileClasspath = PathUtil.getJdkClassesRoots() + PathUtil.getKotlinPathsForIdeaPlugin().runtimePath,
+                                              compileClasspath = PathUtil.getJdkClassesRoots() + PathUtil.getKotlinPathsForIdeaPlugin().stdlibPath,
                                               annotationProcessingClasspath = emptyList(), annotationProcessors = "",
                                               sourcesOutputDir = sourceOutputDir, classesOutputDir = sourceOutputDir,
                                               additionalSources = compilationUnits, withJdk = true)

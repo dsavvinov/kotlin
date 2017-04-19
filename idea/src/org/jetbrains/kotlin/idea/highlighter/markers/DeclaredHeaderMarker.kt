@@ -16,32 +16,41 @@
 
 package org.jetbrains.kotlin.idea.highlighter.markers
 
-import com.intellij.psi.NavigatablePsiElement
+import org.jetbrains.kotlin.analyzer.ModuleInfo
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.idea.caches.resolve.ModuleProductionSourceInfo
+import org.jetbrains.kotlin.idea.caches.resolve.ModuleTestSourceInfo
 import org.jetbrains.kotlin.idea.caches.resolve.findModuleDescriptor
 import org.jetbrains.kotlin.idea.core.toDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtDeclaration
 import org.jetbrains.kotlin.resolve.DescriptorToSourceUtils
 import org.jetbrains.kotlin.resolve.MultiTargetPlatform
 import org.jetbrains.kotlin.resolve.checkers.HeaderImplDeclarationChecker
+import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.getMultiTargetPlatform
 
-fun ModuleDescriptor.commonModuleOrNull() = allDependencyModules.filter {
-    it.getMultiTargetPlatform() == MultiTargetPlatform.Common && it.sourceKind == sourceKind
-}.firstOrNull()
+fun ModuleDescriptor.commonModuleOrNull(): ModuleDescriptor? {
+    val sourceKind = sourceKind
+    return allDependencyModules.firstOrNull { dependency ->
+        dependency.getMultiTargetPlatform() == MultiTargetPlatform.Common && dependency.sourceKind == sourceKind
+    }
+}
+
+private val ModuleDescriptor.sourceKind: SourceKind
+    get() = when (getCapability(ModuleInfo.Capability)) {
+        is ModuleProductionSourceInfo -> SourceKind.PRODUCTION
+        is ModuleTestSourceInfo -> SourceKind.TEST
+        else -> SourceKind.NONE
+    }
+
+private enum class SourceKind { NONE, PRODUCTION, TEST }
 
 fun ModuleDescriptor.hasDeclarationOf(descriptor: MemberDescriptor) = declarationOf(descriptor) != null
 
-private fun ModuleDescriptor.declarationOf(descriptor: MemberDescriptor) =
+private fun ModuleDescriptor.declarationOf(descriptor: MemberDescriptor): DeclarationDescriptor? =
         with (HeaderImplDeclarationChecker(this)) {
-            when (descriptor) {
-                is CallableMemberDescriptor ->
-                    descriptor.findNamesakesFromTheSameModule().filter { it.isHeader }.firstOrNull()
-                is ClassifierDescriptorWithTypeParameters ->
-                    descriptor.findClassifiersFromTheSameModule().filter { it is ClassDescriptor && it.isHeader }.firstOrNull()
-                else ->
-                    null
-            }
+            descriptor.findCompatibleDescriptors().firstOrNull { it.isHeader }
         }
 
 fun getHeaderDeclarationTooltip(declaration: KtDeclaration): String? {
@@ -55,13 +64,20 @@ fun getHeaderDeclarationTooltip(declaration: KtDeclaration): String? {
 }
 
 fun navigateToHeaderDeclaration(declaration: KtDeclaration) {
-    val descriptor = declaration.toDescriptor() as? MemberDescriptor ?: return
-    val platformModuleDescriptor = declaration.containingKtFile.findModuleDescriptor()
+    declaration.headerDeclarationIfAny()?.navigate(false)
+}
 
-    val commonModuleDescriptor = platformModuleDescriptor.commonModuleOrNull() ?: return
-    val headerDeclaration = DescriptorToSourceUtils.descriptorToDeclaration(
-            commonModuleDescriptor.declarationOf(descriptor) ?: return
-    ) as? NavigatablePsiElement ?: return
+internal fun MemberDescriptor.headerDescriptor() = module.commonModuleOrNull()?.declarationOf(this)
 
-    headerDeclaration.navigate(false)
+internal fun KtDeclaration.headerDeclarationIfAny(): KtDeclaration? {
+    val headerDescriptor = (toDescriptor() as? MemberDescriptor)?.headerDescriptor() ?: return null
+    return DescriptorToSourceUtils.descriptorToDeclaration(headerDescriptor) as? KtDeclaration
+}
+
+internal fun KtDeclaration.liftToHeader(): KtDeclaration? {
+    return when {
+        hasModifier(KtTokens.HEADER_KEYWORD) -> this
+        hasModifier(KtTokens.IMPL_KEYWORD) -> headerDeclarationIfAny()
+        else -> null
+    }
 }

@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeConstructorSubstitution
 import org.jetbrains.kotlin.types.TypeSubstitutor
+import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.typeUtil.asTypeProjection
 import org.jetbrains.kotlin.utils.SmartList
 import org.jetbrains.kotlin.utils.keysToMap
@@ -70,7 +71,19 @@ class HeaderImplDeclarationChecker(val moduleToCheck: ModuleDescriptor? = null) 
     fun checkHeaderDeclarationHasImplementation(
             reportOn: KtDeclaration, descriptor: MemberDescriptor, diagnosticHolder: DiagnosticSink, checkImpl: Boolean
     ) {
-        val compatibility = when (descriptor) {
+        val compatibility = buildCompatibilityMap(descriptor, checkImpl)
+
+        if (compatibility != null && !compatibility.containsKey(Compatible)) {
+            assert(compatibility.keys.all { it is Incompatible })
+            @Suppress("UNCHECKED_CAST")
+            val incompatibility = compatibility as Map<Incompatible, Collection<MemberDescriptor>>
+            diagnosticHolder.report(Errors.HEADER_WITHOUT_IMPLEMENTATION.on(
+                    reportOn, descriptor, moduleToCheck ?: descriptor.module, incompatibility))
+        }
+    }
+
+    private fun buildCompatibilityMap(descriptor: MemberDescriptor, checkImpl: Boolean): Map<Compatibility, List<MemberDescriptor>>? {
+        return when (descriptor) {
             is CallableMemberDescriptor -> {
                 descriptor.findNamesakesFromTheSameModule().filter { impl ->
                     descriptor != impl &&
@@ -89,14 +102,6 @@ class HeaderImplDeclarationChecker(val moduleToCheck: ModuleDescriptor? = null) 
                 }
             }
             else -> null
-        }
-
-        if (compatibility != null && !compatibility.containsKey(Compatible)) {
-            assert(compatibility.keys.all { it is Incompatible })
-            @Suppress("UNCHECKED_CAST")
-            val incompatibility = compatibility as Map<Incompatible, Collection<MemberDescriptor>>
-            diagnosticHolder.report(Errors.HEADER_WITHOUT_IMPLEMENTATION.on(
-                    reportOn, descriptor, moduleToCheck ?: descriptor.module, incompatibility))
         }
     }
 
@@ -143,7 +148,9 @@ class HeaderImplDeclarationChecker(val moduleToCheck: ModuleDescriptor? = null) 
         }
     }
 
-    fun CallableMemberDescriptor.findNamesakesFromTheSameModule(): Collection<CallableMemberDescriptor> {
+    fun MemberDescriptor.findCompatibleDescriptors() = buildCompatibilityMap(this, false)?.get(Compatible) ?: emptyList()
+
+    private fun CallableMemberDescriptor.findNamesakesFromTheSameModule(): Collection<CallableMemberDescriptor> {
         val packageFqName = (containingDeclaration as? PackageFragmentDescriptor)?.fqName ?: return emptyList()
         val myModule = moduleToCheck ?: module
         val scope = myModule.getPackage(packageFqName).memberScope
@@ -155,7 +162,7 @@ class HeaderImplDeclarationChecker(val moduleToCheck: ModuleDescriptor? = null) 
         } // TODO: only obtain descriptors from our module to start with
     }
 
-    fun ClassifierDescriptorWithTypeParameters.findClassifiersFromTheSameModule(): Collection<ClassifierDescriptorWithTypeParameters> {
+    private fun ClassifierDescriptorWithTypeParameters.findClassifiersFromTheSameModule(): Collection<ClassifierDescriptorWithTypeParameters> {
         val myModule = moduleToCheck ?: module
         val classId = classId ?: return emptyList()
 
@@ -266,11 +273,11 @@ class HeaderImplDeclarationChecker(val moduleToCheck: ModuleDescriptor? = null) 
 
         val substitutor = Substitutor(aTypeParams, bTypeParams, parentSubstitutor)
 
-        if (aParams.map { substitutor(it.type) } != bParams.map { it.type } ||
-            aExtensionReceiver?.type?.let(substitutor) != bExtensionReceiver?.type) return Incompatible.ParameterTypes
-        if (substitutor(a.returnType) != b.returnType) return Incompatible.ReturnType
+        if (!areCompatibleTypeLists(aParams.map { substitutor(it.type) }, bParams.map { it.type }) ||
+            !areCompatibleTypes(aExtensionReceiver?.type?.let(substitutor), bExtensionReceiver?.type)) return Incompatible.ParameterTypes
+        if (!areCompatibleTypes(substitutor(a.returnType), b.returnType)) return Incompatible.ReturnType
 
-        if (!equalsBy(aParams, bParams, ValueParameterDescriptor::getName)) return Incompatible.ParameterNames
+        if (b.hasStableParameterNames() && !equalsBy(aParams, bParams, ValueParameterDescriptor::getName)) return Incompatible.ParameterNames
         if (!equalsBy(aTypeParams, bTypeParams, TypeParameterDescriptor::getName)) return Incompatible.TypeParameterNames
 
         if (a.modality != b.modality) return Incompatible.Modality
@@ -292,8 +299,19 @@ class HeaderImplDeclarationChecker(val moduleToCheck: ModuleDescriptor? = null) 
         return Compatible
     }
 
+    private fun areCompatibleTypes(a: KotlinType?, b: KotlinType?): Boolean {
+        return if (a != null) b != null && TypeUtils.equalTypes(a, b) else b == null
+    }
+
+    private fun areCompatibleTypeLists(a: List<KotlinType?>, b: List<KotlinType?>): Boolean {
+        for (i in a.indices) {
+            if (!areCompatibleTypes(a[i], b[i])) return false
+        }
+        return true
+    }
+
     private fun areCompatibleTypeParameters(a: List<TypeParameterDescriptor>, b: List<TypeParameterDescriptor>, substitutor: Substitutor): Compatibility {
-        if (a.map { substitutor(it.defaultType) } != b.map { it.defaultType }) return Incompatible.TypeParameterUpperBounds
+        if (!areCompatibleTypeLists(a.map { substitutor(it.defaultType) }, b.map { it.defaultType })) return Incompatible.TypeParameterUpperBounds
         if (!equalsBy(a, b, TypeParameterDescriptor::getVariance)) return Incompatible.TypeParameterVariance
         if (!equalsBy(a, b, TypeParameterDescriptor::isReified)) return Incompatible.TypeParameterReified
 
@@ -362,7 +380,9 @@ class HeaderImplDeclarationChecker(val moduleToCheck: ModuleDescriptor? = null) 
         // and not added if an explicit supertype _is_ specified
         val aSupertypes = a.typeConstructor.supertypes.filterNot(KotlinBuiltIns::isAny)
         val bSupertypes = b.typeConstructor.supertypes.filterNot(KotlinBuiltIns::isAny)
-        if (!bSupertypes.containsAll(aSupertypes.map(substitutor))) return Incompatible.Supertypes
+        if (aSupertypes.map(substitutor).any { aSupertype ->
+            bSupertypes.none { bSupertype -> areCompatibleTypes(aSupertype, bSupertype) }
+        }) return Incompatible.Supertypes
 
         areCompatibleClassScopes(a, b, checkImpl && !implTypealias, substitutor).let { if (it != Compatible) return it }
 

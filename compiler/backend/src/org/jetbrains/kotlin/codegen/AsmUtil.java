@@ -21,7 +21,6 @@ import com.google.common.collect.Sets;
 import com.intellij.openapi.util.Pair;
 import com.intellij.psi.tree.IElementType;
 import kotlin.Unit;
-import kotlin.jvm.functions.Function1;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
@@ -446,7 +445,7 @@ public class AsmUtil {
     }
 
     public static void genClosureFields(@NotNull CalculatedClosure closure, ClassBuilder v, KotlinTypeMapper typeMapper) {
-        List<Pair<String, Type>> allFields = new ArrayList<Pair<String, Type>>();
+        List<Pair<String, Type>> allFields = new ArrayList<>();
 
         ClassifierDescriptor captureThis = closure.getCaptureThis();
         if (captureThis != null) {
@@ -500,15 +499,12 @@ public class AsmUtil {
         v.invokevirtual("java/lang/StringBuilder", "append", "(" + type.getDescriptor() + ")Ljava/lang/StringBuilder;", false);
     }
 
-    public static StackValue genToString(final StackValue receiver, final Type receiverType) {
-        return StackValue.operation(JAVA_STRING_TYPE, new Function1<InstructionAdapter, Unit>() {
-            @Override
-            public Unit invoke(InstructionAdapter v) {
-                Type type = stringValueOfType(receiverType);
-                receiver.put(type, v);
-                v.invokestatic("java/lang/String", "valueOf", "(" + type.getDescriptor() + ")Ljava/lang/String;", false);
-                return null;
-            }
+    public static StackValue genToString(StackValue receiver, Type receiverType) {
+        return StackValue.operation(JAVA_STRING_TYPE, v -> {
+            Type type = stringValueOfType(receiverType);
+            receiver.put(type, v);
+            v.invokestatic("java/lang/String", "valueOf", "(" + type.getDescriptor() + ")Ljava/lang/String;", false);
+            return null;
         });
     }
 
@@ -563,28 +559,25 @@ public class AsmUtil {
 
     @NotNull
     public static StackValue genEqualsForExpressionsOnStack(
-            final @NotNull IElementType opToken,
-            final @NotNull StackValue left,
-            final @NotNull StackValue right
+            @NotNull IElementType opToken,
+            @NotNull StackValue left,
+            @NotNull StackValue right
     ) {
-        final Type leftType = left.type;
-        final Type rightType = right.type;
+        Type leftType = left.type;
+        Type rightType = right.type;
         if (isPrimitive(leftType) && leftType == rightType) {
             return StackValue.cmp(opToken, leftType, left, right);
         }
 
-        return StackValue.operation(Type.BOOLEAN_TYPE, new Function1<InstructionAdapter, Unit>() {
-            @Override
-            public Unit invoke(InstructionAdapter v) {
-                left.put(leftType, v);
-                right.put(rightType, v);
-                genAreEqualCall(v);
+        return StackValue.operation(Type.BOOLEAN_TYPE, v -> {
+            left.put(leftType, v);
+            right.put(rightType, v);
+            genAreEqualCall(v);
 
-                if (opToken == KtTokens.EXCLEQ || opToken == KtTokens.EXCLEQEQEQ) {
-                    genInvertBoolean(v);
-                }
-                return Unit.INSTANCE;
+            if (opToken == KtTokens.EXCLEQ || opToken == KtTokens.EXCLEQEQEQ) {
+                genInvertBoolean(v);
             }
+            return Unit.INSTANCE;
         });
     }
 
@@ -686,8 +679,8 @@ public class AsmUtil {
     @NotNull
     public static StackValue genNotNullAssertions(
             @NotNull GenerationState state,
-            @NotNull final StackValue stackValue,
-            @Nullable final RuntimeAssertionInfo runtimeAssertionInfo
+            @NotNull StackValue stackValue,
+            @Nullable RuntimeAssertionInfo runtimeAssertionInfo
     ) {
         if (state.isCallAssertionsDisabled()) return stackValue;
         if (runtimeAssertionInfo == null || !runtimeAssertionInfo.getNeedNotNullAssertion()) return stackValue;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2015 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,12 +119,12 @@ public class DataFlowAnalyzer {
 
     @NotNull
     public DataFlowInfo extractDataFlowInfoFromCondition(
-            @Nullable final KtExpression condition,
-            final boolean conditionValue,
-            final ExpressionTypingContext context
+            @Nullable KtExpression condition,
+            boolean conditionValue,
+            ExpressionTypingContext context
     ) {
         if (condition == null) return context.dataFlowInfo;
-        final Ref<DataFlowInfo> result = new Ref<DataFlowInfo>(null);
+        Ref<DataFlowInfo> result = new Ref<>(null);
         condition.accept(new KtVisitorVoid() {
             @Override
             public void visitIsExpression(@NotNull KtIsExpression expression) {
@@ -344,13 +344,12 @@ public class DataFlowAnalyzer {
     @NotNull
     public static Collection<KotlinType> getAllPossibleTypes(
             @NotNull KtExpression expression,
-            @NotNull DataFlowInfo dataFlowInfo,
             @NotNull KotlinType type,
             @NotNull ResolutionContext c
     ) {
         DataFlowValue dataFlowValue = DataFlowValueFactory.createDataFlowValue(expression, type, c);
         Collection<KotlinType> possibleTypes = Sets.newHashSet(type);
-        possibleTypes.addAll(dataFlowInfo.getStableTypes(dataFlowValue));
+        possibleTypes.addAll(c.dataFlowInfo.getStableTypes(dataFlowValue));
         return possibleTypes;
     }
 

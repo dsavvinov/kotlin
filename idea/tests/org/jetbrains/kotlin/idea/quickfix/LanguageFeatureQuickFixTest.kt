@@ -24,13 +24,13 @@ import com.intellij.openapi.roots.ui.configuration.libraryEditor.NewLibraryEdito
 import com.intellij.openapi.util.io.FileUtil
 import com.intellij.openapi.vfs.JarFileSystem
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.testFramework.fixtures.LightPlatformCodeInsightFixtureTestCase
+import org.jetbrains.kotlin.cli.common.arguments.CommonCompilerArguments
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersion
 import org.jetbrains.kotlin.idea.compiler.configuration.KotlinCommonCompilerArgumentsHolder
 import org.jetbrains.kotlin.idea.facet.KotlinFacetType
-import org.jetbrains.kotlin.idea.framework.JavaRuntimeDetectionUtil
+import org.jetbrains.kotlin.idea.facet.getRuntimeLibraryVersion
 import org.jetbrains.kotlin.idea.project.getLanguageVersionSettings
 import org.jetbrains.kotlin.idea.project.languageVersionSettings
 import org.jetbrains.kotlin.idea.test.ConfigLibraryUtil
@@ -44,7 +44,7 @@ class LanguageFeatureQuickFixTest : LightPlatformCodeInsightFixtureTestCase() {
         resetProjectSettings(LanguageVersion.KOTLIN_1_1)
         myFixture.configureByText("foo.kt", "suspend fun foo()")
 
-        assertFalse(KotlinCommonCompilerArgumentsHolder.getInstance(project).settings.coroutinesEnable)
+        assertEquals(CommonCompilerArguments.WARN, KotlinCommonCompilerArgumentsHolder.getInstance(project).settings.coroutinesState)
         assertEquals(LanguageFeature.State.ENABLED_WITH_WARNING, coroutineSupport)
         myFixture.launchAction(myFixture.findSingleIntention("Enable coroutine support in the project"))
         assertEquals(LanguageFeature.State.ENABLED, coroutineSupport)
@@ -55,7 +55,7 @@ class LanguageFeatureQuickFixTest : LightPlatformCodeInsightFixtureTestCase() {
         resetProjectSettings(LanguageVersion.KOTLIN_1_1)
         myFixture.configureByText("foo.kt", "suspend fun foo()")
 
-        assertFalse(KotlinCommonCompilerArgumentsHolder.getInstance(project).settings.coroutinesEnable)
+        assertEquals(CommonCompilerArguments.WARN, KotlinCommonCompilerArgumentsHolder.getInstance(project).settings.coroutinesState)
         assertEquals(LanguageFeature.State.ENABLED_WITH_WARNING, coroutineSupport)
         myFixture.launchAction(myFixture.findSingleIntention("Disable coroutine support in the project"))
         assertEquals(LanguageFeature.State.ENABLED_WITH_ERROR, coroutineSupport)
@@ -73,14 +73,14 @@ class LanguageFeatureQuickFixTest : LightPlatformCodeInsightFixtureTestCase() {
     }
 
     fun testEnableCoroutines_UpdateRuntime() {
-        val runtime = configureRuntime("mockRuntime106")
+        configureRuntime("mockRuntime106")
         resetProjectSettings(LanguageVersion.KOTLIN_1_1)
         myFixture.configureByText("foo.kt", "suspend fun foo()")
 
         assertEquals(LanguageFeature.State.ENABLED_WITH_WARNING, coroutineSupport)
         myFixture.launchAction(myFixture.findSingleIntention("Enable coroutine support in the project"))
         assertEquals(LanguageFeature.State.ENABLED, coroutineSupport)
-        assertEquals(bundledRuntimeVersion(), JavaRuntimeDetectionUtil.getJavaRuntimeVersion(listOf(runtime)))
+        assertEquals(bundledRuntimeVersion(), getRuntimeLibraryVersion(myFixture.module))
     }
 
     fun testIncreaseLangLevel() {
@@ -120,7 +120,7 @@ class LanguageFeatureQuickFixTest : LightPlatformCodeInsightFixtureTestCase() {
     }
 
     fun testIncreaseLangAndApiLevel_10() {
-        val runtime = configureRuntime("mockRuntime106")
+        configureRuntime("mockRuntime106")
         resetProjectSettings(LanguageVersion.KOTLIN_1_0)
         myFixture.configureByText("foo.kt", "val x = <caret>\"s\"::length")
 
@@ -129,11 +129,11 @@ class LanguageFeatureQuickFixTest : LightPlatformCodeInsightFixtureTestCase() {
         assertEquals("1.1", KotlinCommonCompilerArgumentsHolder.getInstance(project).settings.languageVersion)
         assertEquals("1.1", KotlinCommonCompilerArgumentsHolder.getInstance(project).settings.apiVersion)
 
-        assertEquals(bundledRuntimeVersion(), JavaRuntimeDetectionUtil.getJavaRuntimeVersion(listOf(runtime)))
+        assertEquals(bundledRuntimeVersion(), getRuntimeLibraryVersion(myFixture.module))
     }
 
     fun testIncreaseLangLevelFacet_10() {
-        val runtime = configureRuntime("mockRuntime106")
+        configureRuntime("mockRuntime106")
         resetProjectSettings(LanguageVersion.KOTLIN_1_0)
         configureKotlinFacet(myModule) {
             settings.languageLevel = LanguageVersion.KOTLIN_1_0
@@ -145,12 +145,13 @@ class LanguageFeatureQuickFixTest : LightPlatformCodeInsightFixtureTestCase() {
         myFixture.launchAction(myFixture.findSingleIntention("Set module language version to 1.1"))
         assertEquals(LanguageVersion.KOTLIN_1_1, myModule.languageVersionSettings.languageVersion)
 
-        assertEquals(bundledRuntimeVersion(), JavaRuntimeDetectionUtil.getJavaRuntimeVersion(listOf(runtime)))
+        assertEquals(bundledRuntimeVersion(), getRuntimeLibraryVersion(myFixture.module))
     }
 
-    private fun configureRuntime(path: String): VirtualFile {
-        val tempFile = FileUtil.createTempFile("kotlin-runtime", ".jar")
-        FileUtil.copy(File("idea/testData/configuration/$path/kotlin-runtime.jar"), tempFile)
+    private fun configureRuntime(path: String) {
+        val name = if (path == "mockRuntime106") "kotlin-runtime" else "kotlin-stdlib"
+        val tempFile = FileUtil.createTempFile(name, ".jar")
+        FileUtil.copy(File("idea/testData/configuration/$path/$name.jar"), tempFile)
         val tempVFile = LocalFileSystem.getInstance().findFileByIoFile(tempFile)!!
 
         updateModel(myFixture.module) { model ->
@@ -161,16 +162,13 @@ class LanguageFeatureQuickFixTest : LightPlatformCodeInsightFixtureTestCase() {
 
             ConfigLibraryUtil.addLibrary(editor, model)
         }
-        return tempVFile
     }
 
     private fun resetProjectSettings(version: LanguageVersion) {
         KotlinCommonCompilerArgumentsHolder.getInstance(project).update {
             languageVersion = version.versionString
             apiVersion = version.versionString
-            coroutinesEnable = false
-            coroutinesWarn = true
-            coroutinesError = false
+            coroutinesState = CommonCompilerArguments.WARN
         }
     }
 

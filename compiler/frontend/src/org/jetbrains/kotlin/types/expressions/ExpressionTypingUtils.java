@@ -125,8 +125,8 @@ public class ExpressionTypingUtils {
 
     public static ObservableBindingTrace makeTraceInterceptingTypeMismatch(
             @NotNull BindingTrace trace,
-            @NotNull final KtElement expressionToWatch,
-            @NotNull final boolean[] mismatchFound
+            @NotNull KtElement expressionToWatch,
+            @NotNull boolean[] mismatchFound
     ) {
         return new ObservableBindingTrace(trace) {
 
@@ -174,7 +174,7 @@ public class ExpressionTypingUtils {
 
     @NotNull
     public static List<KotlinType> getValueParametersTypes(@NotNull List<ValueParameterDescriptor> valueParameters) {
-        List<KotlinType> parameterTypes = new ArrayList<KotlinType>(valueParameters.size());
+        List<KotlinType> parameterTypes = new ArrayList<>(valueParameters.size());
         for (ValueParameterDescriptor parameter : valueParameters) {
             parameterTypes.add(parameter.getType());
         }

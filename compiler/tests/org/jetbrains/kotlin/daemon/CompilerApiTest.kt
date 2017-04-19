@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.daemon.common.*
 import org.jetbrains.kotlin.integration.KotlinIntegrationTestBase
 import org.jetbrains.kotlin.scripts.captureOut
 import org.jetbrains.kotlin.test.KotlinTestUtils
+import org.jetbrains.kotlin.utils.keysToMap
 import org.junit.Assert
 import java.io.File
 import java.net.URLClassLoader
@@ -90,6 +91,20 @@ class CompilerApiTest : KotlinIntegrationTestBase() {
 
             KotlinTestUtils.assertEqualsToFile(expectedFile, normalizedContent)
         }
+    }
+
+    fun testScriptResolverEnvironmentArgsParsing() {
+
+        fun args(body: K2JVMCompilerArguments.() -> Unit): K2JVMCompilerArguments =
+                K2JVMCompilerArguments().apply(body)
+
+        val longStr = (1..100).joinToString { """\" $it aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \\""" }
+        val unescapeRe = """\\(["\\])""".toRegex()
+        val messageCollector = TestMessageCollector()
+        Assert.assertEquals(hashMapOf("abc" to "def", "11" to "ab cd \\ \"", "long" to unescapeRe.replace(longStr, "\$1")),
+                            K2JVMCompiler.createScriptResolverEnvironment(
+                                args { scriptResolverEnvironment = arrayOf("abc=def", """11="ab cd \\ \""""", "long=\"$longStr\"") },
+                                messageCollector))
     }
 
     fun testHelloAppLocal() {
@@ -173,8 +188,7 @@ class CompilerApiTest : KotlinIntegrationTestBase() {
 }
 
 class TestMessageCollector : MessageCollector {
-
-    data class Message(val severity: CompilerMessageSeverity, val message: String, val location: CompilerMessageLocation)
+    data class Message(val severity: CompilerMessageSeverity, val message: String, val location: CompilerMessageLocation?)
 
     val messages = arrayListOf<Message>()
 
@@ -182,7 +196,7 @@ class TestMessageCollector : MessageCollector {
         messages.clear()
     }
 
-    override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
+    override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation?) {
         messages.add(Message(severity, message, location))
     }
 

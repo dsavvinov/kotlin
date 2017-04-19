@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.analyzer.EmptyResolverForProject
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
 import org.jetbrains.kotlin.container.getService
+import org.jetbrains.kotlin.container.tryGetService
 import org.jetbrains.kotlin.context.GlobalContext
 import org.jetbrains.kotlin.context.GlobalContextImpl
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
@@ -164,7 +165,7 @@ class KotlinCacheServiceImpl(val project: Project) : KotlinCacheService {
     }
 
     fun <T : Any> tryGetProjectService(platform: TargetPlatform, ideaModuleInfo: IdeaModuleInfo, serviceClass: Class<T>): T? {
-        return globalFacade(platform, ideaModuleInfo.sdk).tryGetResolverForModuleInfo(ideaModuleInfo)?.componentProvider?.getService(serviceClass)
+        return globalFacade(platform, ideaModuleInfo.sdk).tryGetResolverForModuleInfo(ideaModuleInfo)?.componentProvider?.tryGetService(serviceClass)
     }
 
     private fun globalFacade(platform: TargetPlatform, sdk: Sdk?) =
@@ -182,9 +183,18 @@ class KotlinCacheServiceImpl(val project: Project) : KotlinCacheService {
         val targetPlatform = files.map { TargetPlatformDetector.getPlatform(it) }.toSet().single()
         val syntheticFileModule = files.map(KtFile::getModuleInfo).toSet().single()
         val sdk = syntheticFileModule.sdk
-        val filesModificationTracker = ModificationTracker {
-            // TODO: Check getUserData(FILE_OUT_OF_BLOCK_MODIFICATION_COUNT) actually works
-            files.sumByLong { it.outOfBlockModificationCount + it.modificationStamp }
+        val filesModificationTracker: ModificationTracker
+        // File copies are created during completion and receive correct modification events through POM.
+        // Dummy files created e.g. by J2K do not receive events.
+        if (files.all { it.originalFile != it }) {
+            filesModificationTracker = ModificationTracker {
+                files.sumByLong { it.outOfBlockModificationCount }
+            }
+        }
+        else {
+            filesModificationTracker = ModificationTracker {
+                files.sumByLong { it.outOfBlockModificationCount + it.modificationStamp }
+            }
         }
         val dependenciesForSyntheticFileCache = listOf(PsiModificationTracker.OUT_OF_CODE_BLOCK_MODIFICATION_COUNT, filesModificationTracker)
         val debugName = "completion/highlighting in $syntheticFileModule for files ${files.joinToString { it.name }} for platform $targetPlatform"

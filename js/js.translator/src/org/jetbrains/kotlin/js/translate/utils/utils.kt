@@ -144,7 +144,7 @@ fun FunctionDescriptor.requiresStateMachineTransformation(context: TranslationCo
 fun JsFunction.fillCoroutineMetadata(
         context: TranslationContext,
         descriptor: FunctionDescriptor,
-        hasController: Boolean, isLambda: Boolean
+        hasController: Boolean
 ) {
     if (!descriptor.requiresStateMachineTransformation(context)) return
 
@@ -159,7 +159,6 @@ fun JsFunction.fillCoroutineMetadata(
 
     coroutineMetadata = CoroutineMetadata(
             doResumeName = context.getNameForDescriptor(TranslationUtils.getCoroutineDoResumeFunction(context)),
-            resumeName = context.getNameForDescriptor(TranslationUtils.getCoroutineResumeFunction(context)),
             suspendObjectRef = ReferenceTranslator.translateAsValueReference(suspendPropertyDescriptor, context),
             baseClassRef = coroutineBaseClassRef,
             stateName = getCoroutinePropertyName("state"),
@@ -167,9 +166,7 @@ fun JsFunction.fillCoroutineMetadata(
             finallyPathName = getCoroutinePropertyName("finallyPath"),
             resultName = getCoroutinePropertyName("result"),
             exceptionName = getCoroutinePropertyName("exception"),
-            facadeName = getCoroutinePropertyName("facade"),
             hasController = hasController,
-            isLambda = isLambda,
             hasReceiver = descriptor.dispatchReceiverParameter != null
     )
 }

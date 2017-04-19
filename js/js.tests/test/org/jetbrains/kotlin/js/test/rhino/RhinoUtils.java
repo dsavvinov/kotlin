@@ -125,7 +125,7 @@ public final class RhinoUtils {
             @Nullable Map<String, Object> variables,
             @NotNull EcmaVersion ecmaVersion)
             throws Exception {
-        runRhinoTest(fileNames, checker, variables, ecmaVersion, Collections.<String>emptyList());
+        runRhinoTest(fileNames, checker, variables, ecmaVersion, Collections.emptyList());
     }
 
     public static void runRhinoTest(@NotNull List<String> fileNames,
@@ -179,20 +179,16 @@ public final class RhinoUtils {
 
     @NotNull
     private static Scriptable getParentScope(@NotNull EcmaVersion version, @NotNull Context context, @NotNull List<String> jsLibraries) {
-        ScriptableObject parentScope = versionToScope.get(version);
-        if (parentScope == null) {
-            parentScope = initScope(version, context, jsLibraries);
-            versionToScope.put(version, parentScope);
-        }
-        return parentScope;
+        return versionToScope.computeIfAbsent(version, v -> initScope(v, context, jsLibraries));
     }
 
     @NotNull
     private static ScriptableObject initScope(@NotNull EcmaVersion version, @NotNull Context context, @NotNull List<String> jsLibraries) {
         ScriptableObject scope = context.initStandardObjects();
         try {
+            runFileWithRhino(DIST_DIR_JS_PATH + "../../js/js.translator/testData/rhino-polyfills.js", context, scope);
             runFileWithRhino(DIST_DIR_JS_PATH + "kotlin.js", context, scope);
-            runFileWithRhino(DIST_DIR_JS_PATH + "../classes/kotlin-test-js/kotlin-test.js", context, scope);
+            runFileWithRhino(DIST_DIR_JS_PATH + "kotlin-test.js", context, scope);
 
             //runFileWithRhino(pathToTestFilesRoot() + "jshint.js", context, scope);
             for (String jsLibrary : jsLibraries) {

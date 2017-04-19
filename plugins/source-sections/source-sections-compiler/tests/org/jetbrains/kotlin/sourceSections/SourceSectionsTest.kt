@@ -32,14 +32,13 @@ import org.jetbrains.kotlin.daemon.client.DaemonReportingTargets
 import org.jetbrains.kotlin.daemon.client.KotlinCompilerClient
 import org.jetbrains.kotlin.daemon.common.*
 import org.jetbrains.kotlin.script.StandardScriptDefinition
+import org.jetbrains.kotlin.script.tryConstructClassFromStringArgs
 import org.jetbrains.kotlin.test.ConfigurationKind
 import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.test.TestCaseWithTmpdir
 import org.jetbrains.kotlin.test.TestJdkKind
 import org.jetbrains.kotlin.utils.KotlinPaths
 import org.jetbrains.kotlin.utils.PathUtil
-import org.jetbrains.kotlin.utils.tryConstructClassFromStringArgs
-import org.junit.Ignore
 import java.io.*
 import java.lang.management.ManagementFactory
 import java.net.URLClassLoader
@@ -60,7 +59,7 @@ class SourceSectionsTest : TestCaseWithTmpdir() {
     }
 
     val compilerClassPath = listOf(kotlinPaths.compilerPath)
-    val scriptRuntimeClassPath = listOf( kotlinPaths.runtimePath, kotlinPaths.scriptRuntimePath)
+    val scriptRuntimeClassPath = listOf( kotlinPaths.stdlibPath, kotlinPaths.scriptRuntimePath)
     val sourceSectionsPluginJar = File(kotlinPaths.libPath, "source-sections-compiler-plugin.jar")
     val compilerId by lazy(LazyThreadSafetyMode.NONE) { CompilerId.makeCompilerId(compilerClassPath) }
 
@@ -116,6 +115,23 @@ class SourceSectionsTest : TestCaseWithTmpdir() {
         }
     }
 
+    fun testSourceSectionsFilterWithCRLF() {
+        val sourceToFiltered = getTestFiles(".filtered")
+
+        createEnvironment() // creates VirtualFileManager
+        val fileCreator = FilteredSectionsVirtualFileExtension(TEST_ALLOWED_SECTIONS.toSet())
+
+        sourceToFiltered.forEach { (source, expectedResult) ->
+            val sourceWithCRLF = createTempFile(source.name)
+            sourceWithCRLF.writeText(source.readText().replace("\r\n", "\n").replace("\n", "\r\n"))
+            val filteredVF = fileCreator.createPreprocessedFile(StandardFileSystems.local().findFileByPath(sourceWithCRLF.canonicalPath))
+            TestCase.assertNotNull("Cannot generate preprocessed file", filteredVF)
+            val expected = expectedResult.inputStream().trimmedLines(Charset.defaultCharset())
+            val actual = ByteArrayInputStream(filteredVF!!.contentsToByteArray()).trimmedLines(filteredVF.charset)
+            TestCase.assertEquals("Unexpected result on preprocessing file '${source.name}'", expected, actual)
+        }
+    }
+
     fun testSourceSectionsRun() {
         val sourceToOutput = getTestFiles(".out")
 
@@ -157,9 +173,8 @@ class SourceSectionsTest : TestCaseWithTmpdir() {
         val sourceToOutput = getTestFiles(".out")
 
         sourceToOutput.forEach { (source, expectedOutput) ->
-
             val args = arrayOf(source.canonicalPath, "-d", tmpdir.canonicalPath,
-                               "-Xplugin", sourceSectionsPluginJar.canonicalPath,
+                               "-Xplugin=${sourceSectionsPluginJar.canonicalPath}",
                                "-P", TEST_ALLOWED_SECTIONS.joinToString(",") { "plugin:${SourceSectionsCommandLineProcessor.PLUGIN_ID}:${SourceSectionsCommandLineProcessor.SECTIONS_OPTION.name}=$it" })
             val (output, code) = captureOut {
                 CLICompiler.doMainNoExit(K2JVMCompiler(), args)
@@ -189,9 +204,8 @@ class SourceSectionsTest : TestCaseWithTmpdir() {
             try {
 
                 sourceToOutput.forEach { (source, expectedOutput) ->
-
                     val args = arrayOf(source.canonicalPath, "-d", tmpdir.canonicalPath,
-                                       "-Xplugin", sourceSectionsPluginJar.canonicalPath,
+                                       "-Xplugin=${sourceSectionsPluginJar.canonicalPath}",
                                        "-P", TEST_ALLOWED_SECTIONS.joinToString(",") { "plugin:${SourceSectionsCommandLineProcessor.PLUGIN_ID}:${SourceSectionsCommandLineProcessor.SECTIONS_OPTION.name}=$it" })
 
                     messageCollector.clear()
@@ -263,8 +277,7 @@ internal fun<T> captureOut(body: () -> T): Pair<String, T> {
 }
 
 class TestMessageCollector : MessageCollector {
-
-    data class Message(val severity: CompilerMessageSeverity, val message: String, val location: CompilerMessageLocation)
+    data class Message(val severity: CompilerMessageSeverity, val message: String, val location: CompilerMessageLocation?)
 
     val messages = arrayListOf<Message>()
 
@@ -272,7 +285,7 @@ class TestMessageCollector : MessageCollector {
         messages.clear()
     }
 
-    override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation) {
+    override fun report(severity: CompilerMessageSeverity, message: String, location: CompilerMessageLocation?) {
         messages.add(Message(severity, message, location))
     }
 

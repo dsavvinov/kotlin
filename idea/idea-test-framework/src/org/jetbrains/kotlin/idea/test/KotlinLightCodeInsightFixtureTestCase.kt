@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.idea.test
 
+import com.intellij.codeInsight.CodeInsightTestCase
 import com.intellij.codeInsight.daemon.impl.EditorTracker
 import com.intellij.ide.startup.impl.StartupManagerImpl
 import com.intellij.openapi.actionSystem.ActionPlaces
@@ -49,6 +50,8 @@ abstract class KotlinLightCodeInsightFixtureTestCase : KotlinLightCodeInsightFix
 
     protected val module: Module get() = myFixture.module
 
+    protected open val captureExceptions = true
+
     override fun setUp() {
         super.setUp()
         (StartupManager.getInstance(project) as StartupManagerImpl).runPostStartupActivities()
@@ -61,12 +64,15 @@ abstract class KotlinLightCodeInsightFixtureTestCase : KotlinLightCodeInsightFix
 
         invalidateLibraryCache(project)
 
-        LoggedErrorProcessor.setNewInstance(object : LoggedErrorProcessor() {
-            override fun processError(message: String?, t: Throwable?, details: Array<out String>?, logger: Logger) {
-                exceptions.addIfNotNull(t)
-                super.processError(message, t, details, logger)
-            }
-        })
+        if (captureExceptions) {
+            LoggedErrorProcessor.setNewInstance(object : LoggedErrorProcessor() {
+                override fun processError(message: String?, t: Throwable?, details: Array<out String>?, logger: Logger) {
+                    exceptions.addIfNotNull(t)
+                    super.processError(message, t, details, logger)
+                }
+            })
+        }
+        CodeInsightTestCase.fixTemplates()
     }
 
     override fun tearDown() {
@@ -115,6 +121,9 @@ abstract class KotlinLightCodeInsightFixtureTestCase : KotlinLightCodeInsightFix
                 }
                 else if (InTextDirectivesUtils.isDirectiveDefined(fileText, "RUNTIME_WITH_KOTLIN_TEST")) {
                     return KotlinWithJdkAndRuntimeLightProjectDescriptor.INSTANCE_WITH_KOTLIN_TEST
+                }
+                else if (InTextDirectivesUtils.isDirectiveDefined(fileText, "RUNTIME_WITH_FULL_JDK")) {
+                    return KotlinWithJdkAndRuntimeLightProjectDescriptor.INSTANCE_FULL_JDK
                 }
                 else if (InTextDirectivesUtils.isDirectiveDefined(fileText, "RUNTIME") ||
                          InTextDirectivesUtils.isDirectiveDefined(fileText, "WITH_RUNTIME")) {

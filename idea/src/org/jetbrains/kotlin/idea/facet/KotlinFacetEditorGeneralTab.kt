@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 JetBrains s.r.o.
+ * Copyright 2010-2017 JetBrains s.r.o.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import com.intellij.ui.HoverHyperlinkLabel
 import com.intellij.util.ui.FormBuilder
 import com.intellij.util.ui.ThreeStateCheckBox
 import org.jetbrains.kotlin.cli.common.arguments.*
-import org.jetbrains.kotlin.cli.common.parser.com.sampullara.cli.Argument
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.idea.compiler.configuration.*
 import org.jetbrains.kotlin.utils.addToStdlib.firstIsInstanceOrNull
@@ -150,13 +149,15 @@ class KotlinFacetEditorGeneralTab(
 
     inner class VersionValidator : FacetEditorValidator() {
         override fun check(): ValidationResult {
-            val apiLevel = editor.compilerConfigurable.apiVersionComboBox.selectedItem as? LanguageVersion?
+            val apiLevel = editor.compilerConfigurable.apiVersionComboBox.selectedItem as? ApiVersion?
                            ?: return ValidationResult.OK
             val languageLevel = editor.compilerConfigurable.languageVersionComboBox.selectedItem as? LanguageVersion?
                                 ?: return ValidationResult.OK
             val targetPlatform = editor.targetPlatformComboBox.selectedItem as TargetPlatformKind<*>?
             val libraryLevel = getLibraryLanguageLevel(editorContext.module, editorContext.rootModel, targetPlatform)
-            if (languageLevel < apiLevel || libraryLevel < apiLevel) {
+
+            val apiLevelVersion = LanguageVersion.fromVersionString(apiLevel.versionString) ?: return ValidationResult.OK
+            if (languageLevel < apiLevelVersion || libraryLevel < apiLevelVersion) {
                 return ValidationResult("Language version/Runtime version may not be less than API version", null)
             }
             return ValidationResult.OK
@@ -197,7 +198,7 @@ class KotlinFacetEditorGeneralTab(
                 if (additionalValue != field[emptyArguments]) {
                     val argumentInfo = field.annotations.firstIsInstanceOrNull<Argument>() ?: continue
                     val addTo = if (additionalValue != field[primaryArguments]) overridingArguments else redundantArguments
-                    addTo += "<strong>" + argumentInfo.value + "</strong>"
+                    addTo += "<strong>" + argumentInfo.value.first() + "</strong>"
                 }
             }
             if (overridingArguments.isNotEmpty() || redundantArguments.isNotEmpty()) {
@@ -224,6 +225,8 @@ class KotlinFacetEditorGeneralTab(
     private val libraryValidator: FrameworkLibraryValidator
     private val versionValidator = VersionValidator()
     private val coroutineValidator = ArgumentConsistencyValidator()
+
+    private var enableValidation = false
 
     init {
         libraryValidator = FrameworkLibraryValidatorWithDynamicDescription(
@@ -252,8 +255,6 @@ class KotlinFacetEditorGeneralTab(
         editor.targetPlatformComboBox.validateOnChange()
 
         editor.updateCompilerConfigurable()
-
-        reset()
     }
 
     private fun JTextField.validateOnChange() {
@@ -274,8 +275,17 @@ class KotlinFacetEditorGeneralTab(
         addActionListener { doValidate() }
     }
 
+    private fun validateOnce(body: () -> Unit) {
+        enableValidation = false
+        body()
+        enableValidation = true
+        doValidate()
+    }
+
     private fun doValidate() {
-        validatorsManager.validate()
+        if (enableValidation) {
+            validatorsManager.validate()
+        }
     }
 
     override fun isModified(): Boolean {
@@ -285,29 +295,33 @@ class KotlinFacetEditorGeneralTab(
     }
 
     override fun reset() {
-        editor.useProjectSettingsCheckBox.isSelected = configuration.settings.useProjectSettings
-        editor.targetPlatformComboBox.selectedItem = configuration.settings.targetPlatformKind
-        editor.compilerConfigurable.reset()
-        editor.updateCompilerConfigurable()
+        validateOnce {
+            editor.useProjectSettingsCheckBox.isSelected = configuration.settings.useProjectSettings
+            editor.targetPlatformComboBox.selectedItem = configuration.settings.targetPlatformKind
+            editor.compilerConfigurable.reset()
+            editor.updateCompilerConfigurable()
+        }
     }
 
     override fun apply() {
-        editor.compilerConfigurable.apply()
-        with(configuration.settings) {
-            useProjectSettings = editor.useProjectSettingsCheckBox.isSelected
-            (editor.targetPlatformComboBox.selectedItem as TargetPlatformKind<*>?)?.let {
-                if (it != targetPlatformKind) {
-                    val newCompilerArguments = it.createCompilerArguments()
-                    val platformArguments = when (it) {
-                        is TargetPlatformKind.Jvm -> editor.compilerConfigurable.k2jvmCompilerArguments
-                        is TargetPlatformKind.JavaScript -> editor.compilerConfigurable.k2jsCompilerArguments
-                        else -> null
+        validateOnce {
+            editor.compilerConfigurable.apply()
+            with(configuration.settings) {
+                useProjectSettings = editor.useProjectSettingsCheckBox.isSelected
+                (editor.targetPlatformComboBox.selectedItem as TargetPlatformKind<*>?)?.let {
+                    if (it != targetPlatformKind) {
+                        val newCompilerArguments = it.createCompilerArguments()
+                        val platformArguments = when (it) {
+                            is TargetPlatformKind.Jvm -> editor.compilerConfigurable.k2jvmCompilerArguments
+                            is TargetPlatformKind.JavaScript -> editor.compilerConfigurable.k2jsCompilerArguments
+                            else -> null
+                        }
+                        if (platformArguments != null) {
+                            mergeBeans(platformArguments, newCompilerArguments)
+                        }
+                        copyInheritedFields(compilerArguments!!, newCompilerArguments)
+                        compilerArguments = newCompilerArguments
                     }
-                    if (platformArguments != null) {
-                        mergeBeans(platformArguments, newCompilerArguments)
-                    }
-                    copyInheritedFields(compilerArguments!!, newCompilerArguments)
-                    compilerArguments = newCompilerArguments
                 }
             }
         }

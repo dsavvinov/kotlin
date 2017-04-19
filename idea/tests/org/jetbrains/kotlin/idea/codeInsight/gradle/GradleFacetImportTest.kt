@@ -16,12 +16,14 @@
 
 package org.jetbrains.kotlin.idea.codeInsight.gradle
 
+import com.intellij.openapi.util.text.StringUtil
 import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.config.*
 import org.jetbrains.kotlin.idea.facet.KotlinFacet
 import org.junit.Assert
 import org.junit.Test
+import java.io.File
 
 internal fun GradleImportingTestCase.facetSettings(moduleName: String) = KotlinFacet.get(getModule(moduleName))!!.configuration.settings
 
@@ -192,54 +194,6 @@ class GradleFacetImportTest : GradleImportingTestCase() {
 
         with (facetSettings) {
             Assert.assertEquals(LanguageFeature.State.ENABLED, coroutineSupport)
-        }
-    }
-
-    @Test
-    fun testFixCorruptedCoroutines() {
-        createProjectSubFile("build.gradle", """
-            group 'Again'
-            version '1.0-SNAPSHOT'
-
-            buildscript {
-                repositories {
-                    mavenCentral()
-                    maven {
-                        url 'http://dl.bintray.com/kotlin/kotlin-eap-1.1'
-                    }
-                }
-
-                dependencies {
-                    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.0")
-                }
-            }
-
-            apply plugin: 'kotlin'
-
-            dependencies {
-                compile "org.jetbrains.kotlin:kotlin-stdlib:1.1.0"
-            }
-
-            kotlin {
-                experimental {
-                    coroutines 'enable'
-                }
-            }
-        """)
-
-        importProject()
-
-        with (facetSettings) {
-            compilerArguments!!.coroutinesEnable = true
-            compilerArguments!!.coroutinesWarn = true
-            compilerArguments!!.coroutinesError = true
-
-            importProject()
-
-            Assert.assertEquals(LanguageFeature.State.ENABLED, coroutineSupport)
-            Assert.assertEquals(true, compilerArguments!!.coroutinesEnable)
-            Assert.assertEquals(false, compilerArguments!!.coroutinesWarn)
-            Assert.assertEquals(false, compilerArguments!!.coroutinesError)
         }
     }
 
@@ -624,7 +578,7 @@ class GradleFacetImportTest : GradleImportingTestCase() {
 
         with (facetSettings) {
             Assert.assertEquals(
-                    listOf("-jdk-home", "c:\\program files\\jdk1.8", "-Xmulti-platform"),
+                    listOf("-jdk-home", "c:/program files/jdk1.8", "-Xmulti-platform"),
                     compilerSettings!!.additionalArgumentsAsList
             )
         }
@@ -667,6 +621,131 @@ class GradleFacetImportTest : GradleImportingTestCase() {
                            "plugin:org.jetbrains.kotlin.allopen:annotation=org.springframework.cache.annotation.Cacheable"),
                     compilerArguments!!.pluginOptions.toList()
             )
+        }
+    }
+
+    @Test
+    fun testAndroidGradleJsDetection() {
+        createProjectSubFile("android-module/build.gradle", """
+            group 'Again'
+            version '1.0-SNAPSHOT'
+
+            buildscript {
+                repositories {
+                    jcenter()
+                }
+                dependencies {
+                    classpath "com.android.tools.build:gradle:2.3.0"
+                }
+            }
+
+            apply plugin: 'com.android.application'
+
+            android {
+                compileSdkVersion 23
+                buildToolsVersion "23.0.1"
+
+                defaultConfig {
+                    minSdkVersion 11
+                    targetSdkVersion 23
+                    versionCode 1002003
+                    versionName version
+                }
+
+                dataBinding {
+                    enabled = true
+                }
+
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_1_7
+                    targetCompatibility JavaVersion.VERSION_1_7
+                }
+
+                buildTypes {
+                    debug {
+                        applicationIdSuffix ".debug"
+                        versionNameSuffix "-debug"
+                    }
+                    release {
+                        minifyEnabled true
+                        shrinkResources true
+                    }
+                }
+            }
+        """)
+        createProjectSubFile("android-module/src/main/AndroidManifest.xml", """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+                      xmlns:tools="http://schemas.android.com/tools"
+                      package="my.test.project" >
+            </manifest>
+        """)
+        createProjectSubFile("js-module/build.gradle", """
+            group 'Again'
+            version '1.0-SNAPSHOT'
+
+            buildscript {
+                repositories {
+                    mavenCentral()
+                    maven {
+                        url 'http://dl.bintray.com/kotlin/kotlin-dev'
+                    }
+                }
+
+                dependencies {
+                    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.2-eap-44")
+                }
+            }
+
+            apply plugin: 'kotlin2js'
+
+            dependencies {
+                compile "org.jetbrains.kotlin:kotlin-stdlib-js:1.1.0"
+            }
+        """)
+        createProjectSubFile("build.gradle", """
+            group 'Again'
+            version '1.0-SNAPSHOT'
+
+            buildscript {
+                repositories {
+                    mavenLocal()
+                    maven {
+                        url='https://dl.bintray.com/kotlin/kotlin-eap-1.1'
+                    }
+                    jcenter()
+                }
+                dependencies {
+                    classpath "com.android.tools.build:gradle:2.3.0"
+                    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.0"
+                }
+            }
+
+            ext {
+                androidBuildToolsVersion = '23.0.1'
+            }
+
+            allprojects {
+                repositories {
+                    mavenLocal()
+                    maven {
+                        url='https://dl.bintray.com/kotlin/kotlin-eap-1.1'
+                    }
+                    jcenter()
+                }
+            }
+        """)
+        createProjectSubFile("settings.gradle", """
+            rootProject.name = "android-js-test"
+            include ':android-module'
+            include ':js-module'
+        """)
+        createProjectSubFile("local.properties", """
+            sdk.dir=/${StringUtil.escapeBackSlashes(File(homePath).parent + "/dependencies/androidSDK")}
+        """)
+        importProject()
+
+        with (facetSettings("js-module")) {
+            Assert.assertEquals(TargetPlatformKind.JavaScript, targetPlatformKind)
         }
     }
 }

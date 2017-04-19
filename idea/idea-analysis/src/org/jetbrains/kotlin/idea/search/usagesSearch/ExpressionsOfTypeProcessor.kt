@@ -20,6 +20,7 @@ import com.intellij.ide.highlighter.JavaFileType
 import com.intellij.ide.highlighter.XmlFileType
 import com.intellij.lang.java.JavaLanguage
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.psi.search.FileTypeIndex
@@ -80,6 +81,8 @@ class ExpressionsOfTypeProcessor(
         var mode = if (ApplicationManager.getApplication().isUnitTestMode) Mode.ALWAYS_SMART else Mode.PLAIN_WHEN_NEEDED
         @TestOnly
         var testLog: MutableList<String>? = null
+
+        val LOG = Logger.getInstance(ExpressionsOfTypeProcessor::class.java)
 
         fun logPresentation(element: PsiElement): String? {
             return runReadAction {
@@ -170,7 +173,11 @@ class ExpressionsOfTypeProcessor(
         }
     }
 
-    private fun downShiftToPlainSearch() {
+    private fun downShiftToPlainSearch(reference: PsiReference) {
+        val message = getFallbackDiagnosticsMessage(reference)
+        LOG.info("ExpressionsOfTypeProcessor: " + message)
+        testLog?.add("Downgrade to plain text search: $message")
+
         tasks.clear()
         scopesToUsePlainSearch.clear()
         possibleMatchesInScopeHandler(searchScope)
@@ -185,14 +192,11 @@ class ExpressionsOfTypeProcessor(
                     if (processClassUsage(reference)) return@searchReferences true
 
                     if (mode != Mode.ALWAYS_SMART) {
-                        downShiftToPlainSearch()
+                        downShiftToPlainSearch(reference)
                         return@searchReferences false
                     }
 
-                    val element = reference.element
-                    val document = PsiDocumentManager.getInstance(project).getDocument(element.containingFile)
-                    val lineAndCol = DiagnosticUtils.offsetToLineAndColumn(document, element.startOffset)
-                    error("Unsupported reference: '${element.text}' in ${element.containingFile.name} line ${lineAndCol.line} column ${lineAndCol.column}")
+                    error(getFallbackDiagnosticsMessage(reference))
                 }
 
                 // we must use plain search inside our class (and inheritors) because implicit 'this' can happen anywhere
@@ -200,6 +204,13 @@ class ExpressionsOfTypeProcessor(
             }
         }
         addTask(ProcessClassUsagesTask(classToSearch))
+    }
+
+    private fun getFallbackDiagnosticsMessage(reference: PsiReference): String {
+        val element = reference.element
+        val document = PsiDocumentManager.getInstance(project).getDocument(element.containingFile)
+        val lineAndCol = DiagnosticUtils.offsetToLineAndColumn(document, element.startOffset)
+        return "Unsupported reference: '${element.text}' in ${element.containingFile.name} line ${lineAndCol.line} column ${lineAndCol.column}"
     }
 
     private enum class ReferenceProcessor(val handler: (ExpressionsOfTypeProcessor, PsiReference) -> Boolean) {
@@ -220,7 +231,7 @@ class ExpressionsOfTypeProcessor(
                 searchReferences(searchParameters) { reference ->
                     val processed = processor.handler(this@ExpressionsOfTypeProcessor, reference)
                     if (!processed) { // we don't know how to handle this reference and down-shift to plain search
-                        downShiftToPlainSearch()
+                        downShiftToPlainSearch(reference)
                     }
                     processed
                 }
@@ -268,8 +279,8 @@ class ExpressionsOfTypeProcessor(
                 val scope = GlobalSearchScope.projectScope(project).excludeFileTypes(KotlinFileType.INSTANCE, XmlFileType.INSTANCE)
                 testLog?.add("Searched references to ${logPresentation(psiClass)} in non-Kotlin files")
                 searchReferences(psiClass, scope) { reference ->
-                    if (reference.element.language != JavaFileType.INSTANCE) { // reference in some JVM language can be method parameter (but we don't know)
-                        downShiftToPlainSearch()
+                    if (reference.element.language != JavaLanguage.INSTANCE) { // reference in some JVM language can be method parameter (but we don't know)
+                        downShiftToPlainSearch(reference)
                         return@searchReferences false
                     }
 

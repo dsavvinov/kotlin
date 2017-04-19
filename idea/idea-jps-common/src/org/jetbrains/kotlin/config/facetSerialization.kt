@@ -16,12 +16,12 @@
 
 package org.jetbrains.kotlin.config
 
+import com.intellij.util.PathUtil
 import com.intellij.util.xmlb.SkipDefaultsSerializationFilter
 import com.intellij.util.xmlb.XmlSerializer
 import org.jdom.DataConversionException
 import org.jdom.Element
-import org.jetbrains.kotlin.cli.common.arguments.K2JSCompilerArguments
-import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
+import org.jetbrains.kotlin.cli.common.arguments.*
 
 fun Element.getOption(name: String) = getChildren("option").firstOrNull { it.getAttribute("name").value == name }
 
@@ -85,7 +85,7 @@ private fun readV1Config(element: Element): KotlinFacetSettings {
     }
 }
 
-private fun readV2Config(element: Element): KotlinFacetSettings {
+private fun readV2AndLaterConfig(element: Element): KotlinFacetSettings {
     return KotlinFacetSettings().apply {
         element.getAttributeValue("useProjectSettings")?.let { useProjectSettings = it.toBoolean() }
         val platformName = element.getAttributeValue("platform")
@@ -101,6 +101,25 @@ private fun readV2Config(element: Element): KotlinFacetSettings {
     }
 }
 
+private fun readV2Config(element: Element): KotlinFacetSettings {
+    return readV2AndLaterConfig(element).apply {
+        element.getChild("compilerArguments")?.children?.let { args ->
+            when {
+                args.any { arg -> arg.attributes[0].value == "coroutinesEnable" && arg.attributes[1].booleanValue } ->
+                    compilerArguments!!.coroutinesState = CommonCompilerArguments.ENABLE
+                args.any { arg -> arg.attributes[0].value == "coroutinesWarn" && arg.attributes[1].booleanValue } ->
+                    compilerArguments!!.coroutinesState = CommonCompilerArguments.WARN
+                args.any { arg -> arg.attributes[0].value == "coroutinesError" && arg.attributes[1].booleanValue } ->
+                    compilerArguments!!.coroutinesState = CommonCompilerArguments.ERROR
+            }
+        }
+    }
+}
+
+private fun readLatestConfig(element: Element): KotlinFacetSettings {
+    return readV2AndLaterConfig(element)
+}
+
 fun deserializeFacetSettings(element: Element): KotlinFacetSettings {
     val version =
             try {
@@ -112,8 +131,39 @@ fun deserializeFacetSettings(element: Element): KotlinFacetSettings {
     return when (version) {
         1 -> readV1Config(element)
         2 -> readV2Config(element)
+        KotlinFacetSettings.CURRENT_VERSION -> readLatestConfig(element)
         else -> KotlinFacetSettings() // Reset facet configuration if versions don't match
     }
+}
+
+fun CommonCompilerArguments.convertPathsToSystemIndependent() {
+    pluginClasspaths?.forEachIndexed { index, s -> pluginClasspaths[index] = PathUtil.toSystemIndependentName(s) }
+
+    when (this) {
+        is K2JVMCompilerArguments -> {
+            destination = PathUtil.toSystemIndependentName(destination)
+            classpath = PathUtil.toSystemIndependentName(classpath)
+            jdkHome = PathUtil.toSystemIndependentName(jdkHome)
+            kotlinHome = PathUtil.toSystemIndependentName(kotlinHome)
+            friendPaths?.forEachIndexed { index, s -> friendPaths[index] = PathUtil.toSystemIndependentName(s) }
+            declarationsOutputPath = PathUtil.toSystemIndependentName(declarationsOutputPath)
+        }
+
+        is K2JSCompilerArguments -> {
+            outputFile = PathUtil.toSystemIndependentName(outputFile)
+            libraries = PathUtil.toSystemIndependentName(libraries)
+        }
+
+        is K2MetadataCompilerArguments -> {
+            destination = PathUtil.toSystemIndependentName(destination)
+            classpath = PathUtil.toSystemIndependentName(classpath)
+        }
+    }
+}
+
+fun CompilerSettings.convertPathsToSystemIndependent() {
+    scriptTemplatesClasspath = PathUtil.toSystemIndependentName(scriptTemplatesClasspath)
+    outputDirectoryForJsLibraryFiles = PathUtil.toSystemIndependentName(outputDirectoryForJsLibraryFiles)
 }
 
 fun KotlinFacetSettings.serializeFacetSettings(element: Element) {
@@ -126,13 +176,15 @@ fun KotlinFacetSettings.serializeFacetSettings(element: Element) {
     if (!useProjectSettings) {
         element.setAttribute("useProjectSettings", useProjectSettings.toString())
     }
-    compilerSettings?.let {
+    compilerSettings?.let { copyBean(it) }?.let {
+        it.convertPathsToSystemIndependent()
         Element("compilerSettings").apply {
             XmlSerializer.serializeInto(it, this, filter)
             element.addContent(this)
         }
     }
-    compilerArguments?.let {
+    compilerArguments?.let { copyBean(it) }?.let {
+        it.convertPathsToSystemIndependent()
         Element("compilerArguments").apply {
             XmlSerializer.serializeInto(it, this, filter)
             element.addContent(this)
