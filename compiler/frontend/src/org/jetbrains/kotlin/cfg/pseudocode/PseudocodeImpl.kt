@@ -55,6 +55,9 @@ class PseudocodeImpl(override val correspondingElement: KtElement) : Pseudocode 
         getLocalDeclarations(this)
     }
 
+    private var isDefinitelyInvoked: Boolean = false
+    fun markAsDefinitelyInvoked() { isDefinitelyInvoked = true }
+
     private val representativeInstructions = HashMap<KtElement, KtElementInstruction>()
 
     private val labels = ArrayList<PseudocodeLabel>()
@@ -285,7 +288,7 @@ class PseudocodeImpl(override val correspondingElement: KtElement) : Pseudocode 
                 val body = instruction.body as PseudocodeImpl
                 body.parent = this@PseudocodeImpl
                 body.postProcess()
-                instruction.next = sinkInstruction
+                instruction.next = if (body.isDefinitelyInvoked) getNextPosition(currentPosition) else sinkInstruction
             }
 
             override fun visitSubroutineExit(instruction: SubroutineExitInstruction) {

@@ -76,7 +76,7 @@ class ControlFlowInformationProvider private constructor(
     }
 
     constructor(declaration: KtElement, trace: BindingTrace, languageVersionSettings: LanguageVersionSettings, typeResolver: TypeResolver)
-    : this(declaration, trace, ControlFlowProcessor(trace).generatePseudocode(declaration), languageVersionSettings, typeResolver)
+    : this(declaration, trace, ControlFlowProcessor(trace, typeResolver).generatePseudocode(declaration), languageVersionSettings, typeResolver)
 
     fun checkForLocalClassOrObjectMode() {
         // Local classes and objects are analyzed twice: when TopDownAnalyzer processes it and as a part of its container.
@@ -484,7 +484,7 @@ class ControlFlowInformationProvider private constructor(
                         report(Errors.CAPTURED_VAL_INITIALIZATION.on(expression, variableDescriptor), ctxt)
                     }
                     else {
-                        report(Errors.VAL_REASSIGNMENT.on(expression, variableDescriptor), ctxt)
+                         report(Errors.VAL_REASSIGNMENT.on(expression, variableDescriptor), ctxt)
                     }
                 }
                 if (isThisOrNoDispatchReceiver) {

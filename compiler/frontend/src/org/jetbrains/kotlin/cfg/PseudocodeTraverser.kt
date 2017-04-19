@@ -112,6 +112,8 @@ private fun <I : ControlFlowInfo<*>> Pseudocode.collectDataFromSubgraph(
         val incomingEdgesData = HashSet<I>()
 
         for (previousInstruction in previousInstructions) {
+//            if (previousInstruction == errorInstruction) continue
+
             val previousData = edgesMap[previousInstruction]
             if (previousData != null) {
                 incomingEdgesData.add(updateEdge(

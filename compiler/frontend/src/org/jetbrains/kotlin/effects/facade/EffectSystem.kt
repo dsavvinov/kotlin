@@ -164,8 +164,12 @@ object EffectSystem {
                evES.print()
     }
 
-    fun getInvocationsInfo(lambda: KtLambdaExpression, call: KtCallExpression, trace: BindingTrace,
-                           typeResolver: TypeResolver): MutableEffectsInfo.InvocationsInfo? {
+    fun getInvocationsInfo(lambda: KtLambdaExpression?, call: KtCallExpression?, trace: BindingTrace,
+                           typeResolver: TypeResolver? = null): MutableEffectsInfo.InvocationsInfo? {
+        lambda ?: return null
+        call ?: return null
+        typeResolver ?: return null
+
         val esResolutionContext = EsResolutionContext.create(trace, call, typeResolver) ?: return null
 
         val resultingEs = call.buildCallTree(esResolutionContext)?.computeEffectSchema(esResolutionContext) ?: return null
