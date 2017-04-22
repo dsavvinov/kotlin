@@ -25,28 +25,53 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
 class MutableEffectsInfo {
-    private val subtypes: MutableMap<DataFlowValue, MutableSet<KotlinType>> = mutableMapOf()
-    private val notSubtypes: MutableMap<DataFlowValue, MutableSet<KotlinType>> = mutableMapOf()
-    private val equals: MutableMap<DataFlowValue, MutableSet<DataFlowValue>> = mutableMapOf()
-    private val notEquals: MutableMap<DataFlowValue, MutableSet<DataFlowValue>> = mutableMapOf()
-    private val invocations: MutableMap<DataFlowValue, MutableSet<Int>> = mutableMapOf()
+    private val typeInfo: MutableMap<DataFlowValue, EsTypeInfoHolder> = mutableMapOf()
+    private val valueInfo: MutableMap<DataFlowValue, EsValueInfoHolder> = mutableMapOf()
+    private val invocationsInfo: MutableMap<DataFlowValue, InvocationsInfo> = mutableMapOf()
 
-    enum class InvocationsInfo {
-        UNKNOWN,
-        NOT_INVOKED,
-        EXACTLY_ONCE,
-        AT_LEAST_ONCE;
+    fun subtype(lhs: DataFlowValue, type: KotlinType): MutableEffectsInfo {
+        val newHolder = InfoHolder.Valid(EsTypeInfo(lhs, mutableSetOf(type), mutableSetOf()))
+        typeInfo.update(lhs, newHolder, { l, r -> l.andType(r) })
+        return this
     }
 
-    fun subtype(lhs: DataFlowValue, type: KotlinType): Unit { subtypes.put(lhs, type) }
+    fun notSubtype(lhs: DataFlowValue, type: KotlinType): MutableEffectsInfo {
+        val newHolder = InfoHolder.Valid(EsTypeInfo(lhs, mutableSetOf(), mutableSetOf(type)))
+        typeInfo.update(lhs, newHolder, { l, r -> l.andType(r) })
+        return this
+    }
 
-    fun notSubtype(lhs: DataFlowValue, type: KotlinType): Unit { notSubtypes.put(lhs, type) }
+    fun equate(lhs: DataFlowValue, rhs: DataFlowValue): MutableEffectsInfo {
+        val newHolder = InfoHolder.Valid(EsValueInfo(lhs, setOf(rhs), setOf()))
+        valueInfo.update(lhs, newHolder, { l, r -> l.andValue(r) })
+        return this
+    }
 
-    fun equate(lhs: DataFlowValue, rhs: DataFlowValue): Unit { equals.put(lhs, rhs) }
+    fun disequate(lhs: DataFlowValue, rhs: DataFlowValue): MutableEffectsInfo {
+        val newHolder = InfoHolder.Valid(EsValueInfo(lhs, setOf(), setOf(rhs)))
+        valueInfo.update(lhs, newHolder, { l, r -> l.andValue(r) })
+        return this
+    }
 
-    fun disequate(lhs: DataFlowValue, rhs: DataFlowValue): Unit { notEquals.put(lhs, rhs) }
+    fun calls(lhs: DataFlowValue, count: Int): MutableEffectsInfo {
+        val newInfo = InvocationsInfo.fromInt(count)
+        invocationsInfo.update(lhs, newInfo, { l, r -> l.and(r) })
+        return this
+    }
 
-    fun calls(lhs: DataFlowValue, count: Int): Unit { invocations.put(lhs, count) }
+    fun or(other: MutableEffectsInfo): MutableEffectsInfo {
+        other.typeInfo.forEach { typeInfo.update(it.key, it.value, { l, r -> l.orType(r) } ) }
+        other.valueInfo.forEach { valueInfo.update(it.key, it.value, { l, r -> l.orValue(r) } ) }
+        other.invocationsInfo.forEach { invocationsInfo.update(it.key, it.value, { l, r -> l.or(r) }) }
+        return this
+    }
+
+    fun and(other: MutableEffectsInfo): MutableEffectsInfo {
+        other.typeInfo.forEach { typeInfo.update(it.key, it.value, { l, r -> l.andType(r) } ) }
+        other.valueInfo.forEach { valueInfo.update(it.key, it.value, { l, r -> l.andValue(r) } ) }
+        other.invocationsInfo.forEach { invocationsInfo.update(it.key, it.value, { l, r -> l.and(r) }) }
+        return this
+    }
 
     fun toDataFlowInfo(languageVersionSettings: LanguageVersionSettings): DataFlowInfo {
         val allValues = getAllValues()
@@ -54,97 +79,43 @@ class MutableEffectsInfo {
         var resultingDataFlow = DataFlowInfoFactory.EMPTY
 
         for (dataFlowValue in allValues) {
-            val consistentSubtypes = getConsistentSubtypes(dataFlowValue)
-            consistentSubtypes.forEach { resultingDataFlow = resultingDataFlow.establishSubtyping(dataFlowValue, it, languageVersionSettings) }
+            typeInfo[dataFlowValue]?.let {
+                when (it) {
+                    is InfoHolder.Valid ->
+                        it.value.subtypes.forEach { resultingDataFlow = resultingDataFlow.establishSubtyping(dataFlowValue, it, languageVersionSettings) }
+                    is InfoHolder.Impossible -> return DataFlowInfo.EMPTY
+                }
+            }
 
-            val consistentEquals = getConsistentEqualValues(dataFlowValue)
-            consistentEquals.forEach { resultingDataFlow = resultingDataFlow.equate(dataFlowValue, it, false, languageVersionSettings) }
-
-            val consistentNotEqualValues = getConsistentNotEqualValues(dataFlowValue)
-            consistentNotEqualValues.forEach { resultingDataFlow = resultingDataFlow.disequate(dataFlowValue, it, languageVersionSettings) }
+            valueInfo[dataFlowValue]?.let {
+                when (it) {
+                    is InfoHolder.Valid -> {
+                        it.value.equals.forEach { resultingDataFlow = resultingDataFlow.equate(dataFlowValue, it, false, languageVersionSettings) }
+                        it.value.notEquals.forEach { resultingDataFlow = resultingDataFlow.disequate(dataFlowValue, it, languageVersionSettings) }
+                    }
+                    is InfoHolder.Impossible -> return DataFlowInfo.EMPTY
+                }
+            }
         }
 
         return resultingDataFlow
     }
 
-    fun getInvocationsInfo(dataFlowValue: DataFlowValue): InvocationsInfo? =
-            invocations.keys.map { Pair(it, getConsistentInvokationInfo(it)) }.toMap()[dataFlowValue]
-
-    fun recordAllInvocations(trace: BindingTrace) {
-        for ((dataFlowValue, info) in invocations) {
-            dataFlowValue.identifierInfo
-        }
-    }
+    fun getInvocationsInfo(dataFlowValue: DataFlowValue): InvocationsInfo? = invocationsInfo[dataFlowValue]
 
     private fun getAllValues(): Set<DataFlowValue> {
         val allValues = mutableSetOf<DataFlowValue>()
 
-        allValues.addAll(subtypes.keys)
-        allValues.addAll(notSubtypes.keys)
-        allValues.addAll(equals.keys)
-        allValues.addAll(notEquals.keys)
+        allValues.addAll(typeInfo.keys)
+        allValues.addAll(valueInfo.keys)
+        allValues.addAll(invocationsInfo.keys)
 
         return allValues
     }
 
-    private fun getConsistentSubtypes(dataFlowValue: DataFlowValue): List<KotlinType> {
-        val result = mutableListOf<KotlinType>()
-
-        val subtypesSet = subtypes[dataFlowValue] ?: setOf<KotlinType>()
-        val notSubtypesSet = notSubtypes[dataFlowValue] ?: setOf<KotlinType>()
-
-        for (type in subtypesSet) {
-            // If there is at least one `notType` such that `type : notType`, then `type` can't be the consistent subtype
-            if (!notSubtypesSet.any(type::isSubtypeOf))  {
-                result += type
-            }
-        }
-
-        return result
+    private fun <K, V> MutableMap<K, V>.update(key: K, value: V, reducer: (V, V) -> V) {
+        val newValue = this[key]?.let { reducer(it, value) } ?: value
+        put(key, newValue)
     }
-
-    private fun getConsistentEqualValues(dataFlowValue: DataFlowValue): List<DataFlowValue> {
-        val recordedValues = equals[dataFlowValue] ?: setOf<DataFlowValue>()
-        val recordedNotEquals = notEquals[dataFlowValue] ?: setOf<DataFlowValue>()
-
-        return if (recordedValues.size > 1) listOf() else (recordedValues - recordedNotEquals).toList()
-    }
-
-    private fun getConsistentNotEqualValues(dataFlowValue: DataFlowValue): List<DataFlowValue> {
-        val recordedValues = equals[dataFlowValue] ?: setOf<DataFlowValue>()
-        val recordedNotEquals = notEquals[dataFlowValue] ?: setOf<DataFlowValue>()
-
-        if (recordedValues.size > 1) return listOf()    // at least two equals - impossible
-
-        if (recordedValues.size == 1 && recordedValues.minus(recordedNotEquals).isEmpty())
-            return listOf()  // value is equal and not equal to the one and the same value - impossible
-
-        return recordedNotEquals.minus(recordedValues).toList()
-    }
-
-    private fun getConsistentInvokationInfo(dataFlowValue: DataFlowValue): InvocationsInfo {
-        val recordedInvokations = invocations[dataFlowValue] ?: return InvocationsInfo.UNKNOWN
-
-        if (recordedInvokations.isEmpty()) return InvocationsInfo.UNKNOWN
-
-        val lowerBound = recordedInvokations.min()!!
-        val upperBound = recordedInvokations.max()!!
-
-        // Check if it is NOT_INVOKED, or EXACTLY_ONCE
-        if (lowerBound == upperBound) {
-            when(lowerBound) {
-                0 -> return InvocationsInfo.NOT_INVOKED
-                1 -> return InvocationsInfo.EXACTLY_ONCE
-            }
-        }
-
-        // Now just decide between AT_LEAST_ONCE and UNKNOWN
-        if (lowerBound >= 1) return InvocationsInfo.AT_LEAST_ONCE
-
-        return InvocationsInfo.UNKNOWN
-    }
-
-    private fun <D> MutableMap<DataFlowValue, MutableSet<D>>.put(key: DataFlowValue, value: D)
-            = get(key)?.add(value) ?: put(key, mutableSetOf(value))
 
 }

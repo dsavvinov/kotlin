@@ -16,98 +16,125 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
-import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo
 import org.jetbrains.kotlin.effects.structure.effects.EsCalls
+import org.jetbrains.kotlin.effects.structure.effects.EsReturns
+import org.jetbrains.kotlin.effects.structure.effects.EsThrows
+import org.jetbrains.kotlin.effects.structure.effects.Outcome
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.Cons
+import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
-import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
+import org.jetbrains.kotlin.effects.visitors.helpers.getOutcome
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.typeUtil.isSubtypeOf
 
 /**
  * Builds data flow info, contained in the given Effect Schema/
  */
-class EffectsInfoCollector(val effectsInfo: MutableEffectsInfo) : SchemaVisitor<Unit>
+class EffectsInfoCollector(val condition: Outcome) : SchemaVisitor<MutableEffectsInfo>
 {
     private var isInverted : Boolean = false
 
-    fun inverted(body: () -> Unit) {
+    fun inverted(body: () -> MutableEffectsInfo): MutableEffectsInfo{
         isInverted = isInverted.xor(true)
-        body()
+        val result = body()
         isInverted = isInverted.xor(true)
+        return result
     }
 
-    override fun visit(node: EsNode) = Unit
+    override fun visit(schema: EffectSchema): MutableEffectsInfo {
+        var resultingInfo = MutableEffectsInfo()
 
-    override fun visit(binaryOperator: BinaryOperator) {
-        binaryOperator.left.accept(this)
-        binaryOperator.right.accept(this)
-    }
-
-    override fun visit(unaryOperator: UnaryOperator) {
-        unaryOperator.arg.accept(this)
-    }
-
-    override fun visit(esIsOperator: EsIs) {
-        if (esIsOperator.arg is EsVariable) {
-            if (isInverted) {
-                effectsInfo.notSubtype(esIsOperator.arg.value, esIsOperator.type)
-            } else {
-                effectsInfo.subtype(esIsOperator.arg.value, esIsOperator.type)
+        for (clause in schema.clauses) {
+            val clauseOutcome = clause.getOutcome()
+            if (clauseOutcome == null || condition.followsFrom(clauseOutcome)) {
+                val clauseInfo = visit(clause)
+                resultingInfo = resultingInfo.or(clauseInfo)
             }
         }
+
+        return resultingInfo
     }
 
-    override fun visit(esEqualOperator: EsEqual) {
+    override fun visit(node: EsNode) = MutableEffectsInfo()
+
+    override fun visit(esOr: EsOr): MutableEffectsInfo {
+        val left = esOr.left.accept(this)
+        val right = esOr.right.accept(this)
+
+        return left.or(right)
+    }
+
+    override fun visit(esAnd: EsAnd): MutableEffectsInfo {
+        val left = esAnd.left.accept(this)
+        val right = esAnd.right.accept(this)
+
+        return left.and(right)
+    }
+
+    override fun visit(esIsOperator: EsIs): MutableEffectsInfo {
+        if (esIsOperator.arg is EsVariable) {
+            if (isInverted) {
+                return MutableEffectsInfo().notSubtype(esIsOperator.arg.value, esIsOperator.type)
+            } else {
+                return MutableEffectsInfo().subtype(esIsOperator.arg.value, esIsOperator.type)
+            }
+        }
+        return MutableEffectsInfo()
+    }
+
+    override fun visit(esEqualOperator: EsEqual): MutableEffectsInfo {
         val leftDFV: DataFlowValue
         val rightDFV: DataFlowValue
 
         if (esEqualOperator.left is EsVariable && esEqualOperator.right is EsConstant) {
             leftDFV = esEqualOperator.left.value
-            rightDFV = esEqualOperator.right.dataFlowValue ?: return
+            rightDFV = esEqualOperator.right.dataFlowValue ?: return MutableEffectsInfo()
         } else if (esEqualOperator.left is EsVariable && esEqualOperator.right is EsVariable) {
             leftDFV = esEqualOperator.left.value
             rightDFV = esEqualOperator.right.value
         } else {
-            esEqualOperator.left.accept(this)
-            esEqualOperator.right.accept(this)
-            return
+            val left = esEqualOperator.left.accept(this)
+            val right = esEqualOperator.right.accept(this)
+            return left.and(right)
         }
 
         if (isInverted) {
-            effectsInfo.disequate(leftDFV, rightDFV)
+            return MutableEffectsInfo().disequate(leftDFV, rightDFV)
         } else {
-            effectsInfo.equate(leftDFV, rightDFV)
+            return MutableEffectsInfo().equate(leftDFV, rightDFV)
         }
     }
 
-    override fun visit(esNot: EsNot) {
-        inverted { esNot.arg.accept(this) }
+    override fun visit(esNot: EsNot): MutableEffectsInfo {
+        return inverted { esNot.arg.accept(this) }
     }
 
-    override fun visit(cons: Cons) {
-        cons.head.accept(this)
-        cons.tail.accept(this)
+    override fun visit(cons: Cons): MutableEffectsInfo {
+        val head = cons.head.accept(this)
+        val tail = cons.tail.accept(this)
+        return head.and(tail)
     }
 
-    override fun visit(esCalls: EsCalls) {
+    override fun visit(esCalls: EsCalls): MutableEffectsInfo {
+        val effectsInfo = MutableEffectsInfo()
         esCalls.callCounts.forEach { esVariable, count -> effectsInfo.calls(esVariable.value, count) }
+        return effectsInfo
     }
 
-    override fun visit(nil: Nil) = Unit
+    override fun visit(nil: Nil) = MutableEffectsInfo()
+
+    override fun visit(imply: Imply): MutableEffectsInfo {
+        val premise = imply.left.accept(this)
+        val conclusion = imply.right.accept(this)
+        return premise.and(conclusion)
+    }
+
 
 }
 
-fun EsNode.collectDataFlowInfo(effectsInfo: MutableEffectsInfo): MutableEffectsInfo {
-    val collector = EffectsInfoCollector(effectsInfo)
-    this.accept(collector)
-
-    return effectsInfo
-}
+fun EffectSchema.collectEffectsInfoAt(outcome: Outcome): MutableEffectsInfo = EffectsInfoCollector(outcome).visit(this)
