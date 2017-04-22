@@ -46,7 +46,7 @@ interface SchemaVisitor<out T> {
 
     fun visit(esEqualOperator: EsEqual): T = visit(esEqualOperator as BinaryOperator)
     fun visit(esOr: EsOr): T = visit(esOr as BinaryOperator)
-    fun visit(and: EsAnd): T = visit(and as BinaryOperator)
+    fun visit(esAnd: EsAnd): T = visit(esAnd as BinaryOperator)
     fun visit(esNot: EsNot): T = visit(esNot as UnaryOperator)
     fun visit(esIsOperator: EsIs): T = visit(esIsOperator as UnaryOperator)
 

@@ -103,10 +103,10 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
         inBrackets(esOr, esOr.right) { esOr.right.accept(this) }
     }
 
-    override fun visit(and: EsAnd): Unit {
-        inBrackets(and, and.left) { and.left.accept(this) }
+    override fun visit(esAnd: EsAnd): Unit {
+        inBrackets(esAnd, esAnd.left) { esAnd.left.accept(this) }
         sb.append(" AND ")
-        inBrackets(and, and.right) { and.right.accept(this) }
+        inBrackets(esAnd, esAnd.right) { esAnd.right.accept(this) }
     }
 
     override fun visit(esNot: EsNot): Unit {
