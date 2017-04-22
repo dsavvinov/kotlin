@@ -35,7 +35,7 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors.*
 import org.jetbrains.kotlin.effects.facade.EffectSystem
-import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo
+import org.jetbrains.kotlin.effects.facade.InvocationsInfo
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.lexer.KtTokens.*
@@ -64,12 +64,12 @@ class ControlFlowProcessor(private val trace: BindingTrace, private val typeReso
     private val builder: ControlFlowBuilder = ControlFlowInstructionsGenerator()
 
     fun generatePseudocode(subroutine: KtElement): Pseudocode {
-        val pseudocode = generate(subroutine, MutableEffectsInfo.InvocationsInfo.UNKNOWN)
+        val pseudocode = generate(subroutine, InvocationsInfo.UNKNOWN)
         (pseudocode as PseudocodeImpl).postProcess()
         return pseudocode
     }
 
-    private fun generate(subroutine: KtElement, invocationsInfo: MutableEffectsInfo.InvocationsInfo): Pseudocode {
+    private fun generate(subroutine: KtElement, invocationsInfo: InvocationsInfo): Pseudocode {
         builder.enterSubroutine(subroutine)
         val cfpVisitor = CFPVisitor(builder)
         if (subroutine is KtDeclarationWithBody && subroutine !is KtSecondaryConstructor) {
@@ -89,7 +89,7 @@ class ControlFlowProcessor(private val trace: BindingTrace, private val typeReso
             cfpVisitor.generateInstructions(subroutine)
         }
         val subroutinePseudocode = builder.exitSubroutine(subroutine)
-        if (invocationsInfo == MutableEffectsInfo.InvocationsInfo.EXACTLY_ONCE) (subroutinePseudocode as? PseudocodeImpl)?.markAsDefinitelyInvoked()
+        if (invocationsInfo == InvocationsInfo.EXACTLY_ONCE) (subroutinePseudocode as? PseudocodeImpl)?.markAsDefinitelyInvoked()
 
         return subroutinePseudocode
     }
@@ -105,12 +105,12 @@ class ControlFlowProcessor(private val trace: BindingTrace, private val typeReso
         builder.returnValue(bodyExpression, returnValue, subroutine)
     }
 
-    private fun processLocalDeclaration(subroutine: KtDeclaration, invocationsInfo: MutableEffectsInfo.InvocationsInfo) {
+    private fun processLocalDeclaration(subroutine: KtDeclaration, invocationsInfo: InvocationsInfo) {
         val afterDeclaration = builder.createUnboundLabel("after local declaration")
 
         when (invocationsInfo) {
-            MutableEffectsInfo.InvocationsInfo.NOT_INVOKED -> builder.jump(afterDeclaration, subroutine)
-            MutableEffectsInfo.InvocationsInfo.UNKNOWN -> builder.nondeterministicJump(afterDeclaration, subroutine, null)
+            InvocationsInfo.NOT_INVOKED -> builder.jump(afterDeclaration, subroutine)
+            InvocationsInfo.UNKNOWN -> builder.nondeterministicJump(afterDeclaration, subroutine, null)
             // Note missing entries for EXACTLY_ONCE, AT_LEAST_ONCE - jump is not needed for them
         }
         generate(subroutine, invocationsInfo)
@@ -1051,7 +1051,7 @@ class ControlFlowProcessor(private val trace: BindingTrace, private val typeReso
             return parent.parent is KtDoWhileExpression
         }
 
-        private fun visitFunction(function: KtFunction, invocationsInfo: MutableEffectsInfo.InvocationsInfo) {
+        private fun visitFunction(function: KtFunction, invocationsInfo: InvocationsInfo) {
             processLocalDeclaration(function, invocationsInfo)
             val isAnonymousFunction = function is KtFunctionLiteral || function.name == null
             if (isAnonymousFunction || function.isLocal && function.parent !is KtBlockExpression) {
@@ -1060,13 +1060,13 @@ class ControlFlowProcessor(private val trace: BindingTrace, private val typeReso
         }
 
         override fun visitNamedFunction(function: KtNamedFunction) {
-            visitFunction(function, MutableEffectsInfo.InvocationsInfo.UNKNOWN)
+            visitFunction(function, InvocationsInfo.UNKNOWN)
         }
 
         override fun visitLambdaExpression(lambdaExpression: KtLambdaExpression) {
             mark(lambdaExpression)
             val functionLiteral = lambdaExpression.functionLiteral
-            visitFunction(functionLiteral, MutableEffectsInfo.InvocationsInfo.UNKNOWN)
+            visitFunction(functionLiteral, InvocationsInfo.UNKNOWN)
             copyValue(functionLiteral, lambdaExpression)
         }
 
@@ -1186,7 +1186,7 @@ class ControlFlowProcessor(private val trace: BindingTrace, private val typeReso
         }
 
         override fun visitPropertyAccessor(accessor: KtPropertyAccessor) {
-            processLocalDeclaration(accessor, MutableEffectsInfo.InvocationsInfo.UNKNOWN)
+            processLocalDeclaration(accessor, InvocationsInfo.UNKNOWN)
         }
 
         override fun visitBinaryWithTypeRHSExpression(expression: KtBinaryExpressionWithTypeRHS) {
@@ -1662,7 +1662,7 @@ class ControlFlowProcessor(private val trace: BindingTrace, private val typeReso
                 lambdaExpression: KtLambdaExpression,
                 parameterDescriptor: ValueParameterDescriptor,
                 parameterValuesArg: SmartFMap<PseudoValue, ValueParameterDescriptor>,
-                invocationsInfo: MutableEffectsInfo.InvocationsInfo
+                invocationsInfo: InvocationsInfo
         ): SmartFMap<PseudoValue, ValueParameterDescriptor> {
             var parameterValues = parameterValuesArg
 

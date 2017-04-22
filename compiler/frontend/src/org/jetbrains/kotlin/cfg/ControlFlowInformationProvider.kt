@@ -40,7 +40,7 @@ import org.jetbrains.kotlin.diagnostics.DiagnosticFactory
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Errors.*
 import org.jetbrains.kotlin.effects.facade.EffectSystem
-import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo
+import org.jetbrains.kotlin.effects.facade.InvocationsInfo
 import org.jetbrains.kotlin.idea.MainFunctionDetector
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
@@ -49,7 +49,6 @@ import org.jetbrains.kotlin.resolve.BindingContext.*
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsExpression
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsResultOfLambda
 import org.jetbrains.kotlin.resolve.bindingContextUtil.isUsedAsStatement
-import org.jetbrains.kotlin.resolve.calls.callUtil.getCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.resolvedCallUtil.getDispatchReceiverWithSmartCast
@@ -469,9 +468,9 @@ class ControlFlowInformationProvider private constructor(
 
             if (!mayBeInitializedNotHere && captured) {
                 when(invocationsStatus) {
-                    MutableEffectsInfo.InvocationsInfo.NOT_INVOKED -> return false
-                    MutableEffectsInfo.InvocationsInfo.EXACTLY_ONCE -> return false
-                    MutableEffectsInfo.InvocationsInfo.AT_LEAST_ONCE -> {
+                    InvocationsInfo.NOT_INVOKED -> return false
+                    InvocationsInfo.EXACTLY_ONCE -> return false
+                    InvocationsInfo.AT_LEAST_ONCE -> {
                         report(Errors.VAL_REASSIGNMENT.on(expression, variableDescriptor), ctxt)
                         return true
                     }
@@ -498,7 +497,7 @@ class ControlFlowInformationProvider private constructor(
         return false
     }
 
-    private fun getEnclosingLambdaInvokationsInfo(instruction: WriteValueInstruction): MutableEffectsInfo.InvocationsInfo? {
+    private fun getEnclosingLambdaInvokationsInfo(instruction: WriteValueInstruction): InvocationsInfo? {
         val lambdaExpression: KtLambdaExpression =
                 getElementParentDeclaration(instruction.element)?.parent as? KtLambdaExpression ?: return null
         val callee = PsiTreeUtil.getParentOfType(lambdaExpression, KtCallExpression::class.java) ?: return null

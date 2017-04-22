@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.cfg.TailRecursionKind;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor;
 import org.jetbrains.kotlin.effects.facade.CallEffectsInfo;
-import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo;
+import org.jetbrains.kotlin.effects.facade.InvocationsInfo;
 import org.jetbrains.kotlin.name.FqName;
 import org.jetbrains.kotlin.name.FqNameUnsafe;
 import org.jetbrains.kotlin.psi.*;
@@ -166,7 +166,7 @@ public interface BindingContext {
     WritableSlice<ValueParameterDescriptor, Boolean> AUTO_CREATED_IT = Slices.createSimpleSetSlice();
 
     WritableSlice<Call, CallEffectsInfo> CALL_EFFECTS_INFO = Slices.createSimpleSlice();
-    WritableSlice<KtDeclaration, MutableEffectsInfo.InvocationsInfo> INVOCATIONS_INFO = Slices.createSimpleSlice();
+    WritableSlice<KtDeclaration, InvocationsInfo> INVOCATIONS_INFO = Slices.createSimpleSlice();
     /**
      * Has type of current expression has been already resolved
      */
