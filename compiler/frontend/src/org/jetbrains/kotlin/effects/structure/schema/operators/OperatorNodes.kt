@@ -66,7 +66,7 @@ interface BinaryOperator : Operator {
     }
 }
 
-private fun (EffectSchema).flattenWith(rightSchema: EffectSchema, operator: BinaryOperator): EffectSchema {
+private fun EffectSchema.flattenWith(rightSchema: EffectSchema, operator: BinaryOperator): EffectSchema {
     val newClauses = rightSchema.clauses.flatMap { rightClause ->
         this.clauses.map { leftClause ->
             val leftOutcome = leftClause.outcome
@@ -82,7 +82,7 @@ private fun (EffectSchema).flattenWith(rightSchema: EffectSchema, operator: Bina
             val resultingPremise = leftClause.left.and(rightClause.left)
             val resultingOutcome = leftOutcome!!.merge(rightOutcome, operator)
             val resultingEffects = leftEffects.flatMap { leftEffect -> rightEffects.map { leftEffect.merge(it) }.filterNotNull() }
-            return@map Imply(resultingPremise, resultingEffects, resultingOutcome)
+                return@map Imply(resultingPremise, resultingEffects, resultingOutcome)
         }
     }
     return EffectSchema(newClauses)

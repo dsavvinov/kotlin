@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.lift
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.Term
+import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.effects.structure.schema.operators.EsEqual
 import org.jetbrains.kotlin.effects.structure.schema.operators.EsIs
 import org.jetbrains.kotlin.effects.visitors.collectEffectsInfoAt
@@ -188,7 +189,7 @@ object EffectSystem {
     ) {
         for (clause in clauses) {
             val clauseOutcome = clause.getOutcome()
-            if (clauseOutcome == null || outcome.followsFrom(clauseOutcome)) {
+            if (clauseOutcome == null || clauseOutcome.followsFrom(outcome)) {
                 return
             }
         }
@@ -245,4 +246,10 @@ object EffectSystem {
 
 
 
-object Unknown : EsNode
+object Unknown : Outcome, EsNode {
+    override fun followsFrom(other: Outcome): Boolean = throw IllegalStateException("Called followsFrom() on 'Unknown' object")
+
+    override fun isSuccessfull(): Boolean = throw IllegalStateException("Called isSuccessfull() on 'Unknown'-object")
+
+    override fun merge(other: Outcome?, binaryOperator: BinaryOperator): Outcome = throw IllegalStateException("Called merge() on 'Unknown'-object")
+}

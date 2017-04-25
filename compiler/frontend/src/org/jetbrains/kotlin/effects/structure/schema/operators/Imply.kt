@@ -71,6 +71,7 @@ data class Imply(override val left: EsNode, override val right: NodeSequence) : 
             if (leftOutcome.value == false.lift()) {
                 // Add side-effects of false-resulting clause but do not add return
                 resultedClauses.add(Imply(leftClause.left, leftClause.effects, null))
+                continue
             }
 
             // Now, as we know that left part is finishing and returns something,

@@ -18,7 +18,6 @@ package org.jetbrains.kotlin.effects.facade
 
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
-import org.antlr.v4.runtime.misc.ParseCancellationException
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -26,10 +25,8 @@ import org.jetbrains.kotlin.effects.parsing.EsSignatureBuilder
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemLexer
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemParser
 import org.jetbrains.kotlin.effects.parsing.antlr.ErrorReporter
-import org.jetbrains.kotlin.effects.structure.general.EsFunction
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.lazy.descriptors.LazyAnnotationDescriptor
 

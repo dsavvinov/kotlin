@@ -38,4 +38,6 @@ interface CallTreeVisitor<out T> {
     fun visit(ctAnd: CtAnd): T = visit(ctAnd as CtNode)
 
     fun visit(ctOr: CtOr): T = visit(ctOr as CtNode)
+
+    fun visit(ctLambda: CtLambda): T = visit(ctLambda as CtNode)
 }

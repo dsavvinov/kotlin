@@ -26,8 +26,14 @@ data class EsOr(override val left: EsNode, override val right: EsNode) : BinaryO
     override fun newInstance(left: EsNode, right: EsNode): BinaryOperator = EsOr(left, right)
 
     override fun reduce(): EsNode {
-        if (left is EsConstant && right is EsConstant) {
-            return (left.value == right.value).lift()
+        if (left is EsConstant) {
+            if (left.value == true) return true.lift()
+            return right
+        }
+
+        if (right is EsConstant) {
+            if (right.value == true) return true.lift()
+            return left
         }
 
         return this

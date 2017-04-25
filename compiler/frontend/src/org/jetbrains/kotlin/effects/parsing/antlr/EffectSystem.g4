@@ -36,6 +36,7 @@ comparison
 
 namedInfix
     : additiveExpression (inOperation additiveExpression)*
+    | additiveExpression atOperation effect
     | additiveExpression (isOperation type)?
     ;
 
@@ -94,6 +95,11 @@ prefixUnaryOperation
 
 postfixUnaryOperation
     : PLUSPLUS | MINUSMINUS | EXCLEXCL
+    | callSuffix
+    ;
+
+callSuffix
+    : '(' (expression (',' expression)*)? ')'
     ;
 
 inOperation
@@ -104,7 +110,9 @@ isOperation
     : 'is' | '!is'
     ;
 
-
+atOperation
+    : 'at'
+    ;
 
 
 // Effects
@@ -117,14 +125,15 @@ effect
     : throwsEffect
     | returnsEffect
     | callsEffect
+    | hintsEffect
     ;
 
 throwsEffect
-    : 'Throws' SimpleName
+    : 'Throws' type
     ;
 
 returnsEffect
-    : 'Returns' (literalConstant | SimpleName)
+    : 'Returns' '(' (expression | UnknownLiteral ) ')'
     ;
 
 callsEffect
@@ -134,8 +143,8 @@ callsEffect
 callsRecord
     : SimpleName IntegerLiteral;
 
-type
-    : SimpleName
+hintsEffect
+    : 'Hints' '(' SimpleName ',' typeExpression ')'
     ;
 
 literalConstant
@@ -146,6 +155,23 @@ literalConstant
     | UnitLiteral
     ;
 
+typeExpression
+    : type
+    | typeOfOperator
+    ;
+
+type
+    : SimpleName typeParametersList?
+    ;
+
+typeOfOperator
+    : expression 'typeOf' SimpleName
+    ;
+
+typeParametersList
+    : '<' typeExpression (',' typeExpression)* '>'
+    ;
+
 BooleanLiteral
     : 'true'
     | 'false'
@@ -153,10 +179,12 @@ BooleanLiteral
 
 NullLiteral : 'null';
 
+UnknownLiteral : 'unknown';
+
 UnitLiteral : 'unit';
 
 /**
- *  Everything below is proudly stolen from the Java grammar:
+ *  Proudly stolen from the Java grammar:
  *  https://github.com/antlr/grammars-v4/blob/master/java/Java.g4
  */
 

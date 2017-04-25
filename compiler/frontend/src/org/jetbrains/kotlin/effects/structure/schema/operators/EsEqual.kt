@@ -29,6 +29,11 @@ data class EsEqual(override val left: EsNode, override val right: EsNode) : Bina
             return (left.value == right.value).lift()
         }
 
+        if (right is EsConstant) {
+            if (right.value == true) return left
+            if (right.value == false) return EsNot(left)
+        }
+
         return this
     }
 

@@ -1,4 +1,4 @@
-// Generated from /home/dsavvinov/Repos/kotlin-fork/kotlin/compiler/frontend/src/org/jetbrains/kotlin/effects/parsing/antlr/EffectSystem.g4 by ANTLR 4.6
+// Generated from EffectSystem.g4 by ANTLR 4.6
 package org.jetbrains.kotlin.effects.parsing.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -131,6 +131,12 @@ public interface EffectSystemVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitPostfixUnaryOperation(EffectSystemParser.PostfixUnaryOperationContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link EffectSystemParser#callSuffix}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCallSuffix(EffectSystemParser.CallSuffixContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link EffectSystemParser#inOperation}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -142,6 +148,12 @@ public interface EffectSystemVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitIsOperation(EffectSystemParser.IsOperationContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EffectSystemParser#atOperation}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAtOperation(EffectSystemParser.AtOperationContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EffectSystemParser#effectsList}.
 	 * @param ctx the parse tree
@@ -179,15 +191,39 @@ public interface EffectSystemVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitCallsRecord(EffectSystemParser.CallsRecordContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link EffectSystemParser#type}.
+	 * Visit a parse tree produced by {@link EffectSystemParser#hintsEffect}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitType(EffectSystemParser.TypeContext ctx);
+	T visitHintsEffect(EffectSystemParser.HintsEffectContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link EffectSystemParser#literalConstant}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitLiteralConstant(EffectSystemParser.LiteralConstantContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EffectSystemParser#typeExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeExpression(EffectSystemParser.TypeExpressionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EffectSystemParser#type}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitType(EffectSystemParser.TypeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EffectSystemParser#typeOfOperator}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeOfOperator(EffectSystemParser.TypeOfOperatorContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link EffectSystemParser#typeParametersList}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTypeParametersList(EffectSystemParser.TypeParametersListContext ctx);
 }

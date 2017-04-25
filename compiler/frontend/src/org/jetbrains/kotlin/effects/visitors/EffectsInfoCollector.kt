@@ -17,12 +17,12 @@
 package org.jetbrains.kotlin.effects.visitors
 
 import org.jetbrains.kotlin.effects.facade.MutableEffectsInfo
-import org.jetbrains.kotlin.effects.structure.effects.EsCalls
-import org.jetbrains.kotlin.effects.structure.effects.EsReturns
-import org.jetbrains.kotlin.effects.structure.effects.EsThrows
+import org.jetbrains.kotlin.effects.structure.effects.EsCallsEffect
 import org.jetbrains.kotlin.effects.structure.effects.Outcome
+import org.jetbrains.kotlin.effects.structure.effects.EsHints
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
 import org.jetbrains.kotlin.effects.structure.general.EsNode
+import org.jetbrains.kotlin.effects.structure.general.EsType
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.Cons
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
@@ -51,7 +51,7 @@ class EffectsInfoCollector(val condition: Outcome) : SchemaVisitor<MutableEffect
 
         for (clause in schema.clauses) {
             val clauseOutcome = clause.getOutcome()
-            if (clauseOutcome == null || condition.followsFrom(clauseOutcome)) {
+            if (clauseOutcome == null || clauseOutcome.followsFrom(condition)) {
                 val clauseInfo = visit(clause)
                 resultingInfo = resultingInfo.or(clauseInfo)
             }
@@ -111,7 +111,7 @@ class EffectsInfoCollector(val condition: Outcome) : SchemaVisitor<MutableEffect
     }
 
     override fun visit(esNot: EsNot): MutableEffectsInfo {
-        return inverted { esNot.arg.accept(this) }
+        return inverted {  esNot.arg.accept(this) }
     }
 
     override fun visit(cons: Cons): MutableEffectsInfo {
@@ -120,9 +120,18 @@ class EffectsInfoCollector(val condition: Outcome) : SchemaVisitor<MutableEffect
         return head.and(tail)
     }
 
-    override fun visit(esCalls: EsCalls): MutableEffectsInfo {
+    override fun visit(esCallsEffect: EsCallsEffect): MutableEffectsInfo {
         val effectsInfo = MutableEffectsInfo()
-        esCalls.callCounts.forEach { esVariable, count -> effectsInfo.calls(esVariable.value, count) }
+        esCallsEffect.callCounts.forEach { esVariable, count -> effectsInfo.calls(esVariable.value, count) }
+        return effectsInfo
+    }
+
+    override fun visit(esHints: EsHints): MutableEffectsInfo {
+        val effectsInfo = MutableEffectsInfo()
+        esHints.types.forEach { node, typesSet ->
+            if (node is EsVariable) typesSet.forEach { effectsInfo.subtype(node.value, (it as EsType).type) }
+            // else node is EsConstant => no interesting effects info
+        }
         return effectsInfo
     }
 

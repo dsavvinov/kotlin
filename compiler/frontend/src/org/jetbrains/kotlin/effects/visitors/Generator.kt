@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.effects.facade.EffectSchemasResolver
 import org.jetbrains.kotlin.effects.facade.EsResolutionContext
 import org.jetbrains.kotlin.effects.structure.call.*
 import org.jetbrains.kotlin.effects.structure.general.EsConstant
+import org.jetbrains.kotlin.effects.structure.general.EsLambda
 import org.jetbrains.kotlin.effects.structure.general.EsNode
 import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
@@ -34,7 +35,7 @@ class EffectSchemaGenerator(val esResolutionContext: EsResolutionContext, val me
     override fun visit(call: CtCall): EffectSchema? {
         val substitutedArgs = call.childs.map { it.accept(this) ?: return null}
         val basicSchema = EffectSchemasResolver.getEffectSchema(call.resolvedCall.resultingDescriptor, esResolutionContext)
-        val boundSchema = basicSchema?.bind(call.resolvedCall, substitutedArgs, mentionedCallables)
+        val boundSchema = basicSchema?.bind(call.resolvedCall, substitutedArgs, mentionedCallables, esResolutionContext)
         return boundSchema
     }
 
@@ -69,6 +70,10 @@ class EffectSchemaGenerator(val esResolutionContext: EsResolutionContext, val me
     override fun visit(variable: EsVariable): EsNode = variable
 
     override fun visit(constant: EsConstant): EsNode = constant
+
+    override fun visit(ctLambda: CtLambda): EsNode? {
+        return EsLambda(ctLambda.dfv, ctLambda.body?.accept(this), ctLambda.descriptor)
+    }
 }
 
 fun CallTree.generateEffectSchema(context: EsResolutionContext): EsNode? {

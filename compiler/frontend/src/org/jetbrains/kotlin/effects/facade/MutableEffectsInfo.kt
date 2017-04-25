@@ -73,6 +73,8 @@ class MutableEffectsInfo {
         return this
     }
 
+    fun getTypes(dfv: DataFlowValue): List<KotlinType> = (typeInfo[dfv] as? InfoHolder.Valid)?.value?.subtypes?.toList() ?: listOf()
+
     fun toDataFlowInfo(languageVersionSettings: LanguageVersionSettings): DataFlowInfo {
         val allValues = getAllValues()
 

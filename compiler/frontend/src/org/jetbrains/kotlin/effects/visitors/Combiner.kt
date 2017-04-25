@@ -16,12 +16,10 @@
 
 package org.jetbrains.kotlin.effects.visitors
 
-import org.jetbrains.kotlin.effects.structure.effects.EsCalls
+import org.jetbrains.kotlin.effects.structure.effects.EsHints
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
-import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
+import org.jetbrains.kotlin.effects.structure.general.EsGenericType
 import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsVariable
 import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
@@ -32,6 +30,8 @@ import org.jetbrains.kotlin.effects.structure.schema.operators.UnaryOperator
  * nested effect schemas.
  */
 class Combiner : SchemaVisitor<EsNode> {
+    override fun visit(node: EsNode): EsNode = node
+
     override fun visit(schema: EffectSchema): EsNode {
         val evaluatedEffects = schema.clauses.flatMap {
             val res = it.accept(this)
@@ -44,10 +44,6 @@ class Combiner : SchemaVisitor<EsNode> {
 
         return EffectSchema(evaluatedEffects)
     }
-
-    override fun visit(variable: EsVariable): EsNode = variable
-
-    override fun visit(constant: EsConstant): EsNode = constant
 
     override fun visit(binaryOperator: BinaryOperator): EsNode {
         val lhs = binaryOperator.left.accept(this)
@@ -62,14 +58,10 @@ class Combiner : SchemaVisitor<EsNode> {
         return unaryOperator.newInstance(arg).flatten()
     }
 
-    override fun visit(throws: EsThrows) = throws
-
     override fun visit(esReturns: EsReturns): EsNode {
         val arg = esReturns.value.accept(this)
         return EsReturns(arg)
     }
-
-    override fun visit(esCalls: EsCalls): EsNode = esCalls
 
     override fun visit(cons: Cons): EsNode {
         val flatHead = cons.head.accept(this)
@@ -77,7 +69,23 @@ class Combiner : SchemaVisitor<EsNode> {
         return Cons(flatHead, flatTail)
     }
 
-    override fun visit(nil: Nil): EsNode = nil
+    override fun visit(esHints: EsHints): EsNode {
+        val flatTypesMap = esHints.types.map { (subject, typeExpressions) ->
+            val flatExprs = typeExpressions.map { it.accept(this) }.toMutableSet()
+            (subject to flatExprs)
+        }.toMap().toMutableMap()
+
+        return EsHints(flatTypesMap)
+    }
+
+    override fun visit(esGenericType: EsGenericType): EsNode {
+        val typeParameters = esGenericType.typeParameters.map { it.accept(this) }
+        return EsGenericType(
+                esGenericType.bareTypeName,
+                typeParameters,
+                esGenericType.resolutionContext
+        )
+    }
 }
 
 fun (EsNode).flatten() : EsNode = Combiner().let { accept(it) }

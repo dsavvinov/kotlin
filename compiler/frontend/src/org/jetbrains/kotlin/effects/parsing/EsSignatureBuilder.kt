@@ -19,23 +19,22 @@ package org.jetbrains.kotlin.effects.parsing
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.effects.facade.EsResolutionContext
+import org.jetbrains.kotlin.effects.facade.Unknown
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemBaseVisitor
 import org.jetbrains.kotlin.effects.parsing.antlr.EffectSystemParser
-import org.jetbrains.kotlin.effects.structure.effects.EsCalls
+import org.jetbrains.kotlin.effects.structure.effects.EsCallsEffect
+import org.jetbrains.kotlin.effects.structure.effects.EsHints
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsFunction
-import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsVariable
+import org.jetbrains.kotlin.effects.structure.general.*
 import org.jetbrains.kotlin.effects.structure.schema.Cons
 import org.jetbrains.kotlin.effects.structure.schema.EffectSchema
 import org.jetbrains.kotlin.effects.structure.schema.Nil
 import org.jetbrains.kotlin.effects.structure.schema.NodeSequence
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.DelegatingBindingTrace
 import org.jetbrains.kotlin.resolve.TemporaryBindingTrace
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
@@ -97,13 +96,20 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     override fun visitNamedInfix(ctx: EffectSystemParser.NamedInfixContext): EsNode {
         val additiveExpressions = ctx.additiveExpression().map(this::visitAdditiveExpression)
         if (ctx.isOperation != null) {
-            val rhsType = resolveType(ctx.type().SimpleName())
-            assert(additiveExpressions.size == 1, { "IsExpression: Expected 1 additive expression, got ${additiveExpressions.size}" })
+            val rhsType = visitType(ctx.type()).type
+
+            if (additiveExpressions.size != 1) throw IllegalStateException ("IsExpression: Expected 1 additive expression, got ${additiveExpressions.size}")
+
             return if (ctx.isOperation.text == "is") EsIs(additiveExpressions[0], rhsType) else EsNot(EsIs(additiveExpressions[0], rhsType))
         }
 
         if (ctx.inOperation().isNotEmpty()) {
             TODO()
+        }
+
+        if (ctx.atOperation() != null) {
+            val effect = visitEffect(ctx.effect())
+            return EsAt(additiveExpressions[0], effect)
         }
 
         assert(additiveExpressions.size == 1, { "No infix expression: Expected 1 additive expression, got ${additiveExpressions.size}" })
@@ -156,7 +162,12 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
     override fun visitPostfixUnaryExpression(ctx: EffectSystemParser.PostfixUnaryExpressionContext): EsNode {
         val atom = visitAtomicExpression(ctx.atomicExpression())
         val postfixOps = ctx.postfixUnaryOperation().map {
-            when ((it.getChild(0) as TerminalNode).symbol.type) {
+            if (it.callSuffix() != null) {
+                val argList = it.callSuffix().expression().map { visitExpression(it) }
+                return@map { node: EsNode -> EsCall(node, argList) }
+            }
+
+            return@map when ((it.getChild(0) as TerminalNode).symbol.type) {
                 EffectSystemParser.PLUSPLUS -> TODO()
                 EffectSystemParser.MINUSMINUS -> TODO()
                 EffectSystemParser.EXCLEXCL -> TODO()
@@ -167,9 +178,13 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
         return postfixOps.foldRight<UnaryOperatorT<EsNode>, EsNode>(atom, { op, acc -> op(acc) })
     }
 
+    override fun visitPostfixUnaryOperation(ctx: EffectSystemParser.PostfixUnaryOperationContext?): EsNode? {
+        return super.visitPostfixUnaryOperation(ctx)
+    }
+
     override fun visitAtomicExpression(ctx: EffectSystemParser.AtomicExpressionContext): EsNode {
         if (ctx.SimpleName() != null) {
-            return resolveVariable(ctx.SimpleName())
+            return resolveVariable(ctx.SimpleName().text)
         }
 
         if (ctx.literalConstant() != null) {
@@ -190,6 +205,10 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
             return visitCallsEffect(ctx.callsEffect())
         }
 
+        if (ctx.hintsEffect() != null) {
+            return visitHintsEffect(ctx.hintsEffect())
+        }
+
         if (ctx.returnsEffect() != null) {
             return visitReturnsEffect(ctx.returnsEffect())
         }
@@ -197,23 +216,50 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
         return visitThrowsEffect(ctx.throwsEffect())
     }
 
-    override fun visitThrowsEffect(ctx: EffectSystemParser.ThrowsEffectContext): EsThrows = EsThrows(resolveType(ctx.SimpleName()))
+    override fun visitHintsEffect(ctx: EffectSystemParser.HintsEffectContext): EsHints {
+        val variable = resolveVariable(ctx.SimpleName().text)
+        val typeExpression = visitTypeExpression(ctx.typeExpression())
+        return EsHints(mutableMapOf(variable to mutableSetOf(typeExpression)))
+    }
+
+    override fun visitThrowsEffect(ctx: EffectSystemParser.ThrowsEffectContext): EsThrows = EsThrows(visitType(ctx.type()).type)
 
     override fun visitReturnsEffect(ctx: EffectSystemParser.ReturnsEffectContext): EsReturns {
-        val arg: EsNode = ctx.SimpleName()?.let(this::resolveVariable) ?: visitLiteralConstant(ctx.literalConstant())
+        if (ctx.UnknownLiteral() != null) return EsReturns(Unknown)
+        val arg: EsNode = visitExpression(ctx.expression())
         return EsReturns(arg)
     }
 
     class CallsRecord(val left: EsVariable, val right: Int) : EsNode
     override fun visitCallsRecord(ctx: EffectSystemParser.CallsRecordContext): CallsRecord {
-        val callable = resolveVariable(ctx.SimpleName())
+        val callable = resolveVariable(ctx.SimpleName().text)
         val times = ctx.IntegerLiteral().text.toInt()
         return CallsRecord(callable, times)
     }
 
-    override fun visitCallsEffect(ctx: EffectSystemParser.CallsEffectContext): EsCalls {
+    override fun visitCallsEffect(ctx: EffectSystemParser.CallsEffectContext): EsCallsEffect {
         val callsRecords = ctx.callsRecord().map { visitCallsRecord(it) }
-        return EsCalls(callsRecords.map { it.left to it.right }.toMap().toMutableMap())
+        return EsCallsEffect(callsRecords.map { it.left to it.right }.toMap().toMutableMap())
+    }
+
+    override fun visitTypeExpression(ctx: EffectSystemParser.TypeExpressionContext): EsNode {
+        if (ctx.typeOfOperator() != null) return visitTypeOfOperator(ctx.typeOfOperator())
+
+        return visitType(ctx.type())
+    }
+
+    override fun visitType(ctx: EffectSystemParser.TypeContext): EsType {
+        if (ctx.typeParametersList() != null) {
+            val typeParameters = ctx.typeParametersList().typeExpression().map { visitTypeExpression(it) }
+            return EsGenericType(ctx.SimpleName().text, typeParameters, esResolutionContext)
+        }
+        return EsSimpleType(resolveType(ctx.SimpleName()))
+    }
+
+    override fun visitTypeOfOperator(ctx: EffectSystemParser.TypeOfOperatorContext): EsTypeOf {
+        val rhs = resolveVariable(ctx.SimpleName().text)
+        val lhs = visitExpression(ctx.expression())
+        return EsTypeOf(lhs, rhs)
     }
 
     override fun visitLiteralConstant(ctx: EffectSystemParser.LiteralConstantContext): EsConstant {
@@ -280,11 +326,13 @@ class EsSignatureBuilder(val ownerDescriptor: CallableDescriptor, val esResoluti
         return type
     }
 
-    private fun resolveVariable(simpleName: TerminalNode): EsVariable {
-        val name = Name.identifier(simpleName.text)
+    private fun resolveVariable(varName: String): EsVariable {
+        if (varName == "RESULT") return EsVariable.RESULT
+
+        val name = Name.identifier(varName)
 
         val parameterDescriptor = ownerDescriptor.valueParameters.find { it.name == name }
-                                  ?: throw IllegalStateException("Can't find value parameter with a given name $name")
+                                  ?: return EsVariable(DataFlowValue.ERROR, varName)
         val idInfo = IdentifierInfo.Variable(parameterDescriptor, DataFlowValue.Kind.STABLE_VALUE, null)
         val dfv = DataFlowValue(idInfo, parameterDescriptor.type)
 

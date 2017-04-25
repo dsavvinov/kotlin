@@ -1,4 +1,4 @@
-// Generated from /home/dsavvinov/Repos/kotlin-fork/kotlin/compiler/frontend/src/org/jetbrains/kotlin/effects/parsing/antlr/EffectSystem.g4 by ANTLR 4.6
+// Generated from EffectSystem.g4 by ANTLR 4.6
 package org.jetbrains.kotlin.effects.parsing.antlr;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -256,6 +256,18 @@ public class EffectSystemBaseListener implements EffectSystemListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterCallSuffix(EffectSystemParser.CallSuffixContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitCallSuffix(EffectSystemParser.CallSuffixContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterInOperation(EffectSystemParser.InOperationContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -275,6 +287,18 @@ public class EffectSystemBaseListener implements EffectSystemListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitIsOperation(EffectSystemParser.IsOperationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterAtOperation(EffectSystemParser.AtOperationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitAtOperation(EffectSystemParser.AtOperationContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -352,13 +376,13 @@ public class EffectSystemBaseListener implements EffectSystemListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterType(EffectSystemParser.TypeContext ctx) { }
+	@Override public void enterHintsEffect(EffectSystemParser.HintsEffectContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitType(EffectSystemParser.TypeContext ctx) { }
+	@Override public void exitHintsEffect(EffectSystemParser.HintsEffectContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -371,6 +395,54 @@ public class EffectSystemBaseListener implements EffectSystemListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitLiteralConstant(EffectSystemParser.LiteralConstantContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTypeExpression(EffectSystemParser.TypeExpressionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeExpression(EffectSystemParser.TypeExpressionContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterType(EffectSystemParser.TypeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitType(EffectSystemParser.TypeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTypeOfOperator(EffectSystemParser.TypeOfOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeOfOperator(EffectSystemParser.TypeOfOperatorContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterTypeParametersList(EffectSystemParser.TypeParametersListContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitTypeParametersList(EffectSystemParser.TypeParametersListContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

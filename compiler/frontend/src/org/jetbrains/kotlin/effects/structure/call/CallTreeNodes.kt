@@ -16,6 +16,8 @@
 
 package org.jetbrains.kotlin.effects.structure.call
 
+import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.types.KotlinType
@@ -53,5 +55,9 @@ data class CtAnd(val left: CtNode, val right: CtNode) : CtNode {
 }
 
 data class CtOr(val left: CtNode, val right: CtNode) : CtNode {
+    override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
+}
+
+data class CtLambda(val dfv: DataFlowValue, val body: CtNode?, val descriptor: CallableDescriptor) : CtNode {
     override fun <T> accept(visitor: CallTreeVisitor<T>): T = visitor.visit(this)
 }

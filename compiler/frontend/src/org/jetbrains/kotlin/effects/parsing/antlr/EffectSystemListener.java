@@ -1,4 +1,4 @@
-// Generated from /home/dsavvinov/Repos/kotlin-fork/kotlin/compiler/frontend/src/org/jetbrains/kotlin/effects/parsing/antlr/EffectSystem.g4 by ANTLR 4.6
+// Generated from EffectSystem.g4 by ANTLR 4.6
 package org.jetbrains.kotlin.effects.parsing.antlr;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -208,6 +208,16 @@ public interface EffectSystemListener extends ParseTreeListener {
 	 */
 	void exitPostfixUnaryOperation(EffectSystemParser.PostfixUnaryOperationContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link EffectSystemParser#callSuffix}.
+	 * @param ctx the parse tree
+	 */
+	void enterCallSuffix(EffectSystemParser.CallSuffixContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectSystemParser#callSuffix}.
+	 * @param ctx the parse tree
+	 */
+	void exitCallSuffix(EffectSystemParser.CallSuffixContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link EffectSystemParser#inOperation}.
 	 * @param ctx the parse tree
 	 */
@@ -227,6 +237,16 @@ public interface EffectSystemListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitIsOperation(EffectSystemParser.IsOperationContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectSystemParser#atOperation}.
+	 * @param ctx the parse tree
+	 */
+	void enterAtOperation(EffectSystemParser.AtOperationContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectSystemParser#atOperation}.
+	 * @param ctx the parse tree
+	 */
+	void exitAtOperation(EffectSystemParser.AtOperationContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EffectSystemParser#effectsList}.
 	 * @param ctx the parse tree
@@ -288,15 +308,15 @@ public interface EffectSystemListener extends ParseTreeListener {
 	 */
 	void exitCallsRecord(EffectSystemParser.CallsRecordContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link EffectSystemParser#type}.
+	 * Enter a parse tree produced by {@link EffectSystemParser#hintsEffect}.
 	 * @param ctx the parse tree
 	 */
-	void enterType(EffectSystemParser.TypeContext ctx);
+	void enterHintsEffect(EffectSystemParser.HintsEffectContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link EffectSystemParser#type}.
+	 * Exit a parse tree produced by {@link EffectSystemParser#hintsEffect}.
 	 * @param ctx the parse tree
 	 */
-	void exitType(EffectSystemParser.TypeContext ctx);
+	void exitHintsEffect(EffectSystemParser.HintsEffectContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EffectSystemParser#literalConstant}.
 	 * @param ctx the parse tree
@@ -307,4 +327,44 @@ public interface EffectSystemListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitLiteralConstant(EffectSystemParser.LiteralConstantContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectSystemParser#typeExpression}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeExpression(EffectSystemParser.TypeExpressionContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectSystemParser#typeExpression}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeExpression(EffectSystemParser.TypeExpressionContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectSystemParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void enterType(EffectSystemParser.TypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectSystemParser#type}.
+	 * @param ctx the parse tree
+	 */
+	void exitType(EffectSystemParser.TypeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectSystemParser#typeOfOperator}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeOfOperator(EffectSystemParser.TypeOfOperatorContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectSystemParser#typeOfOperator}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeOfOperator(EffectSystemParser.TypeOfOperatorContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectSystemParser#typeParametersList}.
+	 * @param ctx the parse tree
+	 */
+	void enterTypeParametersList(EffectSystemParser.TypeParametersListContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectSystemParser#typeParametersList}.
+	 * @param ctx the parse tree
+	 */
+	void exitTypeParametersList(EffectSystemParser.TypeParametersListContext ctx);
 }

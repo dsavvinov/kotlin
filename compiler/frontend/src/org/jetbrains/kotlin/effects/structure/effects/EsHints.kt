@@ -16,25 +16,20 @@
 
 package org.jetbrains.kotlin.effects.structure.effects
 
-import org.jetbrains.kotlin.effects.facade.Unknown
-import org.jetbrains.kotlin.effects.structure.call.CtNode
+import org.jetbrains.kotlin.effects.structure.general.EsNode
+import org.jetbrains.kotlin.effects.structure.general.EsVariable
+import org.jetbrains.kotlin.effects.structure.schema.Effect
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
-import org.jetbrains.kotlin.effects.structure.schema.operators.BinaryOperator
 import org.jetbrains.kotlin.types.KotlinType
 
-data class EsThrows(val exception: KotlinType) : Outcome, CtNode {
-    override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
+class EsHints(val types: MutableMap<EsNode, MutableSet<EsNode>>) : Effect {
+    override fun merge(other: Effect): Effect? {
+        if (other !is EsHints) return this
 
-    override fun isSuccessfull(): Boolean = false
-
-    override fun merge(other: Outcome?, binaryOperator: BinaryOperator): Outcome = this
-
-    override fun followsFrom(other: Outcome): Boolean {
-        if (other == Unknown) return true
-
-        if (other !is EsThrows) return false
-
-        // TODO: insert proper subtyping here
-        return exception == other.exception
+        val newMap = types.toMutableMap()
+        other.types.forEach { variable, types -> newMap[variable]?.let { it += types } ?: newMap.put(variable, types) }
+        return EsHints(newMap)
     }
+
+    override fun <T> accept(visitor: SchemaVisitor<T>): T = visitor.visit(this)
 }

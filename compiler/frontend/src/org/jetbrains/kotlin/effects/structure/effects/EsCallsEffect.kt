@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.effects.structure.schema.Effect
 import org.jetbrains.kotlin.effects.structure.schema.SchemaVisitor
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 
-data class EsCalls(val callCounts: MutableMap<EsVariable, Int>) : Effect {
+data class EsCallsEffect(val callCounts: MutableMap<EsVariable, Int>) : Effect {
     private var sourceCall : ResolvedCall<*>? = null
 
     private constructor(callCounts: MutableMap<EsVariable, Int>, sourceCall: ResolvedCall<*>?) : this(callCounts) {
@@ -38,9 +38,9 @@ data class EsCalls(val callCounts: MutableMap<EsVariable, Int>) : Effect {
         this.sourceCall = sourceCall
     }
 
-    override fun merge(other: Effect): EsCalls {
+    override fun merge(other: Effect): EsCallsEffect {
         // Prevent from combining with itself, thus erroneously doubling amount of side-effects
-        if (other !is EsCalls || other.sourceCall == this.sourceCall) return this
+        if (other !is EsCallsEffect || other.sourceCall == this.sourceCall) return this
 
         val resultCalls = mutableMapOf<EsVariable, Int>()
         resultCalls.putAll(callCounts)
@@ -48,6 +48,6 @@ data class EsCalls(val callCounts: MutableMap<EsVariable, Int>) : Effect {
             resultCalls.merge(function, calls, Int::plus)
         }
 
-        return EsCalls(resultCalls, sourceCall)
+        return EsCallsEffect(resultCalls, sourceCall)
     }
 }

@@ -16,15 +16,14 @@
 
 package org.jetbrains.kotlin.effects.visitors.helpers
 
-import org.jetbrains.kotlin.effects.structure.effects.EsCalls
+import org.jetbrains.kotlin.effects.structure.effects.EsCallsEffect
+import org.jetbrains.kotlin.effects.structure.effects.EsHints
 import org.jetbrains.kotlin.effects.structure.effects.EsReturns
 import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsVariable
-import org.jetbrains.kotlin.effects.structure.general.lift
+import org.jetbrains.kotlin.effects.structure.general.*
 import org.jetbrains.kotlin.effects.structure.schema.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
 
 class EffectSchemaPrinter : SchemaVisitor<Unit> {
@@ -53,7 +52,7 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
     }
 
     private fun inBrackets(father: EsNode, child: EsNode, body: () -> Unit): Unit {
-        val needsBrackets = getPriority(child) < getPriority(father)
+        val needsBrackets = child is EsIs || getPriority(child) < getPriority(father)
         if (needsBrackets) sb.append("(")
         body()
         if (needsBrackets) sb.append(")")
@@ -115,7 +114,11 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
     }
 
     override fun visit(variable: EsVariable): Unit {
-        sb.append((variable.value.identifierInfo as IdentifierInfo.Variable).variable.name)
+        if (variable.value == DataFlowValue.ERROR) {
+            sb.append(variable.surrogateId)
+            return
+        }
+        sb.append((variable.value.identifierInfo as? IdentifierInfo.Variable)?.variable?.name ?: variable.value.identifierInfo.toString())
     }
 
     override fun visit(constant: EsConstant): Unit {
@@ -134,10 +137,65 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
         }
     }
 
-    override fun visit(nil: Nil) { }
+    override fun visit(esHints: EsHints) {
+        if (esHints.types.size == 1) {
+            val (variable, types) = esHints.types.toList()[0]
+            if (types.size == 1) {
+                sb.append("Hints(")
+                variable.accept(this)
+                sb.append(", ")
+                types.toList()[0].accept(this)
+                sb.append(")")
+                return
+            }
+        }
+        sb.append("Hints(<non-trivial>)")
+    }
 
-    override fun visit(esCalls: EsCalls) {
-        sb.append("EsCalls(${esCalls.callCounts})")
+    override fun visit(esCallsEffect: EsCallsEffect) {
+        sb.append("EsCallsEffect(${esCallsEffect.callCounts})")
+    }
+
+    override fun visit(nil: Nil) = Unit
+
+    override fun visit(esAt: EsAt) {
+        esAt.left.accept(this)
+        sb.append(" at ")
+        esAt.right.accept(this)
+    }
+
+    override fun visit(esCall: EsCall) {
+        esCall.callable.accept(this)
+        sb.append("(")
+        for ((index, arg) in esCall.arguments.withIndex()) {
+            arg.accept(this)
+            if (index != esCall.arguments.size - 1) sb.append(", ")
+        }
+    }
+
+    override fun visit(esTypeOf: EsTypeOf) {
+        sb.append("(")
+        esTypeOf.left.accept(this)
+        sb.append(")")
+
+        sb.append(" typeOf ")
+        esTypeOf.right.accept(this)
+    }
+
+    override fun visit(esType: EsType) {
+        sb.append(esType.type)
+    }
+
+    override fun visit(esGenericType: EsGenericType) {
+        if (esGenericType.isConstructed) {
+            visit(esGenericType.type as EsType)
+            return
+        }
+
+        sb.append ("${esGenericType.bareTypeName} < ")
+        esGenericType.typeParameters.forEach { it.accept(this); sb.append(", ") }
+        sb.append(">")
+
     }
 
     private fun getPriority(node: EsNode): Int {
@@ -149,6 +207,8 @@ class EffectSchemaPrinter : SchemaVisitor<Unit> {
             else -> 999
         }
     }
+
+
 }
 
 fun EsNode?.print() : String {

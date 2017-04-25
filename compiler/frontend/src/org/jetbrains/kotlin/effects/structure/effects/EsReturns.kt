@@ -41,10 +41,13 @@ data class EsReturns(val value: EsNode) : Outcome {
 
 
     override fun followsFrom(other: Outcome): Boolean {
+        // Anything follows from Unknown
+        if (other == Unknown) return true
+
         if (other !is EsReturns) return false
 
         // Returns(Unknown) conforms to any kind of Returns
-        if (value == Unknown) return true
+        if (other.value == Unknown) return true
 
         // Variable can take any value, so anything follows from such Returns
         if (other.value is EsVariable) return true

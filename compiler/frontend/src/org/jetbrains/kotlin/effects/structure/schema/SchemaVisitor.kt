@@ -16,13 +16,8 @@
 
 package org.jetbrains.kotlin.effects.structure.schema
 
-import org.jetbrains.kotlin.effects.structure.effects.EsCalls
-import org.jetbrains.kotlin.effects.structure.effects.EsThrows
-import org.jetbrains.kotlin.effects.structure.effects.Outcome
-import org.jetbrains.kotlin.effects.structure.effects.EsReturns
-import org.jetbrains.kotlin.effects.structure.general.EsConstant
-import org.jetbrains.kotlin.effects.structure.general.EsNode
-import org.jetbrains.kotlin.effects.structure.general.EsVariable
+import org.jetbrains.kotlin.effects.structure.effects.*
+import org.jetbrains.kotlin.effects.structure.general.*
 import org.jetbrains.kotlin.effects.structure.schema.operators.*
 
 interface SchemaVisitor<out T> {
@@ -32,10 +27,18 @@ interface SchemaVisitor<out T> {
     fun visit(schema: EffectSchema): T = visit(schema as EsNode)
     fun visit(variable: EsVariable): T = visit(variable as EsNode)
     fun visit(constant: EsConstant): T = visit(constant as EsNode)
+    fun visit(lambda: EsLambda): T = visit(lambda as EsNode)
+
+    // Types
+    fun visit(esType: EsType): T = visit(esType as EsNode)
+    fun visit(esSimpleType: EsSimpleType): T = visit(esSimpleType as EsType)
+    fun visit(esGenericType: EsGenericType): T = visit(esGenericType as EsType)
 
     fun visit(nodeSequence: NodeSequence): T = visit(nodeSequence as EsNode)
     fun visit(cons: Cons): T = visit(cons as NodeSequence)
     fun visit(nil: Nil): T = visit(nil as NodeSequence)
+
+    fun visit(esCall: EsCall): T = visit(esCall as EsNode)
 
     // Operators
     fun visit(operator: Operator): T = visit(operator as EsNode)
@@ -47,12 +50,16 @@ interface SchemaVisitor<out T> {
     fun visit(esEqualOperator: EsEqual): T = visit(esEqualOperator as BinaryOperator)
     fun visit(esOr: EsOr): T = visit(esOr as BinaryOperator)
     fun visit(esAnd: EsAnd): T = visit(esAnd as BinaryOperator)
+    fun visit(esAt: EsAt): T = visit(esAt as BinaryOperator)
+    fun visit(esTypeOf: EsTypeOf): T = visit(esTypeOf as BinaryOperator)
+
     fun visit(esNot: EsNot): T = visit(esNot as UnaryOperator)
     fun visit(esIsOperator: EsIs): T = visit(esIsOperator as UnaryOperator)
 
     // Effects
     fun visit(effect: Effect): T = visit(effect as EsNode)
-    fun visit(esCalls: EsCalls): T = visit(esCalls as Effect)
+    fun visit(esCallsEffect: EsCallsEffect): T = visit(esCallsEffect as Effect)
+    fun visit(esHints: EsHints): T = visit(esHints as Effect)
 
     // Outcomes
     fun visit(outcome: Outcome): T = visit(outcome as EsNode)
