@@ -3,8 +3,8 @@ fun foo(arg: Int?) {
     var x = arg
     if (x == null) return
     run {
-        // Not safe: x = null later in the owner
-        <!SMARTCAST_IMPOSSIBLE!>x<!>.hashCode()
+        // Now safe because we know that run calls this lambda in-place
+        <!DEBUG_INFO_SMARTCAST!>x<!>.hashCode()
     }
     x = null  
 }
