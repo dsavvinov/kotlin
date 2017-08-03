@@ -7307,6 +7307,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                         doTest(fileName);
                     }
 
+                    @TestMetadata("inlinedClosureChangesBackToNull.kt")
+                    public void testInlinedClosureChangesBackToNull() throws Exception {
+                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/inlinedClosureChangesBackToNull.kt");
+                        doTest(fileName);
+                    }
+
                     @TestMetadata("innerCasts.kt")
                     public void testInnerCasts() throws Exception {
                         String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/innerCasts.kt");

@@ -8,7 +8,7 @@ fun foo() {
             return true
         }
         <!SMARTCAST_IMPOSSIBLE!>i<!>.hashCode()
-        trans(<!SMARTCAST_IMPOSSIBLE!>i<!>, ::can)
+        trans(<!SMARTCAST_IMPOSSIBLE!>i<!>, ::trans)
         <!SMARTCAST_IMPOSSIBLE!>i<!>.hashCode()
     }
 }

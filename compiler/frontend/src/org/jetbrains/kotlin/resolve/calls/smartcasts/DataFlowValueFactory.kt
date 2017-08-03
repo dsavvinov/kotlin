@@ -286,8 +286,13 @@ object DataFlowValueFactory {
 
         // Access is in closure; check if it is inlined closure
         while (isInlinedClosure(parent, bindingContext)) {
+            if (ControlFlowInformationProvider.getDeclarationDescriptorIncludingConstructors(bindingContext, parent) == variableContainingDeclaration) {
+                // found variableContainingDeclaration while ascending - treat this access as not closured
+                return false
+            }
+
             // treat inlined closure as its parent
-            parent = ControlFlowInformationProvider.getElementParentDeclaration(parent) ?: return false
+            parent = ControlFlowInformationProvider.getElementParentDeclaration(parent) ?: break
         }
 
         return ControlFlowInformationProvider.getDeclarationDescriptorIncludingConstructors(bindingContext, parent) != variableContainingDeclaration
@@ -301,10 +306,17 @@ object DataFlowValueFactory {
     ): Boolean {
         // All writers should be before access element, with the exception:
         // writer which is the same with declaration site does not count
-        writers.filterNotNull().forEach { initialWriter ->
+        outerloop@ for (initialWriter in writers.filterNotNull()) {
             var writer: KtDeclaration = initialWriter
             // If writer is an inlined closure then treat it as its parent
             while (isInlinedClosure(writer, bindingContext)) {
+                val writerDescriptor = ControlFlowInformationProvider.getDeclarationDescriptorIncludingConstructors(bindingContext, writer)
+
+                // accessed inside owner, don't consider this writer
+                if (variableContainingDeclaration == writerDescriptor) {
+                    continue@outerloop
+                }
+
                 val elementParentDeclaration = ControlFlowInformationProvider.getElementParentDeclaration(writer) ?: break
                 writer = elementParentDeclaration
             }

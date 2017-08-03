@@ -1231,6 +1231,21 @@ public class DiagnosticsTestWithStdLibGenerated extends AbstractDiagnosticsTestW
             String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/require.kt");
             doTest(fileName);
         }
+
+        @TestMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/smartcastsOnVars")
+        @TestDataPath("$PROJECT_ROOT")
+        @RunWith(JUnit3RunnerWithInners.class)
+        public static class SmartcastsOnVars extends AbstractDiagnosticsTestWithStdLib {
+            public void testAllFilesPresentInSmartcastsOnVars() throws Exception {
+                KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/testsWithStdLib/effects/smartcastsOnVars"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+            }
+
+            @TestMetadata("run.kt")
+            public void testRun() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/smartcastsOnVars/run.kt");
+                doTest(fileName);
+            }
+        }
     }
 
     @TestMetadata("compiler/testData/diagnostics/testsWithStdLib/functionLiterals")

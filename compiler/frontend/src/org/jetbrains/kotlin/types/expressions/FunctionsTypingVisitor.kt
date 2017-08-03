@@ -152,16 +152,16 @@ internal class FunctionsTypingVisitor(facade: ExpressionTypingInternals) : Expre
             components.identifierChecker.checkDeclaration(it, context.trace)
             UnderscoreChecker.checkNamed(it, context.trace, components.languageVersionSettings, allowSingleUnderscore = true)
         }
-        val safeReturnType = computeReturnType(expression, context, functionDescriptor, functionTypeExpected)
-        functionDescriptor.setReturnType(safeReturnType)
+        val safeReturnTypeInfo = computeReturnType(expression, context, functionDescriptor, functionTypeExpected)
+        functionDescriptor.setReturnType(safeReturnTypeInfo.type!!)
 
         val resultType = functionDescriptor.createFunctionType(suspendFunctionTypeExpected)!!
         if (functionTypeExpected) {
             // all checks were done before
-            return createTypeInfo(resultType, context)
+            return createTypeInfo(resultType, safeReturnTypeInfo.dataFlowInfo)
         }
 
-        return components.dataFlowAnalyzer.createCheckedTypeInfo(resultType, context, expression)
+        return components.dataFlowAnalyzer.checkType(createTypeInfo(resultType, safeReturnTypeInfo.dataFlowInfo), expression, context)
     }
 
     private fun checkReservedYield(context: ExpressionTypingContext, expression: PsiElement) {
@@ -194,16 +194,16 @@ internal class FunctionsTypingVisitor(facade: ExpressionTypingInternals) : Expre
             context: ExpressionTypingContext,
             functionDescriptor: SimpleFunctionDescriptorImpl,
             functionTypeExpected: Boolean
-    ): KotlinType {
+    ): KotlinTypeInfo {
         val expectedReturnType = if (functionTypeExpected) context.expectedType.getReturnTypeFromFunctionType() else null
         val returnType = computeUnsafeReturnType(expression, context, functionDescriptor, expectedReturnType)
 
         if (!expression.functionLiteral.hasDeclaredReturnType() && functionTypeExpected) {
             if (!TypeUtils.noExpectedType(expectedReturnType!!) && KotlinBuiltIns.isUnit(expectedReturnType)) {
-                return components.builtIns.unitType
+                return createTypeInfo(components.builtIns.unitType, context)
             }
         }
-        return returnType ?: CANT_INFER_FUNCTION_PARAM_TYPE
+        return returnType ?: createTypeInfo(CANT_INFER_FUNCTION_PARAM_TYPE, context)
     }
 
     private fun computeUnsafeReturnType(
@@ -211,7 +211,7 @@ internal class FunctionsTypingVisitor(facade: ExpressionTypingInternals) : Expre
             context: ExpressionTypingContext,
             functionDescriptor: SimpleFunctionDescriptorImpl,
             expectedReturnType: KotlinType?
-    ): KotlinType? {
+    ): KotlinTypeInfo? {
         val functionLiteral = expression.functionLiteral
 
         val expectedType = expectedReturnType ?: NO_EXPECTED_TYPE
@@ -225,7 +225,10 @@ internal class FunctionsTypingVisitor(facade: ExpressionTypingInternals) : Expre
         val blockReturnedType = components.expressionTypingServices.getBlockReturnedType(functionLiteral.bodyExpression!!, COERCION_TO_UNIT, newContext)
         val typeOfBodyExpression = blockReturnedType.type
 
-        return computeReturnTypeBasedOnReturnExpressions(functionLiteral, context, typeOfBodyExpression)
+        return createTypeInfo(
+                computeReturnTypeBasedOnReturnExpressions(functionLiteral, context, typeOfBodyExpression) ?: return null,
+                blockReturnedType.dataFlowInfo
+        )
     }
 
     private fun computeReturnTypeBasedOnReturnExpressions(

@@ -17,7 +17,7 @@ fun test2(): KClass<out Foo>? {
     var f: Foo? = null
     if (f != null) {
         run { f = null }
-        return <!EXPRESSION_OF_NULLABLE_TYPE_IN_CLASS_LITERAL_LHS!>f<!>::class
+        return <!EXPRESSION_OF_NULLABLE_TYPE_IN_CLASS_LITERAL_LHS, DEBUG_INFO_CONSTANT!>f<!>::class
     }
     return null
 }

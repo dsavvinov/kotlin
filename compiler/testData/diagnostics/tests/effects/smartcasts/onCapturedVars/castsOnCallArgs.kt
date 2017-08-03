@@ -11,7 +11,7 @@ fun castOnCallArguments() {
 
     myRun { x = 42 }
 
-    foo(if (x != null) <!DEBUG_INFO_SMARTCAST!>x<!> else 42, x!!, <!DEBUG_INFO_SMARTCAST!>x<!>)
+    foo(if (<!SENSELESS_COMPARISON!>x != null<!>) <!DEBUG_INFO_SMARTCAST!>x<!> else 42, x<!UNNECESSARY_NOT_NULL_ASSERTION!>!!<!>, <!DEBUG_INFO_SMARTCAST!>x<!>)
 
     myRun { x = null }
 }
