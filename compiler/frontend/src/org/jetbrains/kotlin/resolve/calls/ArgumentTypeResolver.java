@@ -322,14 +322,9 @@ public class ArgumentTypeResolver {
 
         // Correct data-flow info for lambda expression in similar manner to loops-analysis
         if (expression instanceof KtLambdaExpression) {
-            ESCalls.InvocationCount invocationCount = context.trace.get(BindingContext.LAMBDA_INVOCATIONS, (KtLambdaExpression) expression);
-            if (invocationCount != null && invocationCount != ESCalls.InvocationCount.EXACTLY_ONCE) {
-                PreliminaryBlockVisitor visitor = PreliminaryBlockVisitor.visitLambda((KtLambdaExpression) expression);
-                DataFlowInfo newDFI = visitor.clearDataFlowInfoForAssignedLocalVariables(context.dataFlowInfo, languageVersionSettings);
-                newContext = context.replaceDataFlowInfo(newDFI);
-            } else {
-                newContext = context;
-            }
+            PreliminaryBlockVisitor visitor = PreliminaryBlockVisitor.visitLambda((KtLambdaExpression) expression);
+            DataFlowInfo newDFI = visitor.clearDataFlowInfoForAssignedLocalVariables(context.dataFlowInfo, languageVersionSettings);
+            newContext = context.replaceDataFlowInfo(newDFI);
         }  else {
             newContext = context;
         }
