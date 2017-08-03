@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.DescriptorToSourceUtils
 
 class PreliminaryDeclarationVisitor(val declaration: KtDeclaration): AssignedVariablesSearcher() {
-
     override fun writers(variableDescriptor: VariableDescriptor): MutableSet<KtDeclaration?> {
         lazyTrigger
         return super.writers(variableDescriptor)

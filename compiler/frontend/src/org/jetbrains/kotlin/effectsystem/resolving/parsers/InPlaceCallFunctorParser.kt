@@ -46,7 +46,7 @@ class InPlaceCallFunctorParser : FunctorParser {
 
         assert(argsEffects.size == 1) { "Multi-effect annotations are not supported yet" }
 
-        val invocationCount = argsEffects[0].allValueArguments.values.singleOrNull()?.toInvocationCountEnum() ?: return null
+        val invocationCount = argsEffects[0].allValueArguments.values.singleOrNull()?.toInvocationCountEnum() ?: ESCalls.InvocationCount.UNKNOWN
         return InPlaceCallFunctor(invocationCount, isRelevantArg)
     }
 

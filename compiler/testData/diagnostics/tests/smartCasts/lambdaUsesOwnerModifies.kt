@@ -3,7 +3,7 @@ fun foo(arg: Int?) {
     var x = arg
     if (x == null) return
     run {
-        // Not safe: x = null later in the owner
+        // Now safe because we know that run calls this lambda in-place
         <!SMARTCAST_IMPOSSIBLE!>x<!>.hashCode()
     }
     x = null  

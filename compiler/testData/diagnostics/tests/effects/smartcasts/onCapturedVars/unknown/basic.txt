@@ -1,0 +1,12 @@
+package
+
+public fun changingClosureIncorrectSmartcast(): kotlin.Unit
+public fun changingClosurePotentiallyCorrect(): kotlin.Unit
+public fun getBool(): kotlin.Boolean
+public fun getInt(): kotlin.Int?
+public fun getUnknownBool(): kotlin.Boolean
+public fun localFlowAlwaysNotNullOnExit(): kotlin.Unit
+public fun localFlowAlwaysNullOnExit(): kotlin.Unit
+public fun localFlowUnknownAtExit(): kotlin.Unit
+public fun notChangingClosure(): kotlin.Unit
+public fun runRandomly(/*0*/ @kotlin.internal.CalledInPlace block: () -> kotlin.Unit): kotlin.Unit

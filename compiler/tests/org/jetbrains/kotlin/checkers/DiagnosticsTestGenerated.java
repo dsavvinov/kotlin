@@ -7301,46 +7301,76 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                         KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
                     }
 
-                    @TestMetadata("castsOnCallArgs.kt")
-                    public void testCastsOnCallArgs() throws Exception {
-                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/castsOnCallArgs.kt");
-                        doTest(fileName);
+                    @TestMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/exactlyOnce")
+                    @TestDataPath("$PROJECT_ROOT")
+                    @RunWith(JUnit3RunnerWithInners.class)
+                    public static class ExactlyOnce extends AbstractDiagnosticsTest {
+                        public void testAllFilesPresentInExactlyOnce() throws Exception {
+                            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/exactlyOnce"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                        }
+
+                        @TestMetadata("castsOnCallArgs.kt")
+                        public void testCastsOnCallArgs() throws Exception {
+                            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/exactlyOnce/castsOnCallArgs.kt");
+                            doTest(fileName);
+                        }
+
+                        @TestMetadata("innerCasts.kt")
+                        public void testInnerCasts() throws Exception {
+                            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/exactlyOnce/innerCasts.kt");
+                            doTest(fileName);
+                        }
+
+                        @TestMetadata("mixedCasts.kt")
+                        public void testMixedCasts() throws Exception {
+                            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/exactlyOnce/mixedCasts.kt");
+                            doTest(fileName);
+                        }
+
+                        @TestMetadata("nested.kt")
+                        public void testNested() throws Exception {
+                            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/exactlyOnce/nested.kt");
+                            doTest(fileName);
+                        }
+
+                        @TestMetadata("outerCasts.kt")
+                        public void testOuterCasts() throws Exception {
+                            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/exactlyOnce/outerCasts.kt");
+                            doTest(fileName);
+                        }
+
+                        @TestMetadata("typeCasts.kt")
+                        public void testTypeCasts() throws Exception {
+                            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/exactlyOnce/typeCasts.kt");
+                            doTest(fileName);
+                        }
+
+                        @TestMetadata("withNotInlinedClosures.kt")
+                        public void testWithNotInlinedClosures() throws Exception {
+                            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/exactlyOnce/withNotInlinedClosures.kt");
+                            doTest(fileName);
+                        }
                     }
 
-                    @TestMetadata("innerCasts.kt")
-                    public void testInnerCasts() throws Exception {
-                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/innerCasts.kt");
-                        doTest(fileName);
-                    }
+                    @TestMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/unknown")
+                    @TestDataPath("$PROJECT_ROOT")
+                    @RunWith(JUnit3RunnerWithInners.class)
+                    public static class Unknown extends AbstractDiagnosticsTest {
+                        public void testAllFilesPresentInUnknown() throws Exception {
+                            KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/unknown"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                        }
 
-                    @TestMetadata("mixedCasts.kt")
-                    public void testMixedCasts() throws Exception {
-                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/mixedCasts.kt");
-                        doTest(fileName);
-                    }
+                        @TestMetadata("basic.kt")
+                        public void testBasic() throws Exception {
+                            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/unknown/basic.kt");
+                            doTest(fileName);
+                        }
 
-                    @TestMetadata("nested.kt")
-                    public void testNested() throws Exception {
-                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/nested.kt");
-                        doTest(fileName);
-                    }
-
-                    @TestMetadata("outerCasts.kt")
-                    public void testOuterCasts() throws Exception {
-                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/outerCasts.kt");
-                        doTest(fileName);
-                    }
-
-                    @TestMetadata("typeCasts.kt")
-                    public void testTypeCasts() throws Exception {
-                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/typeCasts.kt");
-                        doTest(fileName);
-                    }
-
-                    @TestMetadata("withNotInlinedClosures.kt")
-                    public void testWithNotInlinedClosures() throws Exception {
-                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/withNotInlinedClosures.kt");
-                        doTest(fileName);
+                        @TestMetadata("foobar.kt")
+                        public void testFoobar() throws Exception {
+                            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/onCapturedVars/unknown/foobar.kt");
+                            doTest(fileName);
+                        }
                     }
                 }
 

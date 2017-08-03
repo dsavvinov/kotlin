@@ -378,7 +378,7 @@ object DataFlowValueFactory {
             CAPTURED_VARIABLE
     }
 
-    fun isStableWrtEffects(dataFlowValue: DataFlowValue, bindingContext: BindingContext): Boolean {
+    fun isStableWithEffects(dataFlowValue: DataFlowValue, bindingContext: BindingContext): Boolean {
         if (dataFlowValue.kind != CAPTURED_VARIABLE) return dataFlowValue.isStable
         val identifierInfo = dataFlowValue.identifierInfo as? IdentifierInfo.Variable ?: return dataFlowValue.isStable
         val accessElement = identifierInfo.accessElement ?: return dataFlowValue.isStable

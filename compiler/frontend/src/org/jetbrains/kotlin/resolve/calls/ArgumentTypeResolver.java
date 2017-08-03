@@ -23,15 +23,14 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.FunctionTypesKt;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.builtins.ReflectionTypes;
+import org.jetbrains.kotlin.config.LanguageVersionSettings;
 import org.jetbrains.kotlin.descriptors.annotations.Annotations;
 import org.jetbrains.kotlin.diagnostics.Errors;
+import org.jetbrains.kotlin.effectsystem.effects.ESCalls;
 import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.name.SpecialNames;
 import org.jetbrains.kotlin.psi.*;
-import org.jetbrains.kotlin.resolve.BindingTrace;
-import org.jetbrains.kotlin.resolve.StatementFilter;
-import org.jetbrains.kotlin.resolve.TemporaryBindingTrace;
-import org.jetbrains.kotlin.resolve.TypeResolver;
+import org.jetbrains.kotlin.resolve.*;
 import org.jetbrains.kotlin.resolve.calls.callResolverUtil.ResolveArgumentsMode;
 import org.jetbrains.kotlin.resolve.calls.context.CallResolutionContext;
 import org.jetbrains.kotlin.resolve.calls.context.CheckArgumentTypesMode;
@@ -41,6 +40,7 @@ import org.jetbrains.kotlin.resolve.calls.model.MutableDataFlowInfoForArguments;
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall;
 import org.jetbrains.kotlin.resolve.calls.results.OverloadResolutionResults;
 import org.jetbrains.kotlin.resolve.calls.results.OverloadResolutionResultsUtil;
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo;
 import org.jetbrains.kotlin.resolve.constants.IntegerValueTypeConstructor;
 import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluator;
 import org.jetbrains.kotlin.resolve.scopes.LexicalScope;
@@ -74,6 +74,7 @@ public class ArgumentTypeResolver {
     @NotNull private final ConstantExpressionEvaluator constantExpressionEvaluator;
     @NotNull private final FunctionPlaceholders functionPlaceholders;
 
+    private LanguageVersionSettings languageVersionSettings;
     private ExpressionTypingServices expressionTypingServices;
 
     public ArgumentTypeResolver(
@@ -96,6 +97,12 @@ public class ArgumentTypeResolver {
     @Inject
     public void setExpressionTypingServices(@NotNull ExpressionTypingServices expressionTypingServices) {
         this.expressionTypingServices = expressionTypingServices;
+    }
+
+    // component dependency cycle
+    @Inject
+    public void setLanguageVersionSettings(@NotNull LanguageVersionSettings languageVersionSettings) {
+        this.languageVersionSettings = languageVersionSettings;
     }
 
     public static boolean isSubtypeOfForArgumentType(
@@ -311,11 +318,28 @@ public class ArgumentTypeResolver {
             @NotNull CallResolutionContext<?> context,
             @NotNull ResolveArgumentsMode resolveArgumentsMode
     ) {
-        if (resolveArgumentsMode == SHAPE_FUNCTION_ARGUMENTS) {
-            KotlinType type = getShapeTypeOfFunctionLiteral(functionLiteral, context.scope, context.trace, true);
-            return TypeInfoFactoryKt.createTypeInfo(type, context);
+        CallResolutionContext<?> newContext;
+
+        // Correct data-flow info for lambda expression in similar manner to loops-analysis
+        if (expression instanceof KtLambdaExpression) {
+            ESCalls.InvocationCount invocationCount = context.trace.get(BindingContext.LAMBDA_INVOCATIONS, (KtLambdaExpression) expression);
+            if (invocationCount != null && invocationCount != ESCalls.InvocationCount.EXACTLY_ONCE) {
+                PreliminaryBlockVisitor visitor = PreliminaryBlockVisitor.visitLambda((KtLambdaExpression) expression);
+                DataFlowInfo newDFI = visitor.clearDataFlowInfoForAssignedLocalVariables(context.dataFlowInfo, languageVersionSettings);
+                newContext = context.replaceDataFlowInfo(newDFI);
+            } else {
+                newContext = context;
+            }
+        }  else {
+            newContext = context;
         }
-        return expressionTypingServices.getTypeInfo(expression, context.replaceContextDependency(INDEPENDENT));
+
+        if (resolveArgumentsMode == SHAPE_FUNCTION_ARGUMENTS) {
+            KotlinType type = getShapeTypeOfFunctionLiteral(functionLiteral, newContext.scope, newContext.trace, true);
+            return TypeInfoFactoryKt.createTypeInfo(type, newContext);
+        }
+
+        return expressionTypingServices.getTypeInfo(expression, newContext.replaceContextDependency(INDEPENDENT));
     }
 
     @Nullable
