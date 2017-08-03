@@ -25,7 +25,6 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.config.LanguageFeature;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.diagnostics.Errors;
-import org.jetbrains.kotlin.effectsystem.adapters.EffectSystem;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.resolve.BindingContextUtils;
@@ -268,7 +267,7 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
         ExpressionTypingContext context = contextWithExpectedType.replaceExpectedType(NO_EXPECTED_TYPE).replaceContextDependency(
                 INDEPENDENT);
         // Preliminary analysis
-        PreliminaryLoopVisitor loopVisitor = PreliminaryLoopVisitor.visitLoop(expression);
+        PreliminaryBlockVisitor loopVisitor = PreliminaryBlockVisitor.visitLoop(expression);
         context = context.replaceDataFlowInfo(
                 loopVisitor.clearDataFlowInfoForAssignedLocalVariables(context.dataFlowInfo, components.languageVersionSettings)
         );
@@ -363,7 +362,7 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
         KtExpression body = expression.getBody();
         LexicalScope conditionScope = context.scope;
         // Preliminary analysis
-        PreliminaryLoopVisitor loopVisitor = PreliminaryLoopVisitor.visitLoop(expression);
+        PreliminaryBlockVisitor loopVisitor = PreliminaryBlockVisitor.visitLoop(expression);
         context = context.replaceDataFlowInfo(
                 loopVisitor.clearDataFlowInfoForAssignedLocalVariables(context.dataFlowInfo, components.languageVersionSettings)
         );
@@ -428,7 +427,7 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
         ExpressionTypingContext context =
                 contextWithExpectedType.replaceExpectedType(NO_EXPECTED_TYPE).replaceContextDependency(INDEPENDENT);
         // Preliminary analysis
-        PreliminaryLoopVisitor loopVisitor = PreliminaryLoopVisitor.visitLoop(expression);
+        PreliminaryBlockVisitor loopVisitor = PreliminaryBlockVisitor.visitLoop(expression);
         context = context.replaceDataFlowInfo(loopVisitor.clearDataFlowInfoForAssignedLocalVariables(context.dataFlowInfo,
                                                                                                      components.languageVersionSettings));
 
@@ -557,7 +556,7 @@ public class ControlStructureTypingVisitor extends ExpressionTypingVisitor {
         ExpressionTypingContext tryOutputContext = context.replaceExpectedType(NO_EXPECTED_TYPE);
         if (!nothingInAllCatchBranches &&
             facade.getComponents().languageVersionSettings.supportsFeature(LanguageFeature.SoundSmartCastsAfterTry)) {
-            PreliminaryLoopVisitor tryVisitor = PreliminaryLoopVisitor.visitTryBlock(expression);
+            PreliminaryBlockVisitor tryVisitor = PreliminaryBlockVisitor.visitTryBlock(expression);
             tryOutputContext = tryOutputContext.replaceDataFlowInfo(
                     tryVisitor.clearDataFlowInfoForAssignedLocalVariables(tryOutputContext.dataFlowInfo,
                                                                           components.languageVersionSettings)

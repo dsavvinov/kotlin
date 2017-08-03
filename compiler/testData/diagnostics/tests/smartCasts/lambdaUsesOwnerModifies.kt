@@ -4,7 +4,7 @@ fun foo(arg: Int?) {
     if (x == null) return
     run {
         // Now safe because we know that run calls this lambda in-place
-        <!DEBUG_INFO_SMARTCAST!>x<!>.hashCode()
+        <!SMARTCAST_IMPOSSIBLE!>x<!>.hashCode()
     }
     x = null  
 }

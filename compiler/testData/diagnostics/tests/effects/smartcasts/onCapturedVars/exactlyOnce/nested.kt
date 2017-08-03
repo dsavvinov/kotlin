@@ -8,7 +8,7 @@ fun myRun(@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> Unit) = bloc
 fun innerNestedSmartcast() {
     var x: Int? = null
 
-    myRun { if (x == null) myRun { x = 1337 } else x = <!DEBUG_INFO_SMARTCAST!>x<!>.dec() }
+    myRun { myRun { if (x == null) myRun { x = 1337 } else x = <!DEBUG_INFO_SMARTCAST!>x<!>.dec() } }
 }
 
 fun nestedClosureOuterCast() {

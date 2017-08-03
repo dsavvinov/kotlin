@@ -20,13 +20,14 @@ import org.jetbrains.kotlin.KtNodeTypes
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns.isNullableNothing
 import org.jetbrains.kotlin.cfg.ControlFlowInformationProvider
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
 import org.jetbrains.kotlin.descriptors.impl.SyntheticFieldDescriptor
+import org.jetbrains.kotlin.effectsystem.effects.ESCalls
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.before
+import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingContext.*
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -36,12 +37,10 @@ import org.jetbrains.kotlin.resolve.calls.context.ResolutionContext
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue.Kind
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue.Kind.*
 import org.jetbrains.kotlin.resolve.descriptorUtil.builtIns
-import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ImplicitReceiver
 import org.jetbrains.kotlin.resolve.scopes.receivers.ReceiverValue
 import org.jetbrains.kotlin.resolve.scopes.receivers.TransientReceiver
-import org.jetbrains.kotlin.resolve.source.getPsi
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.expressions.ExpressionTypingUtils
 import org.jetbrains.kotlin.types.expressions.PreliminaryDeclarationVisitor
@@ -282,12 +281,21 @@ object DataFlowValueFactory {
     private fun isAccessedInsideClosure(
             variableContainingDeclaration: DeclarationDescriptor,
             bindingContext: BindingContext,
-            accessElement: KtElement
+            accessElement: KtElement, variableDescriptor: VariableDescriptor
     ): Boolean {
         var parent = ControlFlowInformationProvider.getElementParentDeclaration(accessElement) ?: return false
 
-        // Access is in closure; check if it is inlined closure
+        // Access is in closure; check if it is inlined closure, skipping only EXACTLY_ONCE lambdas
+        var sawWriter = false
         while (isInlinedClosure(parent, bindingContext)) {
+            sawWriter = sawWriter or parent.writesToVariable(variableDescriptor, bindingContext)
+
+            val invocationCount = bindingContext[LAMBDA_INVOCATIONS, parent.parent as KtLambdaExpression]
+            if (invocationCount != ESCalls.InvocationCount.EXACTLY_ONCE) {
+                // someone writes to this variable below, so non-EXACTLY_ONCE closures conservatively treat such variables as unstable
+                if (sawWriter) break
+            }
+
             // treat inlined closure as its parent
             parent = ControlFlowInformationProvider.getElementParentDeclaration(parent) ?: return false
         }
@@ -295,20 +303,40 @@ object DataFlowValueFactory {
         return ControlFlowInformationProvider.getDeclarationDescriptorIncludingConstructors(bindingContext, parent) != variableContainingDeclaration
     }
 
+    private fun KtDeclaration.writesToVariable(variableDescriptor: VariableDescriptor, bindingContext: BindingContext): Boolean {
+        var currentDeclaration: KtDeclaration? = this
+        var declarationVisitor = bindingContext[BindingContext.PRELIMINARY_VISITOR, this]
+        while (declarationVisitor == null && currentDeclaration != null) {
+            currentDeclaration = currentDeclaration.getStrictParentOfType()
+            declarationVisitor = bindingContext.get(BindingContext.PRELIMINARY_VISITOR, currentDeclaration)
+        }
+        return declarationVisitor?.writers(variableDescriptor)?.isNotEmpty() ?: false
+    }
+
     private fun isAccessedBeforeAllClosureWriters(
             variableContainingDeclaration: DeclarationDescriptor,
             writers: Set<KtDeclaration?>,
             bindingContext: BindingContext,
-            accessElement: KtElement
+            accessElement: KtElement,
+            variableDescriptor: VariableDescriptor
     ): Boolean {
         // All writers should be before access element, with the exception:
         // writer which is the same with declaration site does not count
         writers.filterNotNull().forEach { initialWriter ->
             var writer: KtDeclaration = initialWriter
-            // If writer is an inlined closure then treat it as its parent
+            // If writer is an inlined closure then treat it as its parent,
+            var sawWriter = false
             while (isInlinedClosure(writer, bindingContext)) {
-                val elementParentDeclaration = ControlFlowInformationProvider.getElementParentDeclaration(writer) ?: break
-                writer = elementParentDeclaration
+                sawWriter = sawWriter or writer.writesToVariable(variableDescriptor, bindingContext)
+
+                val invocationCount = bindingContext[LAMBDA_INVOCATIONS, writer.parent as KtLambdaExpression]
+                if (invocationCount != ESCalls.InvocationCount.EXACTLY_ONCE) {
+                    // someone writes to this variable below, so non-EXACTLY_ONCE closures conservatively treat such variables as unstable
+                    if (sawWriter) break
+                }
+
+                // treat inlined closure as its parent
+                writer = ControlFlowInformationProvider.getElementParentDeclaration(writer) ?: break
             }
 
             val writerDescriptor = ControlFlowInformationProvider.getDeclarationDescriptorIncludingConstructors(bindingContext, writer)
@@ -322,9 +350,14 @@ object DataFlowValueFactory {
         return true
     }
 
-    private fun isInlinedClosure(declaration: KtDeclaration?, bindingContext: BindingContext): Boolean {
+    private fun isInlinedClosure(
+            declaration: KtDeclaration?,
+            bindingContext: BindingContext,
+            countPredicate: (ESCalls.InvocationCount) -> Boolean = { true }
+    ): Boolean {
         val lambdaExpression = declaration?.parent as? KtLambdaExpression ?: return false
-        return bindingContext[BindingContext.LAMBDA_INVOCATIONS, lambdaExpression] != null
+        val invocationCount = bindingContext[BindingContext.LAMBDA_INVOCATIONS, lambdaExpression] ?: return false
+        return countPredicate(invocationCount)
     }
 
     private fun propertyKind(propertyDescriptor: PropertyDescriptor, usageModule: ModuleDescriptor?): Kind {
@@ -369,16 +402,16 @@ object DataFlowValueFactory {
 
         // If access element is inside closure: captured
         val variableContainingDeclaration = variableDescriptor.containingDeclaration
-        if (isAccessedInsideClosure(variableContainingDeclaration, bindingContext, accessElement)) return CAPTURED_VARIABLE
+        if (isAccessedInsideClosure(variableContainingDeclaration, bindingContext, accessElement, variableDescriptor)) return CAPTURED_VARIABLE
 
         // Otherwise, stable iff considered position is BEFORE all writers except declarer itself
-        return if (isAccessedBeforeAllClosureWriters(variableContainingDeclaration, writers, bindingContext, accessElement))
+        return if (isAccessedBeforeAllClosureWriters(variableContainingDeclaration, writers, bindingContext, accessElement, variableDescriptor))
             STABLE_VARIABLE
         else
             CAPTURED_VARIABLE
     }
 
-    fun isStableWrtEffects(dataFlowValue: DataFlowValue, bindingContext: BindingContext): Boolean {
+    fun isStableWithEffects(dataFlowValue: DataFlowValue, bindingContext: BindingContext): Boolean {
         if (dataFlowValue.kind != CAPTURED_VARIABLE) return dataFlowValue.isStable
         val identifierInfo = dataFlowValue.identifierInfo as? IdentifierInfo.Variable ?: return dataFlowValue.isStable
         val accessElement = identifierInfo.accessElement ?: return dataFlowValue.isStable

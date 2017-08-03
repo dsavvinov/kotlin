@@ -18,6 +18,7 @@ package org.jetbrains.kotlin.types.expressions
 
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.impl.LocalVariableDescriptor
+import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.psi.KtLoopExpression
 import org.jetbrains.kotlin.psi.KtTryExpression
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
@@ -27,9 +28,9 @@ import java.util.*
 
 /**
  * The purpose of this class is to find all variable assignments
- * **before** loop analysis
+ * **before** body analysis
  */
-class PreliminaryLoopVisitor private constructor() : AssignedVariablesSearcher() {
+class PreliminaryBlockVisitor private constructor() : AssignedVariablesSearcher() {
 
     fun clearDataFlowInfoForAssignedLocalVariables(dataFlowInfo: DataFlowInfo,
                                                    languageVersionSettings: LanguageVersionSettings): DataFlowInfo {
@@ -55,15 +56,19 @@ class PreliminaryLoopVisitor private constructor() : AssignedVariablesSearcher()
     companion object {
 
         @JvmStatic
-        fun visitLoop(loopExpression: KtLoopExpression): PreliminaryLoopVisitor {
-            val visitor = PreliminaryLoopVisitor()
+        fun visitLoop(loopExpression: KtLoopExpression): PreliminaryBlockVisitor {
+            val visitor = PreliminaryBlockVisitor()
             loopExpression.accept(visitor, null)
             return visitor
         }
 
         @JvmStatic
-        fun visitTryBlock(tryExpression: KtTryExpression): PreliminaryLoopVisitor {
-            val visitor = PreliminaryLoopVisitor()
+        fun visitLambda(lambdaExpression: KtLambdaExpression): PreliminaryBlockVisitor =
+                PreliminaryBlockVisitor().apply { lambdaExpression.accept(this, null) }
+
+        @JvmStatic
+        fun visitTryBlock(tryExpression: KtTryExpression): PreliminaryBlockVisitor {
+            val visitor = PreliminaryBlockVisitor()
             tryExpression.tryBlock.accept(visitor, null)
             return visitor
         }
