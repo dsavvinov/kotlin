@@ -27,13 +27,11 @@ import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.MergeInstruction
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.jumps.AbstractJumpInstruction
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.jumps.ConditionalJumpInstruction
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.jumps.NondeterministicJumpInstruction
-import org.jetbrains.kotlin.cfg.pseudocode.instructions.special.LocalFunctionDeclarationInstruction
-import org.jetbrains.kotlin.cfg.pseudocode.instructions.special.SubroutineEnterInstruction
-import org.jetbrains.kotlin.cfg.pseudocode.instructions.special.SubroutineExitInstruction
-import org.jetbrains.kotlin.cfg.pseudocode.instructions.special.SubroutineSinkInstruction
+import org.jetbrains.kotlin.cfg.pseudocode.instructions.special.*
 import org.jetbrains.kotlin.cfg.pseudocodeTraverser.TraversalOrder.BACKWARD
 import org.jetbrains.kotlin.cfg.pseudocodeTraverser.TraversalOrder.FORWARD
 import org.jetbrains.kotlin.cfg.pseudocodeTraverser.TraverseInstructionResult
+import org.jetbrains.kotlin.cfg.pseudocodeTraverser.getLastInstruction
 import org.jetbrains.kotlin.cfg.pseudocodeTraverser.traverseFollowingInstructions
 import org.jetbrains.kotlin.psi.KtElement
 import java.util.*
@@ -221,18 +219,13 @@ class PseudocodeImpl(override val correspondingElement: KtElement) : Pseudocode 
         postPrecessed = true
         errorInstruction.sink = sinkInstruction
         exitInstruction.sink = sinkInstruction
+
         for ((index, instruction) in mutableInstructionList.withIndex()) {
             //recursively invokes 'postProcess' for local declarations
             instruction.processInstruction(index)
         }
-        if (parent != null) return
 
-        // Collecting reachable instructions should be done after processing all instructions
-        // (including instructions in local declarations) to avoid being in incomplete state.
         collectAndCacheReachableInstructions()
-        for (localFunctionDeclarationInstruction in localDeclarations) {
-            (localFunctionDeclarationInstruction.body as PseudocodeImpl).collectAndCacheReachableInstructions()
-        }
     }
 
     private fun collectAndCacheReachableInstructions() {
@@ -284,6 +277,14 @@ class PseudocodeImpl(override val correspondingElement: KtElement) : Pseudocode 
                 instruction.next = sinkInstruction
             }
 
+            override fun visitInlinedLocalFunctionDeclarationInstruction(instruction: InlinedLocalFunctionDeclarationInstruction) {
+                val body = instruction.body as PseudocodeImpl
+                body.parent = this@PseudocodeImpl
+                body.postProcess()
+                // Don't add edge to next instruction if flow can't reach exit of inlined declaration
+                instruction.next = if (body.getLastInstruction(FORWARD) is SubroutineSinkInstruction) getNextPosition(currentPosition) else sinkInstruction
+            }
+
             override fun visitSubroutineExit(instruction: SubroutineExitInstruction) {
                 // Nothing
             }
@@ -306,15 +307,6 @@ class PseudocodeImpl(override val correspondingElement: KtElement) : Pseudocode 
                 return@traverseFollowingInstructions TraverseInstructionResult.SKIP
             }
             TraverseInstructionResult.CONTINUE
-        }
-        if (!visited.contains(exitInstruction)) {
-            visited.add(exitInstruction)
-        }
-        if (!visited.contains(errorInstruction)) {
-            visited.add(errorInstruction)
-        }
-        if (!visited.contains(sinkInstruction)) {
-            visited.add(sinkInstruction)
         }
         return visited
     }

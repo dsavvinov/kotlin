@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.MagicKind
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors.*
+import org.jetbrains.kotlin.effectsystem.effects.ESCalls
 import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.lexer.KtTokens.*
@@ -57,6 +58,8 @@ import org.jetbrains.kotlin.types.expressions.DoubleColonLHS
 import org.jetbrains.kotlin.types.expressions.OperatorConventions
 import org.jetbrains.kotlin.util.slicedMap.ReadOnlySlice
 import java.util.*
+
+typealias DeferredGenerator = (ControlFlowBuilder) -> Unit
 
 class ControlFlowProcessor(private val trace: BindingTrace) {
 
@@ -107,6 +110,46 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
         builder.nondeterministicJump(afterDeclaration, subroutine, null)
         generate(subroutine)
         builder.bindLabel(afterDeclaration)
+    }
+
+    private fun processInlinedLambda(lambdaFunctionLiteral: KtFunctionLiteral, invocationCount: ESCalls.InvocationCount): DeferredGenerator {
+        builder.createLambda(lambdaFunctionLiteral)
+        // Defer emitting of inlined declaration
+        return { builder ->
+            val beforeLambda = builder.createUnboundLabel("before inlined lambda")
+            val afterLambda = builder.createUnboundLabel("after inlined lambda")
+
+            builder.bindLabel(beforeLambda)
+
+            // nonndeterministic jump if visit not guaranteed
+            if (invocationCount != ESCalls.InvocationCount.EXACTLY_ONCE && invocationCount != ESCalls.InvocationCount.AT_LEAST_ONCE) {
+                builder.nondeterministicJump(afterLambda, lambdaFunctionLiteral, null)
+            }
+
+            // generate(subroutine) peeled
+            builder.enterInlinedSubroutine(lambdaFunctionLiteral, invocationCount)
+            val cfpVisitor = CFPVisitor(builder)
+            val valueParameters = lambdaFunctionLiteral.valueParameters
+            for (valueParameter in valueParameters) {
+                cfpVisitor.generateInstructions(valueParameter)
+            }
+            val bodyExpression = lambdaFunctionLiteral.bodyExpression
+            if (bodyExpression != null) {
+                cfpVisitor.generateInstructions(bodyExpression)
+                if (!lambdaFunctionLiteral.hasBlockBody()) {
+                    generateImplicitReturnValue(bodyExpression, lambdaFunctionLiteral)
+                }
+            }
+
+            builder.exitInlinedSubroutine(lambdaFunctionLiteral, invocationCount)
+
+            // nondeterministic jump if revisit possible
+            if (invocationCount != ESCalls.InvocationCount.EXACTLY_ONCE && invocationCount != ESCalls.InvocationCount.AT_MOST_ONCE) {
+                builder.nondeterministicJump(beforeLambda, lambdaFunctionLiteral, null)
+            }
+
+            builder.bindLabel(afterLambda)
+        }
     }
 
     private class CatchFinallyLabels(val onException: Label?, val toFinally: Label?, val tryExpression: KtTryExpression?)
@@ -457,7 +500,9 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
                 val argumentMapping = setResolvedCall.getArgumentMapping(valueArgument) as? ArgumentMatch ?: continue
                 val parameterDescriptor = argumentMapping.valueParameter
                 if (valueArgument !== rhsArgument) {
-                    argumentValues = generateValueArgument(valueArgument, parameterDescriptor, argumentValues)
+                    val (newArgumentValues, deferredGenerator) = generateValueArgument(valueArgument, parameterDescriptor, argumentValues)
+                    argumentValues = newArgumentValues
+                    deferredGenerator?.invoke(builder)
                 }
                 else {
                     val rhsValue = rhsDeferredValue.invoke()
@@ -1485,12 +1530,20 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
 
             val receivers = getReceiverValues(resolvedCall)
 
+            // Some language constructs (e.g. inlined lambdas) should be partially processed before call
+            // (to provide argument for call itself), and partially - after (in case of inlined lambdas,
+            // their body should be generated after call). To do so, we store deferred generators, which
+            // will be called after call instruction is emitted.
+            val deferredGenerators: MutableList<DeferredGenerator> = mutableListOf()
+
             var parameterValues = SmartFMap.emptyMap<PseudoValue, ValueParameterDescriptor>()
             for (argument in resolvedCall.call.valueArguments) {
                 val argumentMapping = resolvedCall.getArgumentMapping(argument)
                 val argumentExpression = argument.getArgumentExpression()
                 if (argumentMapping is ArgumentMatch) {
-                    parameterValues = generateValueArgument(argument, argumentMapping.valueParameter, parameterValues)
+                    val (newParameterValues, generator) = generateValueArgument(argument, argumentMapping.valueParameter, parameterValues)
+                    parameterValues = newParameterValues
+                    if (generator != null) deferredGenerators.add(generator)
                 }
                 else if (argumentExpression != null) {
                     generateInstructions(argumentExpression)
@@ -1507,7 +1560,9 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
             }
 
             mark(resolvedCall.call.callElement)
-            return builder.call(callElement, resolvedCall, receivers, parameterValues)
+            val callInstruction = builder.call(callElement, resolvedCall, receivers, parameterValues)
+            deferredGenerators.forEach { it.invoke(builder) }
+            return callInstruction
         }
 
         private fun getReceiverValues(resolvedCall: ResolvedCall<*>): Map<PseudoValue, ReceiverValue> {
@@ -1583,11 +1638,19 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
                 valueArgument: ValueArgument,
                 parameterDescriptor: ValueParameterDescriptor,
                 parameterValuesArg: SmartFMap<PseudoValue, ValueParameterDescriptor>
-        ): SmartFMap<PseudoValue, ValueParameterDescriptor> {
+        ): Pair<SmartFMap<PseudoValue, ValueParameterDescriptor>, DeferredGenerator?> {
             var parameterValues = parameterValuesArg
             val expression = valueArgument.getArgumentExpression()
+
+            var deferredGenerator: DeferredGenerator? = null
+
             if (expression != null) {
-                if (!valueArgument.isExternal()) {
+
+                if (expression is KtLambdaExpression && trace[BindingContext.LAMBDA_INVOCATIONS, expression] != null) {
+                    mark(expression)
+                    deferredGenerator = processInlinedLambda(expression.functionLiteral, trace[BindingContext.LAMBDA_INVOCATIONS, expression]!!)
+                    copyValue(expression.functionLiteral, expression)
+                } else if (!valueArgument.isExternal()) {
                     generateInstructions(expression)
                 }
 
@@ -1596,7 +1659,7 @@ class ControlFlowProcessor(private val trace: BindingTrace) {
                     parameterValues = parameterValues.plus(argValue, parameterDescriptor)
                 }
             }
-            return parameterValues
+            return parameterValues to deferredGenerator
         }
     }
 }
