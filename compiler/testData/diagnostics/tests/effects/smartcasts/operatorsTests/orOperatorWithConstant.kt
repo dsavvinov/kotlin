@@ -31,7 +31,7 @@ fun annotatedFalseOrTrue(x: Any?) {
         x.<!UNRESOLVED_REFERENCE!>length<!>
     } else {
         // Unreachable
-        x.<!UNRESOLVED_REFERENCE!>length<!>
+        <!DEBUG_INFO_SMARTCAST!>x<!>.length
     }
 }
 

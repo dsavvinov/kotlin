@@ -20,7 +20,7 @@ fun annotatedTrueAndTrue(x: Any?) {
 fun annotatedTrueAndFalse(x: Any?) {
     if (trueWhenString(x) && false) {
         // Unreachable
-        x.<!UNRESOLVED_REFERENCE!>length<!>
+        <!DEBUG_INFO_SMARTCAST!>x<!>.length
     } else {
         x.<!UNRESOLVED_REFERENCE!>length<!>
     }

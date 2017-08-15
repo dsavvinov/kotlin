@@ -69,7 +69,7 @@ fun branchedAndNestedWithNativeOperators(x: Any?, y: Any?) {
                     equalsTrue(isInt(y) && isString(y))                          // y is Int, String
             )
             &&
-            (1 == 2 || <!USELESS_IS_CHECK!>y is Int<!> || isString(y))
+            (1 == 2 || y is Int || isString(y))
     )
     <!DEBUG_INFO_SMARTCAST!>x<!>.length
     <!DEBUG_INFO_SMARTCAST!>y<!>.length
