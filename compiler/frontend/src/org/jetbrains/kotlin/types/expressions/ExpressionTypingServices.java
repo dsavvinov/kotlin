@@ -301,7 +301,10 @@ public class ExpressionTypingServices {
             blockLevelVisitor = new ExpressionTypingVisitorDispatcher.ForBlock(expressionTypingComponents, annotationChecker, scope);
 
             // Don't commit cache of effect system into parent trace
-            traceForSingleStatement.commit( (slice, key) -> slice != BindingContext.EXPRESSION_EFFECTS, true);
+            traceForSingleStatement.commit(
+                    (slice, key) -> slice != BindingContext.EXPRESSION_EFFECTS && slice != BindingContext.EXPRESSION_CALL_TREE,
+                    true
+            );
         }
         return result.replaceJumpOutPossible(jumpOutPossible).replaceJumpFlowInfo(beforeJumpInfo);
     }

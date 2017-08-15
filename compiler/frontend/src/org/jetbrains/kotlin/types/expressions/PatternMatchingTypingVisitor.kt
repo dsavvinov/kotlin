@@ -43,7 +43,9 @@ import org.jetbrains.kotlin.types.expressions.typeInfoFactory.noTypeInfo
 import org.jetbrains.kotlin.types.typeUtil.containsError
 import java.util.*
 
-class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTypingInternals) : ExpressionTypingVisitor(facade) {
+class PatternMatchingTypingVisitor internal constructor(
+        facade: ExpressionTypingInternals
+) : ExpressionTypingVisitor(facade) {
 
     override fun visitIsExpression(expression: KtIsExpression, contextWithExpectedType: ExpressionTypingContext): KotlinTypeInfo {
         val context = contextWithExpectedType.replaceExpectedType(NO_EXPECTED_TYPE).replaceContextDependency(INDEPENDENT)
@@ -368,8 +370,11 @@ class PatternMatchingTypingVisitor internal constructor(facade: ExpressionTyping
             override fun visitWhenConditionWithExpression(condition: KtWhenConditionWithExpression) {
                 val expression = condition.expression
                 if (expression != null) {
-                    newDataFlowInfo = checkTypeForExpressionCondition(
+                    val basicDataFlowInfo = checkTypeForExpressionCondition(
                             context, expression, subjectType, subjectExpression == null, subjectDataFlowValue)
+                    val moduleDescriptor = DescriptorUtils.getContainingModule(context.scope.ownerDescriptor)
+                    val dataFlowInfoFromES = components.effectSystem.getDataFlowInfoWhenEquals(subjectExpression, expression, context.trace, moduleDescriptor)
+                    newDataFlowInfo = basicDataFlowInfo.and(dataFlowInfoFromES)
                 }
             }
 

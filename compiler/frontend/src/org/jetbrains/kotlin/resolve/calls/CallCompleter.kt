@@ -405,7 +405,7 @@ class CallCompleter(
     private fun MutableResolvedCall<*>.updateResultDataFlowInfoUsingEffects(bindingTrace: BindingTrace) {
         val moduleDescriptor = DescriptorUtils.getContainingModule(this.resultingDescriptor?.containingDeclaration ?: return)
 
-        val resultDFIfromES = effectSystem.getResultDataFlowInfo(this, bindingTrace, moduleDescriptor)
+        val resultDFIfromES = effectSystem.getDataFlowInfoForFinishedCall(this, bindingTrace, moduleDescriptor)
         this.dataFlowInfoForArguments.updateResultInfo(resultDFIfromES)
 
         effectSystem.recordDefiniteInvocations(this, bindingTrace, moduleDescriptor)

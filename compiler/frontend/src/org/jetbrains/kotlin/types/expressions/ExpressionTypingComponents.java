@@ -217,7 +217,7 @@ public class ExpressionTypingComponents {
     }
 
     @Inject
-    public void setEffectSystem(EffectSystem effectSystem) {
+    public void setEffectSystem(@NotNull EffectSystem effectSystem) {
         this.effectSystem = effectSystem;
     }
 }

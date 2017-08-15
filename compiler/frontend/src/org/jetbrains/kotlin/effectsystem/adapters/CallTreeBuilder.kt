@@ -70,7 +70,7 @@ class CallTreeBuilder(
         return if (deparenthesized == expression) UNKNOWN_CALL else deparenthesized.accept(this, data)
     }
 
-    override fun visitUnaryExpression(expression: KtUnaryExpression, data: Unit): CTCall {
+    override fun visitUnaryExpression(expression: KtUnaryExpression, data: Unit): CTNode {
         tryGetCachedCall(expression)?.let { return it }
 
         val argNode = expression.baseExpression?.accept(this, data) ?: return UNKNOWN_CALL
@@ -80,7 +80,7 @@ class CallTreeBuilder(
         }
     }
 
-    override fun visitDotQualifiedExpression(expression: KtDotQualifiedExpression, data: Unit): CTCall {
+    override fun visitDotQualifiedExpression(expression: KtDotQualifiedExpression, data: Unit): CTNode {
         tryGetCachedCall(expression)?.let { return it }
 
         val receiver = expression.receiverExpression.accept(this, data)
@@ -103,7 +103,7 @@ class CallTreeBuilder(
 
     override fun visitLabeledExpression(expression: KtLabeledExpression, data: Unit): CTNode = expression.baseExpression?.accept(this, data) ?: UNKNOWN_CALL
 
-    override fun visitBinaryExpression(expression: KtBinaryExpression, data: Unit): CTCall {
+    override fun visitBinaryExpression(expression: KtBinaryExpression, data: Unit): CTNode {
         tryGetCachedCall(expression)?.let { return it }
 
         val leftNode = expression.left?.accept(this, data) ?: return UNKNOWN_CALL
@@ -125,7 +125,7 @@ class CallTreeBuilder(
         return CTCall(functor, listOf(leftNode, rightNode))
     }
 
-    override fun visitCallExpression(expression: KtCallExpression, data: Unit): CTCall {
+    override fun visitCallExpression(expression: KtCallExpression, data: Unit): CTNode {
         tryGetCachedCall(expression)?.let { return it }
 
         if (expression.parent is KtDotQualifiedExpression && expression.parent.cast<KtDotQualifiedExpression>().receiverExpression != expression) {
@@ -147,7 +147,7 @@ class CallTreeBuilder(
 
     override fun visitReferenceExpression(expression: KtReferenceExpression, data: Unit?): CTNode = tryCreateVariable(expression)
 
-    override fun visitIsExpression(expression: KtIsExpression, data: Unit): CTCall {
+    override fun visitIsExpression(expression: KtIsExpression, data: Unit): CTNode {
         tryGetCachedCall(expression)?.let { return it }
 
         val leftNode = expression.leftHandSide.accept(this, data)
@@ -182,12 +182,19 @@ class CallTreeBuilder(
         return CTVariable(ValueIdsFactory.dfvBased(dfv), dfv.type)
     }
 
-    private fun tryGetCachedCall(expression: KtExpression): CTCall? {
-        val cachedSchema = bindingContext[BindingContext.EXPRESSION_EFFECTS, expression] ?: return null
-        // return call with functor that just returns cached schema on 'apply'
-        return CTCall(object : ESFunctor {
-            override fun apply(arguments: List<EffectSchema>): EffectSchema? = cachedSchema
-        }, listOf())
+    private fun tryGetCachedCall(expression: KtExpression): CTNode? {
+        // Check if the whole schema for expression already built
+        val cachedSchema = bindingContext[BindingContext.EXPRESSION_EFFECTS, expression]
+        if (cachedSchema != null) {
+            // return call with functor that just returns cached schema on 'apply'
+            return CTCall(object : ESFunctor {
+                override fun apply(arguments: List<EffectSchema>): EffectSchema? = cachedSchema
+            }, listOf())
+        }
+
+        // Otherwise, try to get the call tree from cache
+        return bindingContext[BindingContext.EXPRESSION_CALL_TREE, expression]
+
     }
 
     private val UNKNOWN_CALL = CTCall(UnknownFunctor, listOf())

@@ -22,10 +22,14 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.effectsystem.effects.ESCalls
 import org.jetbrains.kotlin.effectsystem.effects.ESReturns
 import org.jetbrains.kotlin.effectsystem.factories.UNKNOWN_CONSTANT
+import org.jetbrains.kotlin.effectsystem.factories.createConstant
 import org.jetbrains.kotlin.effectsystem.factories.lift
+import org.jetbrains.kotlin.effectsystem.functors.EqualsToBinaryConstantFunctor
 import org.jetbrains.kotlin.effectsystem.resolving.FunctorResolver
 import org.jetbrains.kotlin.effectsystem.structure.ESEffect
 import org.jetbrains.kotlin.effectsystem.structure.EffectSchema
+import org.jetbrains.kotlin.effectsystem.structure.calltree.CTConstant
+import org.jetbrains.kotlin.effectsystem.structure.calltree.CTNode
 import org.jetbrains.kotlin.effectsystem.visitors.Reducer
 import org.jetbrains.kotlin.effectsystem.visitors.SchemaBuilder
 import org.jetbrains.kotlin.psi.KtCallExpression
@@ -37,11 +41,12 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
+import org.jetbrains.kotlin.resolve.calls.smartcasts.ConditionalDataFlowInfo
 
 class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
     private val functorResolver = FunctorResolver()
 
-    fun getResultDataFlowInfo(
+    fun getDataFlowInfoForFinishedCall(
             resolvedCall: ResolvedCall<*>,
             bindingTrace: BindingTrace,
             moduleDescriptor: ModuleDescriptor
@@ -55,6 +60,50 @@ class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
         val resultContextInfo = getContextInfoWhen(ESReturns(UNKNOWN_CONSTANT), callExpression, bindingTrace, moduleDescriptor)
 
         return resultContextInfo.toDataFlowInfo(languageVersionSettings)
+    }
+
+    fun getDataFlowInfoWhenEquals(
+            leftExpression: KtExpression?,
+            rightExpression: KtExpression?,
+            bindingTrace: BindingTrace,
+            moduleDescriptor: ModuleDescriptor
+    ): ConditionalDataFlowInfo {
+        if (leftExpression == null || rightExpression == null) return ConditionalDataFlowInfo.EMPTY
+
+        val leftCallTree = getCallTree(leftExpression, bindingTrace, moduleDescriptor) ?: return ConditionalDataFlowInfo.EMPTY
+        val rightCallTree = getCallTree(rightExpression, bindingTrace, moduleDescriptor) ?: return ConditionalDataFlowInfo.EMPTY
+
+        val expression: KtExpression
+        val constant: CTConstant
+
+        when {
+            leftCallTree is CTConstant -> {
+                expression = rightExpression
+                constant = leftCallTree
+            }
+
+            rightCallTree is CTConstant -> {
+                expression = leftExpression
+                constant = rightCallTree
+            }
+
+            else -> return ConditionalDataFlowInfo.EMPTY
+        }
+
+        val esConstant = createConstant(constant.id, constant.value, constant.type)
+        val expressionSchema = getSchema(expression, bindingTrace, moduleDescriptor) ?: return ConditionalDataFlowInfo.EMPTY
+
+        val equalsSchema = EqualsToBinaryConstantFunctor(false, esConstant).apply(expressionSchema) ?: return ConditionalDataFlowInfo.EMPTY
+
+        val reducedSchema = Reducer().reduceSchema(equalsSchema)
+
+        val equalsContextInfo = InfoCollector(ESReturns(true.lift())).collectFromSchema(reducedSchema)
+        val notEqualsContextInfo = InfoCollector(ESReturns(false.lift())).collectFromSchema(reducedSchema)
+
+        return ConditionalDataFlowInfo(
+                equalsContextInfo.toDataFlowInfo(languageVersionSettings),
+                notEqualsContextInfo.toDataFlowInfo(languageVersionSettings)
+        )
     }
 
     fun recordDefiniteInvocations(resolvedCall: ResolvedCall<*>, bindingTrace: BindingTrace, moduleDescriptor: ModuleDescriptor) {
@@ -77,27 +126,16 @@ class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
         }
     }
 
-    fun getConditionalInfoForThenBranch(
+    fun extractDataFlowInfoFromCondition(
             condition: KtExpression?,
+            value: Boolean,
             bindingTrace: BindingTrace,
             moduleDescriptor: ModuleDescriptor
     ): DataFlowInfo {
         if (!languageVersionSettings.supportsFeature(LanguageFeature.ContractEffects)) return DataFlowInfo.EMPTY
         if (condition == null) return DataFlowInfo.EMPTY
 
-        return getContextInfoWhen(ESReturns(true.lift()), condition, bindingTrace, moduleDescriptor)
-                .toDataFlowInfo(languageVersionSettings)
-    }
-
-    fun getConditionalInfoForElseBranch(
-            condition: KtExpression?,
-            bindingTrace: BindingTrace,
-            moduleDescriptor: ModuleDescriptor
-    ): DataFlowInfo {
-        if (!languageVersionSettings.supportsFeature(LanguageFeature.ContractEffects)) return DataFlowInfo.EMPTY
-        if (condition == null) return DataFlowInfo.EMPTY
-
-        return getContextInfoWhen(ESReturns(false.lift()), condition, bindingTrace, moduleDescriptor)
+        return getContextInfoWhen(ESReturns(value.lift()), condition, bindingTrace, moduleDescriptor)
                 .toDataFlowInfo(languageVersionSettings)
     }
 
@@ -114,37 +152,30 @@ class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
         return extractedContextInfo
     }
 
+    private fun getCallTree(expression: KtExpression, bindingTrace: BindingTrace, moduleDescriptor: ModuleDescriptor): CTNode? {
+        if (bindingTrace[BindingContext.EXPRESSION_CALL_TREE, expression] == null) {
+            val callTree = buildCallTree(expression, bindingTrace.bindingContext, moduleDescriptor) ?: return null
+            bindingTrace.record(BindingContext.EXPRESSION_CALL_TREE, expression, callTree)
+        }
+
+        return bindingTrace[BindingContext.EXPRESSION_CALL_TREE, expression]
+    }
+
     private fun getSchema(expression: KtExpression, bindingTrace: BindingTrace, moduleDescriptor: ModuleDescriptor): EffectSchema? {
         if (bindingTrace[BindingContext.EXPRESSION_EFFECTS, expression] == null) {
-            val evaluatedSchema = evaluateSchema(expression, bindingTrace.bindingContext, moduleDescriptor) ?: return null
-            bindingTrace.record(BindingContext.EXPRESSION_EFFECTS, expression, evaluatedSchema)
+            val callTree = getCallTree(expression, bindingTrace, moduleDescriptor) ?: return null
+            val schema = buildSchema(callTree) ?: return null
+            bindingTrace.record(BindingContext.EXPRESSION_EFFECTS, expression, schema)
         }
 
         return bindingTrace[BindingContext.EXPRESSION_EFFECTS, expression]
     }
 
-    private fun evaluateSchema(expression: KtExpression, bindingContext: BindingContext, moduleDescriptor: ModuleDescriptor): EffectSchema? {
-        val ctBuilder = CallTreeBuilder(bindingContext, moduleDescriptor, functorResolver)
-        val callTree = expression.accept(ctBuilder, Unit)
-
-        val esBuilder = SchemaBuilder()
-        val schema = callTree.accept(esBuilder) ?: return null
-
-        val reducedSchema = Reducer().reduceSchema(schema)
-
-        return reducedSchema
+    private fun buildSchema(callTree: CTNode): EffectSchema? {
+        val schema = SchemaBuilder().let { callTree.accept(it) } ?: return null
+        return Reducer().reduceSchema(schema)
     }
 
-    private fun checkAndRecordDefiniteInvocations(bindingTrace: BindingTrace, contextInfo: MutableContextInfo) {
-        for (effect in contextInfo.firedEffects) {
-            val callsEffect = effect as? ESCalls ?: continue
-            val id = callsEffect.callable.id as DataFlowValueID
-
-            // Could be also IdentifierInfo.Variable when call passes non-anonymous lambda for callable parameter
-            val lambdaExpr = (id.dfv.identifierInfo as? DataFlowValueFactory.ExpressionIdentifierInfo)?.expression ?: continue
-            assert(lambdaExpr is KtLambdaExpression) { "Unexpected argument of Calls-effect: expected KtLambdaExpression, got $lambdaExpr" }
-
-            bindingTrace.record(BindingContext.LAMBDA_INVOCATIONS, lambdaExpr as KtLambdaExpression, callsEffect.kind)
-        }
-    }
+    private fun buildCallTree(expression: KtExpression, bindingContext: BindingContext, moduleDescriptor: ModuleDescriptor): CTNode? =
+            CallTreeBuilder(bindingContext, moduleDescriptor, functorResolver).let { expression.accept(it, Unit) }
 }
