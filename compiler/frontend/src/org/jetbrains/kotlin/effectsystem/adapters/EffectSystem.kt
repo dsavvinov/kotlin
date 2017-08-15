@@ -22,13 +22,10 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.effectsystem.effects.ESCalls
 import org.jetbrains.kotlin.effectsystem.effects.ESReturns
 import org.jetbrains.kotlin.effectsystem.factories.UNKNOWN_CONSTANT
-import org.jetbrains.kotlin.effectsystem.factories.createConstant
 import org.jetbrains.kotlin.effectsystem.factories.lift
-import org.jetbrains.kotlin.effectsystem.functors.EqualsToBinaryConstantFunctor
 import org.jetbrains.kotlin.effectsystem.resolving.FunctorResolver
 import org.jetbrains.kotlin.effectsystem.structure.ESEffect
 import org.jetbrains.kotlin.effectsystem.structure.EffectSchema
-import org.jetbrains.kotlin.effectsystem.structure.calltree.CTConstant
 import org.jetbrains.kotlin.effectsystem.structure.calltree.CTNode
 import org.jetbrains.kotlin.effectsystem.visitors.Reducer
 import org.jetbrains.kotlin.effectsystem.visitors.SchemaBuilder
@@ -38,10 +35,11 @@ import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.smartcasts.ConditionalDataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
-import org.jetbrains.kotlin.resolve.calls.smartcasts.ConditionalDataFlowInfo
 
 class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
     private val functorResolver = FunctorResolver()
@@ -73,32 +71,14 @@ class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
         val leftCallTree = getCallTree(leftExpression, bindingTrace, moduleDescriptor) ?: return ConditionalDataFlowInfo.EMPTY
         val rightCallTree = getCallTree(rightExpression, bindingTrace, moduleDescriptor) ?: return ConditionalDataFlowInfo.EMPTY
 
-        val expression: KtExpression
-        val constant: CTConstant
+        val context = bindingTrace.bindingContext
+        val callToEquals = CallTreeBuilder(context, moduleDescriptor, functorResolver)
+                .createCallToEquals(leftCallTree, leftExpression.getType(context), rightCallTree, rightExpression.getType(context), false)
 
-        when {
-            leftCallTree is CTConstant -> {
-                expression = rightExpression
-                constant = leftCallTree
-            }
+        val schema = buildSchema(callToEquals) ?: return ConditionalDataFlowInfo.EMPTY
 
-            rightCallTree is CTConstant -> {
-                expression = leftExpression
-                constant = rightCallTree
-            }
-
-            else -> return ConditionalDataFlowInfo.EMPTY
-        }
-
-        val esConstant = createConstant(constant.id, constant.value, constant.type)
-        val expressionSchema = getSchema(expression, bindingTrace, moduleDescriptor) ?: return ConditionalDataFlowInfo.EMPTY
-
-        val equalsSchema = EqualsToBinaryConstantFunctor(false, esConstant).apply(expressionSchema) ?: return ConditionalDataFlowInfo.EMPTY
-
-        val reducedSchema = Reducer().reduceSchema(equalsSchema)
-
-        val equalsContextInfo = InfoCollector(ESReturns(true.lift())).collectFromSchema(reducedSchema)
-        val notEqualsContextInfo = InfoCollector(ESReturns(false.lift())).collectFromSchema(reducedSchema)
+        val equalsContextInfo = InfoCollector(ESReturns(true.lift())).collectFromSchema(schema)
+        val notEqualsContextInfo = InfoCollector(ESReturns(false.lift())).collectFromSchema(schema)
 
         return ConditionalDataFlowInfo(
                 equalsContextInfo.toDataFlowInfo(languageVersionSettings),

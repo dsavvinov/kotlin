@@ -17,46 +17,63 @@
 package org.jetbrains.kotlin.effectsystem.functors
 
 import org.jetbrains.kotlin.effectsystem.effects.ESReturns
+import org.jetbrains.kotlin.effectsystem.factories.NOT_NULL_CONSTANT
 import org.jetbrains.kotlin.effectsystem.factories.UNKNOWN_CONSTANT
 import org.jetbrains.kotlin.effectsystem.factories.createClause
 import org.jetbrains.kotlin.effectsystem.factories.lift
 import org.jetbrains.kotlin.effectsystem.impls.ESConstant
 import org.jetbrains.kotlin.effectsystem.impls.ESEqual
 import org.jetbrains.kotlin.effectsystem.impls.ESVariable
+import org.jetbrains.kotlin.effectsystem.structure.ConstantID
+import org.jetbrains.kotlin.effectsystem.structure.ESBooleanExpression
 import org.jetbrains.kotlin.effectsystem.structure.ESClause
+import org.jetbrains.kotlin.effectsystem.structure.NOT_NULL_ID
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class EqualsToBinaryConstantFunctor(val isNegated: Boolean, val constant: ESConstant) : AbstractSequentialUnaryFunctor() {
+class EqualsToConstantFunctor(val isNegated: Boolean, val constant: ESConstant, val isBinaryTypeComparison: Boolean) : AbstractSequentialUnaryFunctor() {
     override fun combineClauses(list: List<ESClause>): List<ESClause> {
         // Corner-case when left is variable
         if (list.size == 1 && list.single().effect.safeAs<ESReturns>()?.value is ESVariable) {
             val variable = (list.single().effect as ESReturns).value as ESVariable
-            return listOf(createClause(ESEqual(variable, constant, isNegated), ESReturns(true.lift())))
+            return listOf(createClause(ESEqual(variable, constant, isNegated, isBinaryTypeComparison), ESReturns(true.lift())))
         }
 
-        /**
-         * Here we implicitly use the fact that constant is binary (i.e. has exactly two values),
-         * so all 'notEqual'-clauses (if any) are the only clauses that can produce false
-         */
+
+        val result = mutableListOf<ESClause>()
         val (equal, notEqual) = list.partition { it.effect == ESReturns(constant) || (it.effect as ESReturns).value == UNKNOWN_CONSTANT }
 
         val whenArgReturnsSameConstant = foldConditionsWithOr(equal)
-        val whenArgReturnsOtherConstant = foldConditionsWithOr(notEqual)
-
-        val result = mutableListOf<ESClause>()
-
         if (whenArgReturnsSameConstant != null) {
             val returnValue = isNegated.not().lift() // true when not negated, false otherwise
             result.add(createClause(whenArgReturnsSameConstant, ESReturns(returnValue)))
         }
 
-        if (whenArgReturnsOtherConstant != null) {
-            val returnValue = isNegated.lift()       // false when not negated, true otherwise
-            result.add(createClause(whenArgReturnsOtherConstant, ESReturns(returnValue)))
+        if (isSafeToProduceFalse(list)) {
+            val whenArgReturnsOtherConstant = foldConditionsWithOr(notEqual)
+            if (whenArgReturnsOtherConstant != null) {
+                val returnValue = isNegated.lift()       // false when not negated, true otherwise
+                result.add(createClause(whenArgReturnsOtherConstant, ESReturns(returnValue)))
+            }
         }
 
         return result
     }
 
-    fun negated(): EqualsToBinaryConstantFunctor = EqualsToBinaryConstantFunctor(isNegated.not(), constant)
+    fun negated(): EqualsToConstantFunctor = EqualsToConstantFunctor(isNegated.not(), constant, isBinaryTypeComparison)
+
+    // It is safe to produce Returns(false) only if all cases that return value != 'constant' are described
+    private fun isSafeToProduceFalse(clauses: List<ESClause>): Boolean {
+        // Currently, we restrict this only to two simple cases: when expression has at most binary type
+        // and when it is nullability comparison
+        if (isBinaryTypeComparison) return true
+
+        if (constant.value != null && constant != NOT_NULL_CONSTANT) return false
+
+        // Now we're comparing with null, but it's not nullability comparison yet:
+        // we have to ensure that clauses defined in terms of Returns(NOT_NULL/NULL)
+        return clauses.all {
+            val value = (it.effect as ESReturns).value
+            value.id == NOT_NULL_ID || value.id == ConstantID(null)
+        }
+    }
 }

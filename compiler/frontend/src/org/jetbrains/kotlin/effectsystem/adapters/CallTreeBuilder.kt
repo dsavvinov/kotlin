@@ -29,11 +29,13 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.typeUtil.makeNullable
 import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.kotlin.utils.ifEmpty
 
@@ -111,12 +113,10 @@ class CallTreeBuilder(
 
         val functor = when (expression.operationToken) {
             KtTokens.EQEQ, KtTokens.EQEQEQ -> {
-                rightNode as? CTConstant ?: return UNKNOWN_CALL
-                return CTCall(EqualsToBinaryConstantFunctor(false, createConstant(rightNode.id, rightNode.value, rightNode.type)), listOf(leftNode))
+                return createCallToEquals(leftNode, expression.left?.getType(bindingContext), rightNode, expression.right?.getType(bindingContext), false)
             }
             KtTokens.EXCLEQ, KtTokens.EXCLEQEQEQ -> {
-                rightNode as? CTConstant ?: return UNKNOWN_CALL
-                return CTCall(EqualsToBinaryConstantFunctor(true, createConstant(rightNode.id, rightNode.value, rightNode.type)), listOf(leftNode))
+                return createCallToEquals(leftNode, expression.left?.getType(bindingContext), rightNode, expression.right?.getType(bindingContext), true)
             }
             KtTokens.ANDAND -> AndFunctor()
             KtTokens.OROR -> OrFunctor()
@@ -166,6 +166,39 @@ class CallTreeBuilder(
     override fun visitStringTemplateExpression(expression: KtStringTemplateExpression, data: Unit): CTConstant {
         val concatenatedString = expression.entries.map { it.text }.ifEmpty { listOf("") }.reduce { s, acc -> s + acc }
         return CTConstant(ValueIdsFactory.idForConstant(concatenatedString), DefaultBuiltIns.Instance.stringType, concatenatedString)
+    }
+
+    internal fun createCallToEquals(left: CTNode, leftType: KotlinType?, right: CTNode, rightType: KotlinType?, isNegated: Boolean): CTCall {
+        if (leftType == null || rightType == null) return UNKNOWN_CALL
+
+        val constant: CTConstant
+        val expression: CTNode
+        val expressionType: KotlinType
+
+        when {
+            left is CTConstant -> {
+                constant = left
+                expression = right
+                expressionType = rightType
+            }
+
+            right is CTConstant -> {
+                constant = right
+                expression = left
+                expressionType = leftType
+            }
+
+            // Equals when none of the arguments isn't constant are not supported yet
+            else -> return UNKNOWN_CALL
+        }
+
+        // If type with which we're comparing has cardinality <= 2, we can explicitly mention it to get more complete
+        // inference of return-values later
+        val isAtMostBinaryType = expressionType == DefaultBuiltIns.Instance.unitType ||
+                                     expressionType == DefaultBuiltIns.Instance.unitType.makeNullable() ||
+                                     expressionType == DefaultBuiltIns.Instance.booleanType
+
+        return CTCall(EqualsToConstantFunctor(isNegated, createConstant(constant.id, constant.value, constant.type), isAtMostBinaryType), listOf(expression))
     }
 
     private fun KtExpression.createDataFlowValue(): DataFlowValue? {

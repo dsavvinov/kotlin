@@ -77,7 +77,7 @@ class ConditionParser {
     private fun AnnotationDescriptor.parseCondition(subjectVariable: ESVariable, isNegated: Boolean): ESBooleanExpression? {
         return when {
             this.annotationClass.fqNameEquals(EQUALS_CONDITION) ->
-                ESEqual(subjectVariable, allValueArguments.values.single().toESConstant() ?: return null, isNegated)
+                ESEqual(subjectVariable, allValueArguments.values.single().toESConstant() ?: return null, isNegated, true)
 
             this.annotationClass.fqNameEquals(IS_INSTANCE_CONDITION) ->
                 ESIs(subjectVariable, IsFunctor(allValueArguments.values.single().value as KotlinType, isNegated))
