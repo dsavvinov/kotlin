@@ -7547,6 +7547,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                         doTest(fileName);
                     }
 
+                    @TestMetadata("equalsWithNullableBoolean.kt")
+                    public void testEqualsWithNullableBoolean() throws Exception {
+                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/operatorsTests/equalsWithNullableBoolean.kt");
+                        doTest(fileName);
+                    }
+
                     @TestMetadata("isInstaceOperator.kt")
                     public void testIsInstaceOperator() throws Exception {
                         String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/operatorsTests/isInstaceOperator.kt");
@@ -7568,6 +7574,27 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                     @TestMetadata("orOperatorWithUnknown.kt")
                     public void testOrOperatorWithUnknown() throws Exception {
                         String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/operatorsTests/orOperatorWithUnknown.kt");
+                        doTest(fileName);
+                    }
+                }
+
+                @TestMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/when")
+                @TestDataPath("$PROJECT_ROOT")
+                @RunWith(JUnit3RunnerWithInners.class)
+                public static class When extends AbstractDiagnosticsTest {
+                    public void testAllFilesPresentInWhen() throws Exception {
+                        KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/effects/smartcasts/when"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                    }
+
+                    @TestMetadata("withSubject.kt")
+                    public void testWithSubject() throws Exception {
+                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/when/withSubject.kt");
+                        doTest(fileName);
+                    }
+
+                    @TestMetadata("withoutSubject.kt")
+                    public void testWithoutSubject() throws Exception {
+                        String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/effects/smartcasts/when/withoutSubject.kt");
                         doTest(fileName);
                     }
                 }
