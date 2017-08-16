@@ -53,6 +53,7 @@ class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
 
         // Prevent launch of effect system machinery on pointless cases (constants/enums/constructors/etc.)
         val callExpression = resolvedCall.call.callElement as? KtCallExpression ?: return DataFlowInfo.EMPTY
+        // TODO: leave detailed comment
         if (callExpression is KtDeclaration) return DataFlowInfo.EMPTY
 
         val resultContextInfo = getContextInfoWhen(ESReturns(UNKNOWN_CONSTANT), callExpression, bindingTrace, moduleDescriptor)

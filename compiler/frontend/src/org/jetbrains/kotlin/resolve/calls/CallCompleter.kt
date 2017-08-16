@@ -406,6 +406,7 @@ class CallCompleter(
         val moduleDescriptor = DescriptorUtils.getContainingModule(this.resultingDescriptor?.containingDeclaration ?: return)
 
         val resultDFIfromES = effectSystem.getDataFlowInfoForFinishedCall(this, bindingTrace, moduleDescriptor)
+        // TODO: check if we can detect that it is resolvedCall for callable reference and skip update of data flow info
         this.dataFlowInfoForArguments.updateResultInfo(resultDFIfromES)
 
         effectSystem.recordDefiniteInvocations(this, bindingTrace, moduleDescriptor)
