@@ -1,13 +1,20 @@
-// !DIAGNOSTICS: -INVISIBLE_MEMBER -INVISIBLE_REFERENCE
 // !LANGUAGE: +ContractEffects
 
-import kotlin.internal.*
+import kotlin.effects.dsl.*
 
-@Returns(ConstantValue.FALSE)
-fun notIsString(@IsInstance(String::class) x: Any?) = x !is String
+fun notIsString(x: Any?): Boolean {
+    contract {
+        returns(ConstantValue.FALSE) implies (x is String)
+    }
+    return x !is String
+}
 
-@Returns(ConstantValue.FALSE)
-fun notIsInt(@IsInstance(Int::class) x: Any?) = x !is Int
+fun notIsInt(x: Any?): Boolean {
+    contract {
+        returns(ConstantValue.FALSE) implies (x is Int)
+    }
+    return x !is Int
+}
 
 fun testDeMorgan(x: Any?) {
        // !(x !is String || x !is Int)
