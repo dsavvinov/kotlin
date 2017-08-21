@@ -23,6 +23,8 @@ import org.jetbrains.kotlin.effectsystem.effects.ESReturns
 import org.jetbrains.kotlin.effectsystem.effects.InvocationKind
 import org.jetbrains.kotlin.effectsystem.factories.lift
 import org.jetbrains.kotlin.effectsystem.impls.EffectSchemaImpl
+import org.jetbrains.kotlin.effectsystem.resolving.effects.CallsEffectBuilder
+import org.jetbrains.kotlin.effectsystem.resolving.effects.ReturnsEffectBuilder
 import org.jetbrains.kotlin.effectsystem.structure.ESBooleanExpression
 import org.jetbrains.kotlin.effectsystem.structure.ESClause
 import org.jetbrains.kotlin.effectsystem.structure.ESEffect
@@ -37,7 +39,12 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class ContractBuilder(val trace: BindingTrace) {
     private val conditionBuilder = ConditionBuilder(trace)
-    private val constantsBuilder = ConstantsBuilder(trace)
+
+    // Add new effects-builders here
+    private val effectsBuilders: List<EffectBuilder> = listOf(
+            ReturnsEffectBuilder(trace),
+            CallsEffectBuilder(trace)
+    )
 
     fun getContract(element: KtElement, ownerDescriptor: FunctionDescriptor): ESFunctor? {
         val resolvedCall = element.getResolvedCall(trace.bindingContext)
@@ -65,9 +72,10 @@ class ContractBuilder(val trace: BindingTrace) {
         if (resolvedCall.resultingDescriptor.isImpliesCallDescriptor()) {
             effect = getEffect(resolvedCall.dispatchReceiver.safeAs<ExpressionReceiver>()?.expression) ?: return null
             condition = getCondition(resolvedCall.valueArguments.values.singleOrNull()) ?: return null
-        } else {
+        }
+        else {
             // Unconditional effect
-            effect = getEffect(expression) ?: return report(expression, "unrecognized effect")
+            effect = getEffect(expression) ?: return null
             condition = true.lift()
         }
 
@@ -81,26 +89,24 @@ class ContractBuilder(val trace: BindingTrace) {
 
     private fun getEffect(expression: KtExpression?): ESEffect? {
         if (expression == null) return null
-
         val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
-        val descriptor = resolvedCall.resultingDescriptor
 
-        return when {
-            descriptor.isReturnsEffectDescriptor() -> {
-                val argumentExpression = resolvedCall.firstArgumentAsExpressionOrNull() ?: return null
-                val constantValue = argumentExpression.accept(constantsBuilder, Unit) ?: return report(argumentExpression, "illegal contract-constant")
-                ESReturns(constantValue)
-            }
+        val candidateEffects = effectsBuilders.mapNotNull { it.tryParseEffect(resolvedCall) }
 
-            descriptor.isCallsInPlaceEffectDescriptor() -> {
-                val lambda = resolvedCall.firstArgumentAsExpressionOrNull()?.toESVariable(trace) ?: return null
-                val kind = (resolvedCall.valueArgumentsByIndex?.getOrNull(1) as? ExpressionValueArgument)?.valueArgument
-                        ?.getArgumentExpression()?.toInvocationKind(trace) ?: InvocationKind.UNKNOWN
-                ESCalls(lambda, kind)
-            }
-
-            else -> report(expression, "unrecognized effect")
+        if (candidateEffects.isEmpty()) {
+            trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(expression, "Unrecognized effect"))
+            return null
         }
+
+        if (candidateEffects.size != 1) {
+            throw IllegalStateException(
+                    "Ambiguous effect resolving for expression \"$expression\"\n" +
+                    "Candidates are:\n" +
+                    candidateEffects.joinToString("\n")
+            )
+        }
+
+        return candidateEffects.single()
     }
 
     private fun report(element: KtElement, message: String): Nothing? {
