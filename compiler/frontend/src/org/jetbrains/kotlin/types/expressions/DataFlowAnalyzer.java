@@ -230,13 +230,14 @@ public class DataFlowAnalyzer {
                 }
             }
         });
-        if (result.get() == null) {
-            return context.dataFlowInfo;
-        }
 
         DataFlowInfo infoFromEffectSystem = effectSystem.extractDataFlowInfoFromCondition(
                 condition, conditionValue, context.trace, DescriptorUtils.getContainingModule(context.scope.getOwnerDescriptor())
         );
+
+        if (result.get() == null) {
+            return context.dataFlowInfo.and(infoFromEffectSystem);
+        }
 
         return context.dataFlowInfo.and(result.get()).and(infoFromEffectSystem);
     }
