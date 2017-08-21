@@ -22,6 +22,8 @@ import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.diagnostics.Errors.*
+import org.jetbrains.kotlin.effectsystem.resolving.dsl.isContractCallDescriptor
+import org.jetbrains.kotlin.effectsystem.resolving.dsl.isEffectCall
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfType
@@ -59,6 +61,10 @@ internal class InlineChecker(private val descriptor: FunctionDescriptor) : CallC
 
     override fun check(resolvedCall: ResolvedCall<*>, reportOn: PsiElement, context: CallCheckerContext) {
         val expression = resolvedCall.call.calleeExpression ?: return
+
+        // Omit inline checks for 'contract'-call (because contract DSL can pass inline-lambda to non-inline DSL-function)
+        if (resolvedCall.resultingDescriptor.isEffectCall()) return
+
         supportDefaultValueInline = context.languageVersionSettings.supportsFeature(LanguageFeature.InlineDefaultFunctionalParameters)
 
         //checking that only invoke or inlinable extension called on function parameter

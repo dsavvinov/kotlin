@@ -30,6 +30,7 @@ import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.DiagnosticUtils
 import org.jetbrains.kotlin.diagnostics.Errors.*
+import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractResolver
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
@@ -63,7 +64,9 @@ class FunctionDescriptorResolver(
         private val annotationResolver: AnnotationResolver,
         private val builtIns: KotlinBuiltIns,
         private val modifiersChecker: ModifiersChecker,
-        private val overloadChecker: OverloadChecker
+        private val overloadChecker: OverloadChecker,
+        private val contractResolver: ContractResolver,
+        private val bodyResolver: BodyResolver
 ) {
     fun resolveFunctionDescriptor(
             containingDescriptor: DeclarationDescriptor,
@@ -108,6 +111,11 @@ class FunctionDescriptorResolver(
         initializeFunctionDescriptorAndExplicitReturnType(containingDescriptor, scope, function, functionDescriptor, trace, expectedFunctionType)
         initializeFunctionReturnTypeBasedOnFunctionBody(scope, function, functionDescriptor, trace, dataFlowInfo)
         BindingContextUtils.recordFunctionDeclarationToDescriptor(trace, function, functionDescriptor)
+
+        if (contractResolver.hasContractFastCheck(function, functionDescriptor)) {
+            bodyResolver.resolveFunctionBody(dataFlowInfo, trace, function, functionDescriptor, scope)
+        }
+
         return functionDescriptor
     }
 

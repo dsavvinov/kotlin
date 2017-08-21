@@ -17,10 +17,10 @@
 package org.jetbrains.kotlin.effectsystem.adapters
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.effectsystem.factories.createConstant
 import org.jetbrains.kotlin.effectsystem.functors.*
-import org.jetbrains.kotlin.effectsystem.resolving.FunctorResolver
 import org.jetbrains.kotlin.effectsystem.structure.ESFunctor
 import org.jetbrains.kotlin.effectsystem.structure.EffectSchema
 import org.jetbrains.kotlin.effectsystem.structure.UNIT_ID
@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant
@@ -44,8 +45,7 @@ import org.jetbrains.kotlin.utils.ifEmpty
  */
 class CallTreeBuilder(
         private val bindingContext: BindingContext,
-        private val moduleDescriptor: ModuleDescriptor,
-        private val functorResolver: FunctorResolver
+        private val moduleDescriptor: ModuleDescriptor
 ) : KtVisitor<CTNode, Unit>() {
 
     override fun visitKtElement(element: KtElement, data: Unit): CTNode = UNKNOWN_CALL
@@ -92,7 +92,7 @@ class CallTreeBuilder(
             (it as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.accept(this, data) ?: return UNKNOWN_CALL
         } ?: return UNKNOWN_CALL
 
-        val functor = functorResolver.resolveFunctor(resolvedCall) ?: return UNKNOWN_CALL
+        val functor = resolvedCall.getFunctor() ?: return UNKNOWN_CALL
         return CTCall(functor, listOf(receiver) + argNodes)
     }
 
@@ -134,7 +134,7 @@ class CallTreeBuilder(
         }
 
         val resolvedCall = expression.getResolvedCall(bindingContext) ?: return UNKNOWN_CALL
-        val functor = functorResolver.resolveFunctor(resolvedCall) ?: return UNKNOWN_CALL
+        val functor = resolvedCall.getFunctor() ?: return UNKNOWN_CALL
 
         val argNodes = resolvedCall.valueArgumentsByIndex?.map {
             (it as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.accept(this, data) ?: return UNKNOWN_CALL
@@ -228,6 +228,11 @@ class CallTreeBuilder(
         // Otherwise, try to get the call tree from cache
         return bindingContext[BindingContext.EXPRESSION_CALL_TREE, expression]
 
+    }
+
+    private fun ResolvedCall<*>.getFunctor(): ESFunctor? {
+        val functionDescriptor = this.resultingDescriptor as? FunctionDescriptor ?: return null
+        return bindingContext[BindingContext.FUNCTION_CONTRACT, functionDescriptor.original]
     }
 
     private val UNKNOWN_CALL = CTCall(UnknownFunctor, listOf())

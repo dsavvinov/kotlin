@@ -16,31 +16,38 @@
 
 package org.jetbrains.kotlin.effectsystem.resolving.dsl
 
-import org.jetbrains.kotlin.effectsystem.structure.KtContract
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.effectsystem.structure.ESFunctor
+import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 
 class ContractResolver {
-
-    fun resolveContract(expression: KtExpression?, trace: BindingTrace): KtContract? {
-        if (expression == null) return null
-        if (!checkIfIsContractCall(expression, trace.bindingContext)) return null
-
-        val contractDescriptionTree = ContractDescriptionTreeBuilder(trace).let { expression.accept(it, Unit) } ?: return null
-
-        assert(contractDescriptionTree is ContractRoot) {
-            "Internal error: ContractDescriptionTree doesn't start with ContractRoot, but call was recognized as 'contract'"
-        }
-        TODO()
+    fun hasContractFastCheck(function: KtNamedFunction, functionDescriptor: FunctionDescriptor): Boolean {
+        if (!function.isTopLevel || !function.hasBlockBody() || functionDescriptor.isOperator) return false
+        val firstExpression = (function.bodyExpression as? KtBlockExpression)?.statements?.firstOrNull() ?: return false
+        return isContractDescriptionCallFastCheck(firstExpression)
     }
 
-    /** Should be as fast as possible */
-    private fun checkIfIsContractCall(expression: KtExpression?, context: BindingContext): Boolean {
+    fun resolveContract(expression: KtExpression?, trace: BindingTrace, ownerDescriptor: FunctionDescriptor): ESFunctor? {
+        if (expression == null) return null
+        if (!expression.isContractDescriptionCall(trace.bindingContext)) return null
+
+        return ContractBuilder(trace).getContract(expression, ownerDescriptor)
+    }
+
+    private fun isContractDescriptionCallFastCheck(expression: KtExpression): Boolean {
         if (expression !is KtCallExpression) return false
-        val resolvedCall = expression.getResolvedCall(context) ?: return false
+        return expression.calleeExpression?.text == "contract"
+    }
+
+    private fun KtExpression.isContractDescriptionCall(context: BindingContext): Boolean {
+        if (!isContractDescriptionCallFastCheck(this)) return false
+        val resolvedCall = getResolvedCall(context) ?: return false
 
         return resolvedCall.resultingDescriptor.isContractCallDescriptor()
     }

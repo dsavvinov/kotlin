@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effectsystem.impls
 
+import org.jetbrains.kotlin.effectsystem.effects.ESCalls
 import org.jetbrains.kotlin.effectsystem.effects.ESReturns
 import org.jetbrains.kotlin.effectsystem.effects.ESThrows
 import org.jetbrains.kotlin.effectsystem.factories.boundSchemaFromClauses
@@ -44,16 +45,40 @@ class EffectSchemaImpl(override val clauses: List<ESClause>, val parameters: Lis
             boundSchemaFromClauses(schema.clauses.filter { it.effect.isSequential() })
         }
         val substs = parameters.zip(filteredArgs).toMap()
+        val substitutor = Substitutor(substs)
 
         val combinedClauses = mutableListOf<ESClause>()
         for (clause in clauses) {
+            if (clause.effect is ESCalls) {
+                val callableProvider = substs[clause.effect.callable] ?: continue
+                combinedClauses.addAll(callableProvider.clauses.map { callableProviderClause ->
+                    val outcome = callableProviderClause.effect as? ESReturns ?: return@map callableProviderClause
+
+                    // If cast fails, it means that something is wrong with types
+                    val variable = outcome.value as? ESVariable ?: return null
+
+                    val newEffect = ESCalls(variable, clause.effect.kind)
+                    return@map callableProviderClause.replaceEffect(newEffect)
+                })
+
+                continue
+            }
+
+
             // Substitute all args in condition
-            val substitutedPremise = clause.condition.accept(Substitutor(substs)) ?: continue
+            val substitutedPremise = clause.condition.accept(substitutor) ?: continue
 
             for (substitutedClause in substitutedPremise.clauses) {
-                if (substitutedClause.effect is ESThrows) combinedClauses += substitutedClause
+                val effect = substitutedClause.effect
+                when {
+                    effect is ESThrows -> combinedClauses += substitutedClause
 
-                if (substitutedClause.effect == ESReturns(true.lift())) combinedClauses += createClause(substitutedClause.condition, clause.effect)
+                    effect == ESReturns(true.lift()) -> combinedClauses += createClause(substitutedClause.condition, clause.effect)
+
+                    // TODO: ugly cludge
+                    effect is ESReturns && effect.value is ESBooleanVariable && substitutedClause.condition == true.lift() ->
+                            combinedClauses += createClause(effect.value, clause.effect)
+                }
             }
         }
 

@@ -18,7 +18,9 @@ package org.jetbrains.kotlin.effectsystem.factories
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.effectsystem.impls.ESBooleanConstant
+import org.jetbrains.kotlin.effectsystem.impls.ESBooleanVariable
 import org.jetbrains.kotlin.effectsystem.impls.ESConstant
+import org.jetbrains.kotlin.effectsystem.impls.ESVariable
 import org.jetbrains.kotlin.effectsystem.structure.*
 import org.jetbrains.kotlin.types.KotlinType
 
@@ -28,14 +30,11 @@ fun ESBooleanConstant.negated(): ESBooleanConstant = if (this.value) FALSE_CONST
 
 fun Nothing?.lift(): ESConstant = NULL_CONSTANT
 
-fun createConstant(id: ESValueID, value: Any?, type: KotlinType): ESConstant {
-    return if (type == DefaultBuiltIns.Instance.booleanType) {
-        ESBooleanConstant(id, value as Boolean)
-    }
-    else {
-        ESConstant(id, value, type)
-    }
-}
+fun createConstant(id: ESValueID, value: Any?, type: KotlinType): ESConstant =
+        if (type == DefaultBuiltIns.Instance.booleanType) ESBooleanConstant(id, value as Boolean) else ESConstant(id, value, type)
+
+fun createVariable(id: ESValueID, type: KotlinType): ESVariable =
+        if (type == DefaultBuiltIns.Instance.booleanType) ESBooleanVariable(id) else ESVariable(id, type)
 
 val NOT_NULL_CONSTANT = ESConstant(
         id = NOT_NULL_ID,

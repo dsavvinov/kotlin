@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.cfg.TailRecursionKind;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor;
 import org.jetbrains.kotlin.effectsystem.effects.InvocationKind;
+import org.jetbrains.kotlin.effectsystem.structure.ESFunctor;
 import org.jetbrains.kotlin.effectsystem.structure.EffectSchema;
 import org.jetbrains.kotlin.effectsystem.structure.calltree.CTNode;
 import org.jetbrains.kotlin.name.FqName;
@@ -243,6 +244,8 @@ public interface BindingContext {
     WritableSlice<KtPropertyAccessor, PropertyAccessorDescriptor> PROPERTY_ACCESSOR = Slices.createSimpleSlice();
     WritableSlice<PsiElement, PropertyDescriptor> PRIMARY_CONSTRUCTOR_PARAMETER = Slices.createSimpleSlice();
     WritableSlice<PsiElement, TypeAliasDescriptor> TYPE_ALIAS = Slices.createSimpleSlice();
+
+    WritableSlice<FunctionDescriptor, ESFunctor> FUNCTION_CONTRACT = Slices.createSimpleSlice();
 
     WritableSlice[] DECLARATIONS_TO_DESCRIPTORS = new WritableSlice[] {
             CLASS, TYPE_PARAMETER, FUNCTION, CONSTRUCTOR, VARIABLE, VALUE_PARAMETER, PROPERTY_ACCESSOR,

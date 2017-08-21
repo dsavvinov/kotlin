@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor;
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor;
 import org.jetbrains.kotlin.descriptors.ScriptDescriptor;
+import org.jetbrains.kotlin.effectsystem.structure.ESFunctor;
 import org.jetbrains.kotlin.lexer.KtTokens;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.*;
@@ -254,6 +255,8 @@ public class ExpressionTypingServices {
         // Jump point data flow info
         DataFlowInfo beforeJumpInfo = newContext.dataFlowInfo;
         boolean jumpOutPossible = false;
+
+        boolean isFirstStatement = true;
         for (Iterator<? extends KtElement> iterator = block.iterator(); iterator.hasNext(); ) {
             // Use filtering trace to keep effect system cache only for one statement
             TemporaryBindingTrace traceForSingleStatement = TemporaryBindingTrace.create(
@@ -262,6 +265,7 @@ public class ExpressionTypingServices {
                     BindingTraceFilter.Companion.getACCEPT_ALL(),
                     true
             );
+
             newContext = newContext.replaceBindingTrace(traceForSingleStatement);
 
 
@@ -305,6 +309,20 @@ public class ExpressionTypingServices {
                     (slice, key) -> slice != BindingContext.EXPRESSION_EFFECTS && slice != BindingContext.EXPRESSION_CALL_TREE,
                     true
             );
+
+            if (isFirstStatement) {
+                isFirstStatement = false;
+
+                DeclarationDescriptor ownerDescriptor = scope.getOwnerDescriptor();
+                if (ownerDescriptor instanceof FunctionDescriptor) {
+                    ESFunctor contract = expressionTypingComponents.contractResolver.resolveContract(
+                            statementExpression, context.trace, (FunctionDescriptor) ownerDescriptor
+                    );
+                    if (contract != null) {
+                        context.trace.record(BindingContext.FUNCTION_CONTRACT, (FunctionDescriptor) ownerDescriptor, contract);
+                    }
+                }
+            }
         }
         return result.replaceJumpOutPossible(jumpOutPossible).replaceJumpFlowInfo(beforeJumpInfo);
     }

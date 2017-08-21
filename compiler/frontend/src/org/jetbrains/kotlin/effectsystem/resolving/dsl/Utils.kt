@@ -18,47 +18,98 @@ package org.jetbrains.kotlin.effectsystem.resolving.dsl
 
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.effectsystem.factories.NOT_NULL_CONSTANT
-import org.jetbrains.kotlin.effectsystem.factories.NULL_CONSTANT
-import org.jetbrains.kotlin.effectsystem.factories.UNKNOWN_CONSTANT
-import org.jetbrains.kotlin.effectsystem.factories.lift
-import org.jetbrains.kotlin.effectsystem.impls.ESConstant
+import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
+import org.jetbrains.kotlin.effectsystem.adapters.ValueIdsFactory
+import org.jetbrains.kotlin.effectsystem.effects.InvocationKind
+import org.jetbrains.kotlin.effectsystem.factories.createVariable
+import org.jetbrains.kotlin.effectsystem.impls.ESBooleanVariable
+import org.jetbrains.kotlin.effectsystem.impls.ESVariable
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.resolve.BindingTrace
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
+import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.parents
+import org.jetbrains.kotlin.types.typeUtil.isBoolean
+import org.jetbrains.kotlin.types.typeUtil.isBooleanOrNullableBoolean
+import org.jetbrains.kotlin.types.typeUtil.isNullableAny
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 private val CONTRACT_FQN = FqName("kotlin.effects.dsl.contract")
 private val EFFECT_FQN = FqName("kotlin.effects.dsl.Effect")
 private val IMPLIES_FQN = FqName("kotlin.effects.dsl.Effect.implies")
 
 private val RETURNS_FQN = FqName("kotlin.effects.dsl.ContractBuilder.returns")
-private val CALLED_IN_PLACE_FQN = FqName("kotlin.effects.dsl.ContractBuilder.calledInPlace")
+private val CALLS_IN_PLACE_FQN = FqName("kotlin.effects.dsl.ContractBuilder.callsInPlace")
 
-private val CONSTANT_VALUE_ENUM_FQN = FqName("kotlin.effects.dsl.ConstantValue")
-
-private val TRUE_SHORT_NAME = Name.identifier("TRUE")
-private val FALSE_SHORT_NAME = Name.identifier("FALSE")
-private val NULL_SHORT_NAME = Name.identifier("NULL")
-private val NOT_NULL_SHORT_NAME = Name.identifier("NOT_NULL")
-private val WILDCARD_SHORT_NAME = Name.identifier("WILDCARD")
+private val EQUALS_NAME = Name.identifier("equals")
 
 fun CallableDescriptor.isContractCallDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == CONTRACT_FQN
 
 fun CallableDescriptor.isImpliesCallDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == IMPLIES_FQN
 
-fun CallableDescriptor.isReturnsEffectCallDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == RETURNS_FQN
+fun CallableDescriptor.isReturnsEffectDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == RETURNS_FQN
 
-fun CallableDescriptor.isCalledInPlaceEffectDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == CALLED_IN_PLACE_FQN
+fun CallableDescriptor.isEqualsDescriptor(): Boolean =
+        this is FunctionDescriptor && this.name == EQUALS_NAME && // fast checks
+        this.returnType?.isBoolean() == true && this.valueParameters.singleOrNull()?.type?.isNullableAny() == true // signature matches
 
-fun CallableDescriptor.isConstantValue(): Boolean = this.fqNameSafe.parent() == CONSTANT_VALUE_ENUM_FQN
+fun CallableDescriptor.isCallsInPlaceEffectDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == CALLS_IN_PLACE_FQN
 
-fun CallableDescriptor.isEffect(): Boolean = this.returnType?.constructor?.declarationDescriptor?.fqNameSafe == EFFECT_FQN
 
-fun CallableDescriptor.toESConstant(): ESConstant? = when (this.fqNameSafe.shortName()) {
-    TRUE_SHORT_NAME -> true.lift()
-    FALSE_SHORT_NAME -> false.lift()
-    NULL_SHORT_NAME -> NULL_CONSTANT
-    NOT_NULL_SHORT_NAME -> NOT_NULL_CONSTANT
-    WILDCARD_SHORT_NAME -> UNKNOWN_CONSTANT
-    else -> null
+fun CallableDescriptor.isEffectCall(): Boolean = this.returnType?.constructor?.declarationDescriptor?.fqNameSafe == EFFECT_FQN
+
+fun KtExpression.toESVariable(trace: BindingTrace): ESVariable? {
+    val resolvedCall = this.getResolvedCall(trace.bindingContext) ?: return null
+    val descriptor = resolvedCall.resultingDescriptor
+
+    return when (descriptor) {
+        is ValueParameterDescriptor -> descriptor.toESVariable()
+        is ReceiverParameterDescriptor -> descriptor.receiverToESVariable()
+        else -> null
+    }
+}
+
+fun ResolvedCall<*>.firstArgumentAsExpressionOrNull(): KtExpression? =
+        this.valueArgumentsByIndex?.firstOrNull()?.safeAs<ExpressionValueArgument>()?.valueArgument?.getArgumentExpression()
+
+fun ValueParameterDescriptor.toESVariable(): ESVariable {
+    val dfv = DataFlowValue(IdentifierInfo.Variable(this, DataFlowValue.Kind.STABLE_VALUE, null), type)
+    return createVariable(ValueIdsFactory.dfvBased(dfv), type)
+}
+
+fun ValueParameterDescriptor.toESBooleanVariable(): ESBooleanVariable {
+    assert(this.returnType!!.isBooleanOrNullableBoolean()) { "Trying to convert Descriptor of non-boolean type into ESBooleanVariable" }
+    val dfv = DataFlowValue(IdentifierInfo.Variable(this, DataFlowValue.Kind.STABLE_VALUE, null), type)
+    return ESBooleanVariable(ValueIdsFactory.dfvBased(dfv))
+}
+
+fun ReceiverParameterDescriptor.receiverToESVariable(): ESVariable {
+    val dfv = DataFlowValue(IdentifierInfo.Receiver(value), type)
+    return createVariable(ValueIdsFactory.dfvBased(dfv), type)
+}
+
+private val INVOCATION_KIND_FQN = FqName("kotlin.effects.dsl.InvocationKind")
+private val EXACTLY_ONCE_NAME = Name.identifier("EXACTLY_ONCE")
+private val AT_LEAST_ONCE_NAME = Name.identifier("AT_LEAST_ONCE")
+private val UNKNOWN_NAME = Name.identifier("UNKNOWN")
+private val AT_MOST_ONCE_NAME = Name.identifier("AT_MOST_ONCE")
+
+fun KtExpression.toInvocationKind(trace: BindingTrace): InvocationKind? {
+    val descriptor = this.getResolvedCall(trace.bindingContext)?.resultingDescriptor ?: return null
+    if (descriptor.parents.first().fqNameSafe != INVOCATION_KIND_FQN) return null
+
+    return when (descriptor.fqNameSafe.shortName()) {
+        AT_MOST_ONCE_NAME -> InvocationKind.AT_MOST_ONCE
+        EXACTLY_ONCE_NAME -> InvocationKind.EXACTLY_ONCE
+        AT_LEAST_ONCE_NAME -> InvocationKind.AT_LEAST_ONCE
+        UNKNOWN_NAME -> InvocationKind.UNKNOWN
+        else -> null
+    }
 }

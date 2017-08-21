@@ -954,6 +954,9 @@ public interface Errors {
     DiagnosticFactory2<PsiElement, String, String> PLUGIN_WARNING = DiagnosticFactory2.create(WARNING);
     DiagnosticFactory2<PsiElement, String, String> PLUGIN_INFO = DiagnosticFactory2.create(INFO);
 
+    // Function contracts
+    DiagnosticFactory1<KtElement, String> ERROR_IN_CONTRACT_DESCRIPTION = DiagnosticFactory1.create(ERROR);
+
     // Error sets
     ImmutableSet<? extends DiagnosticFactory<?>> UNRESOLVED_REFERENCE_DIAGNOSTICS = ImmutableSet.of(
             UNRESOLVED_REFERENCE, NAMED_PARAMETER_NOT_FOUND, UNRESOLVED_REFERENCE_WRONG_RECEIVER);

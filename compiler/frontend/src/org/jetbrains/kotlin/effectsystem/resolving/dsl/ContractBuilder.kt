@@ -18,102 +18,93 @@ package org.jetbrains.kotlin.effectsystem.resolving.dsl
 
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.effectsystem.functors.AndFunctor
-import org.jetbrains.kotlin.effectsystem.functors.IsFunctor
-import org.jetbrains.kotlin.effectsystem.functors.NotFunctor
-import org.jetbrains.kotlin.effectsystem.functors.OrFunctor
-import org.jetbrains.kotlin.effectsystem.impls.*
-import org.jetbrains.kotlin.effectsystem.resolving.utility.toESVariable
+import org.jetbrains.kotlin.effectsystem.effects.ESCalls
+import org.jetbrains.kotlin.effectsystem.effects.ESReturns
+import org.jetbrains.kotlin.effectsystem.effects.InvocationKind
+import org.jetbrains.kotlin.effectsystem.factories.lift
+import org.jetbrains.kotlin.effectsystem.impls.EffectSchemaImpl
 import org.jetbrains.kotlin.effectsystem.structure.ESBooleanExpression
 import org.jetbrains.kotlin.effectsystem.structure.ESClause
-import org.jetbrains.kotlin.effectsystem.structure.KtContract
+import org.jetbrains.kotlin.effectsystem.structure.ESEffect
+import org.jetbrains.kotlin.effectsystem.structure.ESFunctor
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.utils.addIfNotNull
+import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedValueArgument
+import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-internal class ContractBuilder(val trace: BindingTrace, val ownerDescriptor: FunctionDescriptor) {
-    // Users should call this method as entrypoint instead of visitRoot,
-    // because it is the only place where ContractRoot node is allowed
-    fun buildFromTree(root: ContractRoot): KtContract? {
-        val block = root.childs.firstOrNull() as? ContractBlock ?: return null
-        return buildFromBlock(block, Unit)
+class ContractBuilder(val trace: BindingTrace) {
+    private val conditionBuilder = ConditionBuilder(trace)
+    private val constantsBuilder = ConstantsBuilder(trace)
+
+    fun getContract(element: KtElement, ownerDescriptor: FunctionDescriptor): ESFunctor? {
+        val resolvedCall = element.getResolvedCall(trace.bindingContext)
+        val descriptor = resolvedCall?.resultingDescriptor ?: return null
+
+        if (!descriptor.isContractCallDescriptor()) return null
+
+        val firstArgument = resolvedCall.firstArgumentAsExpressionOrNull() as? KtLambdaExpression ?: return null
+
+        val clauses = firstArgument.bodyExpression?.statements.orEmpty().mapNotNull { getClause(it) }
+
+        val receiver = ownerDescriptor.extensionReceiverParameter?.receiverToESVariable()
+
+        return EffectSchemaImpl(clauses, listOfNotNull(receiver) + ownerDescriptor.valueParameters.map { it.toESVariable() })
     }
 
-    private fun buildFromBlock(block: ContractBlock, data: Unit): KtContract {
-        val clauses = mutableListOf<ESClause>()
+    private fun getClause(expression: KtExpression): ESClause? {
+        if (expression is KtParenthesizedExpression) return getClause(KtPsiUtil.deparenthesize(expression) ?: return null)
 
-        for (child in block.childs) {
-            if (child !is ContractClause) {
-                child.report("each statement of contract block should be implies-clause")
-                continue
-            }
-            clauses.addIfNotNull(buildClause(child))
+        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
+
+        val effect: ESEffect
+        val condition: ESBooleanExpression
+
+        if (resolvedCall.resultingDescriptor.isImpliesCallDescriptor()) {
+            effect = getEffect(resolvedCall.dispatchReceiver.safeAs<ExpressionReceiver>()?.expression) ?: return null
+            condition = getCondition(resolvedCall.valueArguments.values.singleOrNull()) ?: return null
+        } else {
+            // Unconditional effect
+            effect = getEffect(expression) ?: return report(expression, "unrecognized effect")
+            condition = true.lift()
         }
 
-        return EffectSchemaImpl(clauses, ownerDescriptor.valueParameters.map { it.toESVariable() })
+        return ESClause(condition, effect)
     }
 
-    private fun buildClause(clause: ContractClause): ESClause? {
-        if (clause.childs.size != 2) return null
-        val effect = clause.childs[0] as? ContractEffect ?: return null
-
-        val condition = clause.childs[1].toESBooleanExpression() ?: return null
-
+    private fun getCondition(argument: ResolvedValueArgument?): ESBooleanExpression? {
+        val expression = (argument as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression() ?: return null
+        return expression.accept(conditionBuilder, Unit)
     }
 
-    override fun visitClause(clause: ContractClause, data: Unit): KtContract {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    private fun getEffect(expression: KtExpression?): ESEffect? {
+        if (expression == null) return null
+
+        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
+        val descriptor = resolvedCall.resultingDescriptor
+
+        return when {
+            descriptor.isReturnsEffectDescriptor() -> {
+                val argumentExpression = resolvedCall.firstArgumentAsExpressionOrNull() ?: return null
+                val constantValue = argumentExpression.accept(constantsBuilder, Unit) ?: return report(argumentExpression, "illegal contract-constant")
+                ESReturns(constantValue)
+            }
+
+            descriptor.isCallsInPlaceEffectDescriptor() -> {
+                val lambda = resolvedCall.firstArgumentAsExpressionOrNull()?.toESVariable(trace) ?: return null
+                val kind = (resolvedCall.valueArgumentsByIndex?.getOrNull(1) as? ExpressionValueArgument)?.valueArgument
+                        ?.getArgumentExpression()?.toInvocationKind(trace) ?: InvocationKind.UNKNOWN
+                ESCalls(lambda, kind)
+            }
+
+            else -> report(expression, "unrecognized effect")
+        }
     }
 
-    override fun visitEffect(effectDeclaration: ContractEffect, data: Unit): KtContract {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun visitOperator(operator: ContractOperator, data: Unit): KtContract {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun visitValue(value: ContractValue, data: Unit): KtContract {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun visitType(type: ContractType, data: Unit): KtContract {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    private fun ContractNode.report(message: String): Nothing? {
-        trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(this.sourceElement, message))
+    private fun report(element: KtElement, message: String): Nothing? {
+        trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(element, message))
         return null
-    }
-
-    private fun ContractNode.toESBooleanExpression() {
-        this.accept(object: ContractDescriptionTreeVisitor<ESBooleanExpression?, Unit> {
-            override fun visitNode(node: ContractNode, data: Unit): ESBooleanExpression? =
-                    node.report("conclusion of statement should be boolean condition")
-
-            override fun visitOperator(operator: ContractOperator, data: Unit): ESBooleanExpression? {
-                val args = operator.childs.mapNotNull { it.accept(this, data) }
-
-                val first = args.firstOrNull()
-                val second = args.getOrNull(1)
-
-                when (operator.operatorType) {
-                    OperatorType.AND -> ESAnd(first ?: return null, second ?: return null, AndFunctor())
-                    OperatorType.OR -> ESOr(first ?: return null, second ?: return null, OrFunctor())
-                    OperatorType.NOT -> ESNot(first ?: return null, NotFunctor())
-                    OperatorType.IS -> ESIs(first ?: return null, IsFunctor((operator.childs.getOrNull(1) as? ContractType)?.type ?: return null, false)
-                    OperatorType.NOT_IS -> TODO()
-                    OperatorType.EQUAL -> TODO()
-                    OperatorType.NOT_EQUAL -> TODO()
-                }
-            }
-
-            override fun visitValue(value: ContractValue, data: Unit): ESBooleanExpression {
-                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-            }
-
-            override fun visitType(type: ContractType, data: Unit): ESBooleanExpression {
-                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-            }
-        }, Unit)
     }
 }

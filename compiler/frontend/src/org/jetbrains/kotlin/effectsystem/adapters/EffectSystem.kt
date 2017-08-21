@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.effectsystem.effects.ESCalls
 import org.jetbrains.kotlin.effectsystem.effects.ESReturns
 import org.jetbrains.kotlin.effectsystem.factories.UNKNOWN_CONSTANT
 import org.jetbrains.kotlin.effectsystem.factories.lift
-import org.jetbrains.kotlin.effectsystem.resolving.FunctorResolver
 import org.jetbrains.kotlin.effectsystem.structure.ESEffect
 import org.jetbrains.kotlin.effectsystem.structure.EffectSchema
 import org.jetbrains.kotlin.effectsystem.structure.calltree.CTNode
@@ -42,8 +41,6 @@ import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactory
 
 class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
-    private val functorResolver = FunctorResolver()
-
     fun getDataFlowInfoForFinishedCall(
             resolvedCall: ResolvedCall<*>,
             bindingTrace: BindingTrace,
@@ -72,7 +69,7 @@ class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
         val rightCallTree = getCallTree(rightExpression, bindingTrace, moduleDescriptor) ?: return ConditionalDataFlowInfo.EMPTY
 
         val context = bindingTrace.bindingContext
-        val callToEquals = CallTreeBuilder(context, moduleDescriptor, functorResolver)
+        val callToEquals = CallTreeBuilder(context, moduleDescriptor)
                 .createCallToEquals(leftCallTree, leftExpression.getType(context), rightCallTree, rightExpression.getType(context), false)
 
         val schema = buildSchema(callToEquals) ?: return ConditionalDataFlowInfo.EMPTY
@@ -157,5 +154,5 @@ class EffectSystem(val languageVersionSettings: LanguageVersionSettings) {
     }
 
     private fun buildCallTree(expression: KtExpression, bindingContext: BindingContext, moduleDescriptor: ModuleDescriptor): CTNode? =
-            CallTreeBuilder(bindingContext, moduleDescriptor, functorResolver).let { expression.accept(it, Unit) }
+            CallTreeBuilder(bindingContext, moduleDescriptor).let { expression.accept(it, Unit) }
 }

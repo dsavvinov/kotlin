@@ -19,7 +19,7 @@ package org.jetbrains.kotlin.effectsystem.structure
 /**
  * An abstraction of effect-generating nature of some operation.
  *
- * [Contract] roughly corresponds to some call, but it cares only
+ * [ESFunctor] roughly corresponds to some call, but it cares only
  * about effects of this call, so instead of value arguments, its [apply]
  * method takes just description of effects of each argument
  * (represented by [EffectSchema]), and produces effects of the whole call
@@ -30,7 +30,7 @@ package org.jetbrains.kotlin.effectsystem.structure
  * of effects, though they are encouraged to do so.
  */
 
-interface Contract {
+interface ESFunctor {
     fun apply(arguments: List<EffectSchema>): EffectSchema?
 }
 
