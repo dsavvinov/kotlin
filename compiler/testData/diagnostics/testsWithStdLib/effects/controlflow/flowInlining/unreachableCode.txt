@@ -1,0 +1,4 @@
+package
+
+public inline fun </*0*/ T> myRun(/*0*/ block: () -> T): T
+public fun throwInLambda(): kotlin.Int

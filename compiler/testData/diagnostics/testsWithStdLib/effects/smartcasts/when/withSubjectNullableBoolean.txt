@@ -1,0 +1,5 @@
+package
+
+public fun elseWithNullableResult(/*0*/ x: kotlin.Any?): kotlin.Unit
+public fun exhaustiveWithNullableResult(/*0*/ x: kotlin.Any?): kotlin.Unit
+public fun safeIsString(/*0*/ x: kotlin.Any?): kotlin.Boolean?

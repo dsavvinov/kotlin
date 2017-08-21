@@ -1,0 +1,5 @@
+package
+
+public fun repeatingFlow(/*0*/ n: kotlin.Int): kotlin.Unit
+public fun </*0*/ T> runTwice(/*0*/ block: () -> T): T
+public fun testInitialization(): kotlin.Unit
