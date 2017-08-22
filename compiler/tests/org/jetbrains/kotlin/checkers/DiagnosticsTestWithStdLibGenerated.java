@@ -1402,6 +1402,12 @@ public class DiagnosticsTestWithStdLibGenerated extends AbstractDiagnosticsTestW
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/testsWithStdLib/effects/dsl"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
             }
 
+            @TestMetadata("recursiveProblem.kt")
+            public void testRecursiveProblem() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/recursiveProblem.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("simpleDslTest.kt")
             public void testSimpleDslTest() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/simpleDslTest.kt");

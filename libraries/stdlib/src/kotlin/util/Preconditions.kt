@@ -2,14 +2,21 @@
 @file:kotlin.jvm.JvmName("PreconditionsKt")
 package kotlin
 
+import kotlin.effects.dsl.*
+
 /**
  * Throws an [IllegalArgumentException] if the [value] is false.
  *
  * @sample samples.misc.Preconditions.failRequireWithLazyMessage
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns
-public inline fun require(@kotlin.internal.Equals(kotlin.internal.ConstantValue.TRUE) value: Boolean): Unit = require(value) { "Failed requirement." }
+public inline fun require(value: Boolean): Unit {
+    contract {
+        returns(ConstantValue.WILDCARD) implies (value == true)
+    }
+    require(value) { "Failed requirement." }
+    return Unit
+}
 
 /**
  * Throws an [IllegalArgumentException] with the result of calling [lazyMessage] if the [value] is false.
@@ -17,8 +24,10 @@ public inline fun require(@kotlin.internal.Equals(kotlin.internal.ConstantValue.
  * @sample samples.misc.Preconditions.failRequireWithLazyMessage
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns
-public inline fun require(@kotlin.internal.Equals(kotlin.internal.ConstantValue.TRUE) value: Boolean, lazyMessage: () -> Any): Unit {
+public inline fun require(value: Boolean, lazyMessage: () -> Any): Unit {
+    contract {
+        returns(ConstantValue.WILDCARD) implies (value == true)
+    }
     if (!value) {
         val message = lazyMessage()
         throw IllegalArgumentException(message.toString())
@@ -29,8 +38,12 @@ public inline fun require(@kotlin.internal.Equals(kotlin.internal.ConstantValue.
  * Throws an [IllegalArgumentException] if the [value] is null. Otherwise returns the not null value.
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns
-public inline fun <T:Any> requireNotNull(@kotlin.internal.Equals(kotlin.internal.ConstantValue.NOT_NULL) value: T?): T = requireNotNull(value) { "Required value was null." }
+public inline fun <T:Any> requireNotNull(value: T?): T {
+    contract {
+        returns(ConstantValue.WILDCARD) implies (value != null)
+    }
+    return requireNotNull(value) { "Required value was null." }
+}
 
 /**
  * Throws an [IllegalArgumentException] with the result of calling [lazyMessage] if the [value] is null. Otherwise
@@ -39,8 +52,11 @@ public inline fun <T:Any> requireNotNull(@kotlin.internal.Equals(kotlin.internal
  * @sample samples.misc.Preconditions.failRequireWithLazyMessage
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns
-public inline fun <T:Any> requireNotNull(@kotlin.internal.Equals(kotlin.internal.ConstantValue.NOT_NULL) value: T?, lazyMessage: () -> Any): T {
+public inline fun <T:Any> requireNotNull(value: T?, lazyMessage: () -> Any): T {
+    contract {
+        returns(ConstantValue.WILDCARD) implies (value != null)
+    }
+
     if (value == null) {
         val message = lazyMessage()
         throw IllegalArgumentException(message.toString())
@@ -55,8 +71,12 @@ public inline fun <T:Any> requireNotNull(@kotlin.internal.Equals(kotlin.internal
  * @sample samples.misc.Preconditions.failCheckWithLazyMessage
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns
-public inline fun check(@kotlin.internal.Equals(kotlin.internal.ConstantValue.TRUE) value: Boolean): Unit = check(value) { "Check failed." }
+public inline fun check(value: Boolean): Unit {
+    contract {
+        returns(ConstantValue.WILDCARD) implies (value == true)
+    }
+    check(value) { "Check failed." }
+}
 
 /**
  * Throws an [IllegalStateException] with the result of calling [lazyMessage] if the [value] is false.
@@ -64,8 +84,10 @@ public inline fun check(@kotlin.internal.Equals(kotlin.internal.ConstantValue.TR
  * @sample samples.misc.Preconditions.failCheckWithLazyMessage
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns
-public inline fun check(@kotlin.internal.Equals(kotlin.internal.ConstantValue.TRUE) value: Boolean, lazyMessage: () -> Any): Unit {
+public inline fun check(value: Boolean, lazyMessage: () -> Any): Unit {
+    contract {
+        returns(ConstantValue.WILDCARD) implies (value == true)
+    }
     if (!value) {
         val message = lazyMessage()
         throw IllegalStateException(message.toString())
@@ -79,8 +101,7 @@ public inline fun check(@kotlin.internal.Equals(kotlin.internal.ConstantValue.TR
  * @sample samples.misc.Preconditions.failCheckWithLazyMessage
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns
-public inline fun <T:Any> checkNotNull(@kotlin.internal.Equals(kotlin.internal.ConstantValue.NOT_NULL) value: T?): T = checkNotNull(value) { "Required value was null." }
+public inline fun <T:Any> checkNotNull(value: T?): T = checkNotNull(value) { "Required value was null." }
 
 /**
  * Throws an [IllegalStateException] with the result of calling [lazyMessage]  if the [value] is null. Otherwise
@@ -89,8 +110,11 @@ public inline fun <T:Any> checkNotNull(@kotlin.internal.Equals(kotlin.internal.C
  * @sample samples.misc.Preconditions.failCheckWithLazyMessage
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns
-public inline fun <T:Any> checkNotNull(@kotlin.internal.Equals(kotlin.internal.ConstantValue.NOT_NULL) value: T?, lazyMessage: () -> Any): T {
+public inline fun <T:Any> checkNotNull(value: T?, lazyMessage: () -> Any): T {
+    contract {
+        returns(ConstantValue.WILDCARD) implies (value != null)
+    }
+
     if (value == null) {
         val message = lazyMessage()
         throw IllegalStateException(message.toString())

@@ -21,6 +21,7 @@
 package kotlin.text
 
 import kotlin.comparisons.*
+import kotlin.effects.dsl.*
 
 
 /**
@@ -225,8 +226,13 @@ public fun String.padEnd(length: Int, padChar: Char = ' '): String
  * Returns `true` if this nullable char sequence is either `null` or empty.
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns(kotlin.internal.ConstantValue.FALSE)
-public inline fun @receiver:kotlin.internal.Equals(kotlin.internal.ConstantValue.NOT_NULL) CharSequence?.isNullOrEmpty(): Boolean = this == null || this.length == 0
+public inline fun CharSequence?.isNullOrEmpty(): Boolean {
+    contract {
+        returns(ConstantValue.FALSE) implies (this != null)
+    }
+
+    return this == null || this.length == 0
+}
 
 /**
  * Returns `true` if this char sequence is empty (contains no characters).
@@ -254,8 +260,13 @@ public inline fun CharSequence.isNotBlank(): Boolean = !isBlank()
  * Returns `true` if this nullable char sequence is either `null` or empty or consists solely of whitespace characters.
  */
 @kotlin.internal.InlineOnly
-@kotlin.internal.Returns(kotlin.internal.ConstantValue.FALSE)
-public inline fun @receiver:kotlin.internal.Equals(kotlin.internal.ConstantValue.NOT_NULL) CharSequence?.isNullOrBlank(): Boolean = this == null || this.isBlank()
+public inline fun CharSequence?.isNullOrBlank(): Boolean {
+    contract {
+        returns(ConstantValue.FALSE) implies (this != null)
+    }
+
+    return this == null || this.isBlank()
+}
 
 /**
  * Iterator for characters of the given char sequence.

@@ -1,0 +1,4 @@
+package
+
+public inline fun require(/*0*/ value: kotlin.Boolean): kotlin.Unit
+public inline fun require(/*0*/ value: kotlin.Boolean, /*1*/ lazyMessage: () -> kotlin.Any): kotlin.Unit
