@@ -31,6 +31,8 @@ import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.DiagnosticUtils
 import org.jetbrains.kotlin.diagnostics.Errors.*
 import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractResolver
+import org.jetbrains.kotlin.effectsystem.resolving.dsl.FunctorProvider
+import org.jetbrains.kotlin.effectsystem.structure.ESFunctor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
@@ -111,12 +113,29 @@ class FunctionDescriptorResolver(
         initializeFunctionDescriptorAndExplicitReturnType(containingDescriptor, scope, function, functionDescriptor, trace, expectedFunctionType)
         initializeFunctionReturnTypeBasedOnFunctionBody(scope, function, functionDescriptor, trace, dataFlowInfo)
         BindingContextUtils.recordFunctionDeclarationToDescriptor(trace, function, functionDescriptor)
-
-        if (contractResolver.hasContractFastCheck(function, functionDescriptor)) {
-            bodyResolver.resolveFunctionBody(dataFlowInfo, trace, function, functionDescriptor, scope)
-        }
+        initializeFunctionContractBasedOnFunctionBody(function, functionDescriptor, trace, dataFlowInfo, scope)
 
         return functionDescriptor
+    }
+
+    private fun initializeFunctionContractBasedOnFunctionBody(
+            function: KtNamedFunction,
+            functionDescriptor: SimpleFunctionDescriptorImpl,
+            trace: BindingTrace,
+            dataFlowInfo: DataFlowInfo,
+            scope: LexicalScope
+    ) {
+        if (!contractResolver.hasContractFastCheck(function, functionDescriptor)) {
+            trace.record(BindingContext.FUNCTION_CONTRACT, functionDescriptor, FunctorProvider.noFunctor(function))
+            return
+        }
+
+        // Create lazy provider, that will defer force-resolve of function body until contract is really required
+        // 'resolveFunctionBody' guarantees to initialize functor for this function properly
+        val functorProvider = FunctorProvider(function) {
+            bodyResolver.resolveFunctionBody(dataFlowInfo, trace, function, functionDescriptor, scope)
+        }
+        trace.record(BindingContext.FUNCTION_CONTRACT, functionDescriptor, functorProvider)
     }
 
     private fun initializeFunctionReturnTypeBasedOnFunctionBody(

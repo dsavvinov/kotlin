@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor;
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor;
 import org.jetbrains.kotlin.descriptors.ScriptDescriptor;
+import org.jetbrains.kotlin.effectsystem.resolving.dsl.FunctorProvider;
 import org.jetbrains.kotlin.effectsystem.structure.ESFunctor;
 import org.jetbrains.kotlin.lexer.KtTokens;
 import org.jetbrains.kotlin.psi.*;
@@ -319,7 +320,11 @@ public class ExpressionTypingServices {
                             statementExpression, context.trace, (FunctionDescriptor) ownerDescriptor
                     );
                     if (contract != null) {
-                        context.trace.record(BindingContext.FUNCTION_CONTRACT, (FunctionDescriptor) ownerDescriptor, contract);
+                        FunctorProvider functorProvider =
+                                context.trace.get(BindingContext.FUNCTION_CONTRACT, (FunctionDescriptor) ownerDescriptor);
+                        assert functorProvider != null : "contract have been found for function " + ownerDescriptor +
+                                                         ", but corresponding FunctionProvider in BindingContext is missing";
+                        functorProvider.setFunctor(contract);
                     }
                 }
             }

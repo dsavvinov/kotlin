@@ -232,7 +232,8 @@ class CallTreeBuilder(
 
     private fun ResolvedCall<*>.getFunctor(): ESFunctor? {
         val functionDescriptor = this.resultingDescriptor as? FunctionDescriptor ?: return null
-        return bindingContext[BindingContext.FUNCTION_CONTRACT, functionDescriptor.original]
+        val functorProvider = bindingContext[BindingContext.FUNCTION_CONTRACT, functionDescriptor.original] ?: return null
+        return functorProvider.functor
     }
 
     private val UNKNOWN_CALL = CTCall(UnknownFunctor, listOf())
