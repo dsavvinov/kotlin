@@ -19,6 +19,7 @@ package org.jetbrains.kotlin.effectsystem.adapters
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey
 import org.jetbrains.kotlin.effectsystem.factories.createConstant
 import org.jetbrains.kotlin.effectsystem.functors.*
 import org.jetbrains.kotlin.effectsystem.structure.ESFunctor
@@ -92,7 +93,7 @@ class CallTreeBuilder(
             (it as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.accept(this, data) ?: return UNKNOWN_CALL
         } ?: return UNKNOWN_CALL
 
-        val functor = resolvedCall.getFunctor() ?: return UNKNOWN_CALL
+        val functor = resolvedCall.getContract() ?: return UNKNOWN_CALL
         return CTCall(functor, listOf(receiver) + argNodes)
     }
 
@@ -134,7 +135,7 @@ class CallTreeBuilder(
         }
 
         val resolvedCall = expression.getResolvedCall(bindingContext) ?: return UNKNOWN_CALL
-        val functor = resolvedCall.getFunctor() ?: return UNKNOWN_CALL
+        val functor = resolvedCall.getContract() ?: return UNKNOWN_CALL
 
         val argNodes = resolvedCall.valueArgumentsByIndex?.map {
             (it as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.accept(this, data) ?: return UNKNOWN_CALL
@@ -230,10 +231,11 @@ class CallTreeBuilder(
 
     }
 
-    private fun ResolvedCall<*>.getFunctor(): ESFunctor? {
+    private fun ResolvedCall<*>.getContract(): ESFunctor? {
         val functionDescriptor = this.resultingDescriptor as? FunctionDescriptor ?: return null
-        val functorProvider = bindingContext[BindingContext.FUNCTION_CONTRACT, functionDescriptor.original] ?: return null
-        return functorProvider.functor
+        val contractProvider = functionDescriptor.getUserData(ContractProviderKey) ?: return null
+        val contractDescriptor = contractProvider.getContractDescriptor() ?: return null
+        return ContractToFunctorConverter().convertContractDescriptorToFunctor(contractDescriptor)
     }
 
     private val UNKNOWN_CALL = CTCall(UnknownFunctor, listOf())

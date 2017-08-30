@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effectsystem.resolving.dsl
+package org.jetbrains.kotlin.effectsystem.adapters
 
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor
 import org.jetbrains.kotlin.effectsystem.structure.ESFunctor
-import org.jetbrains.kotlin.psi.KtNamedFunction
 
-class FunctorProvider(private val function: KtNamedFunction, private val computation: () -> Unit) {
-    var functor: ESFunctor? = null
-        get() = if (isProcessed) field else kotlin.run { computation(); field }
-        set(value) {
-            assert(!isProcessed) { "Re-initialization of functor provider for function ${function.name}" }
-            isProcessed = true
-            field = value
-        }
-    private var isProcessed: Boolean = false
-
-    companion object {
-        fun noFunctor(function: KtNamedFunction) = FunctorProvider(function, {})
+class ContractToFunctorConverter {
+    fun convertContractDescriptorToFunctor(contractDescriptor: ContractDescriptor): ESFunctor {
+        TODO()
     }
 }

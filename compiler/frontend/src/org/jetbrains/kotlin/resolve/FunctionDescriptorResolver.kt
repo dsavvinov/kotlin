@@ -24,15 +24,15 @@ import org.jetbrains.kotlin.builtins.isBuiltinFunctionalType
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationsImpl
+import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey
+import org.jetbrains.kotlin.descriptors.contracts.LazyContractProvider
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.FunctionExpressionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.DiagnosticUtils
 import org.jetbrains.kotlin.diagnostics.Errors.*
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractResolver
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.FunctorProvider
-import org.jetbrains.kotlin.effectsystem.structure.ESFunctor
+import org.jetbrains.kotlin.effectsystem.resolving.dsl.PSIContractParserDispatcher
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
@@ -67,7 +67,7 @@ class FunctionDescriptorResolver(
         private val builtIns: KotlinBuiltIns,
         private val modifiersChecker: ModifiersChecker,
         private val overloadChecker: OverloadChecker,
-        private val contractResolver: ContractResolver,
+        private val contractParser: PSIContractParserDispatcher,
         private val bodyResolver: BodyResolver
 ) {
     fun resolveFunctionDescriptor(
@@ -110,32 +110,11 @@ class FunctionDescriptorResolver(
                 CallableMemberDescriptor.Kind.DECLARATION,
                 function.toSourceElement()
         )
-        initializeFunctionDescriptorAndExplicitReturnType(containingDescriptor, scope, function, functionDescriptor, trace, expectedFunctionType)
+        initializeFunctionDescriptorAndExplicitReturnType(containingDescriptor, scope, function, functionDescriptor, trace, expectedFunctionType, dataFlowInfo)
         initializeFunctionReturnTypeBasedOnFunctionBody(scope, function, functionDescriptor, trace, dataFlowInfo)
         BindingContextUtils.recordFunctionDeclarationToDescriptor(trace, function, functionDescriptor)
-        initializeFunctionContractBasedOnFunctionBody(function, functionDescriptor, trace, dataFlowInfo, scope)
 
         return functionDescriptor
-    }
-
-    private fun initializeFunctionContractBasedOnFunctionBody(
-            function: KtNamedFunction,
-            functionDescriptor: SimpleFunctionDescriptorImpl,
-            trace: BindingTrace,
-            dataFlowInfo: DataFlowInfo,
-            scope: LexicalScope
-    ) {
-        if (!contractResolver.hasContractFastCheck(function, functionDescriptor)) {
-            trace.record(BindingContext.FUNCTION_CONTRACT, functionDescriptor, FunctorProvider.noFunctor(function))
-            return
-        }
-
-        // Create lazy provider, that will defer force-resolve of function body until contract is really required
-        // 'resolveFunctionBody' guarantees to initialize functor for this function properly
-        val functorProvider = FunctorProvider(function) {
-            bodyResolver.resolveFunctionBody(dataFlowInfo, trace, function, functionDescriptor, scope)
-        }
-        trace.record(BindingContext.FUNCTION_CONTRACT, functionDescriptor, functorProvider)
     }
 
     private fun initializeFunctionReturnTypeBasedOnFunctionBody(
@@ -166,7 +145,8 @@ class FunctionDescriptorResolver(
             function: KtFunction,
             functionDescriptor: SimpleFunctionDescriptorImpl,
             trace: BindingTrace,
-            expectedFunctionType: KotlinType
+            expectedFunctionType: KotlinType,
+            dataFlowInfo: DataFlowInfo
     ) {
         val headerScope = LexicalWritableScope(scope, functionDescriptor, true,
                                                TraceBasedLocalRedeclarationChecker(trace, overloadChecker), LexicalScopeKind.FUNCTION_HEADER)
@@ -194,6 +174,12 @@ class FunctionDescriptorResolver(
         val visibility = resolveVisibilityFromModifiers(function, getDefaultVisibility(function, containingDescriptor))
         val modality = resolveMemberModalityFromModifiers(function, getDefaultModality(containingDescriptor, visibility, function.hasBody()),
                                                           trace.bindingContext, containingDescriptor)
+        val contractProvider = if (contractParser.fastCheckIfContractPresent(function)) {
+            LazyContractProvider(functionDescriptor) { bodyResolver.resolveFunctionBody(dataFlowInfo, trace, function, functionDescriptor, scope) }
+        } else {
+            LazyContractProvider.createInitialized(functionDescriptor, null)
+        }
+
         functionDescriptor.initialize(
                 receiverType,
                 getDispatchReceiverParameterIfNeeded(containingDescriptor),
@@ -201,7 +187,8 @@ class FunctionDescriptorResolver(
                 valueParameterDescriptors,
                 returnType,
                 modality,
-                visibility
+                visibility,
+                mapOf(ContractProviderKey to contractProvider)
         )
         functionDescriptor.isOperator = function.hasModifier(KtTokens.OPERATOR_KEYWORD)
         functionDescriptor.isInfix = function.hasModifier(KtTokens.INFIX_KEYWORD)

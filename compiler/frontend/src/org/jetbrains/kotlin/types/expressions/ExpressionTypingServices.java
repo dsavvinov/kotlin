@@ -23,8 +23,9 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor;
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor;
 import org.jetbrains.kotlin.descriptors.ScriptDescriptor;
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.FunctorProvider;
-import org.jetbrains.kotlin.effectsystem.structure.ESFunctor;
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor;
+import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey;
+import org.jetbrains.kotlin.descriptors.contracts.LazyContractProvider;
 import org.jetbrains.kotlin.lexer.KtTokens;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.*;
@@ -311,21 +312,17 @@ public class ExpressionTypingServices {
                     true
             );
 
+            // Check if function has contract and record it if so
             if (isFirstStatement) {
                 isFirstStatement = false;
-
                 DeclarationDescriptor ownerDescriptor = scope.getOwnerDescriptor();
                 if (ownerDescriptor instanceof FunctionDescriptor) {
-                    ESFunctor contract = expressionTypingComponents.contractResolver.resolveContract(
-                            statementExpression, context.trace, (FunctionDescriptor) ownerDescriptor
-                    );
-                    if (contract != null) {
-                        FunctorProvider functorProvider =
-                                context.trace.get(BindingContext.FUNCTION_CONTRACT, (FunctionDescriptor) ownerDescriptor);
-                        assert functorProvider != null : "contract have been found for function " + ownerDescriptor +
-                                                         ", but corresponding FunctionProvider in BindingContext is missing";
-                        functorProvider.setFunctor(contract);
-                    }
+                    FunctionDescriptor functionDescriptor = (FunctionDescriptor) ownerDescriptor;
+                    ContractDescriptor contract = expressionTypingComponents.contractParser.parseContract(statementExpression, context.trace);
+
+                    LazyContractProvider contractProvider = functionDescriptor.getUserData(ContractProviderKey.INSTANCE);
+                    assert contractProvider != null : "Contract provider is null for FunctionDescriptor " + functionDescriptor.toString();
+                    contractProvider.setContractDescriptor(contract);
                 }
             }
         }

@@ -16,10 +16,12 @@
 
 package org.jetbrains.kotlin.effectsystem.resolving.dsl
 
-import org.jetbrains.kotlin.effectsystem.structure.ESEffect
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
+import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.resolve.BindingTrace
 
-interface EffectBuilder {
-    fun tryParseEffect(resolvedCall: ResolvedCall<*>): ESEffect?
+interface PSIEffectParser {
+    fun tryParseEffect(expression: KtExpression): EffectDeclaration?
 }
 
+abstract class AbstractPSIEffectParser(val trace: BindingTrace, val contractParserDispatcher: PSIContractParserDispatcher) : PSIEffectParser
