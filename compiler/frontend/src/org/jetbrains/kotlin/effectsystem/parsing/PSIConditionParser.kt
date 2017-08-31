@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effectsystem.resolving.dsl
+package org.jetbrains.kotlin.effectsystem.parsing
 
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanConstantDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanVariableReference
-import org.jetbrains.kotlin.descriptors.contracts.expressions.EqualsPredicate
-import org.jetbrains.kotlin.descriptors.contracts.expressions.IsInstancePredicate
+import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
@@ -29,7 +26,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 
-class PSIConditionParser(val trace: BindingTrace, val dispatcher: PSIContractParserDispatcher) : KtVisitor<BooleanExpression?, Unit>() {
+internal class PSIConditionParser(val trace: BindingTrace, val dispatcher: PSIContractParserDispatcher) : KtVisitor<BooleanExpression?, Unit>() {
     override fun visitIsExpression(expression: KtIsExpression, data: Unit): BooleanExpression? {
         val variable = dispatcher.parseVariable(expression.leftHandSide) ?: return null
         val typeReference = expression.typeReference ?: return null
@@ -57,7 +54,16 @@ class PSIConditionParser(val trace: BindingTrace, val dispatcher: PSIContractPar
                 val right = dispatcher.parseValue(resolvedCall.firstArgumentAsExpressionOrNull()) ?: return null
                 val isNegated = (element as? KtBinaryExpression)?.operationToken == KtTokens.EXCLEQ ?: false
 
-                return EqualsPredicate(left, right, isNegated)
+                if (left is ConstantDescriptor && left.constantValue == Constants.NULL && right is VariableReference) {
+                    return IsNullPredicate(right, isNegated)
+                }
+
+                if (right is ConstantDescriptor && right.constantValue == Constants.NULL && left is VariableReference) {
+                    return IsNullPredicate(left, isNegated)
+                }
+
+                trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(element, "only equality comparisons with 'null' allowed"))
+                return null
             }
 
             else -> {
