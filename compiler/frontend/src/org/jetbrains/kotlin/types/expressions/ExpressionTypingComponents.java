@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.config.LanguageVersionSettings;
 import org.jetbrains.kotlin.context.GlobalContext;
 import org.jetbrains.kotlin.effectsystem.adapters.EffectSystem;
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.PSIContractParserDispatcher;
+import org.jetbrains.kotlin.effectsystem.parsing.PSIContractParserDispatcher;
 import org.jetbrains.kotlin.incremental.components.LookupTracker;
 import org.jetbrains.kotlin.platform.PlatformToKotlinClassMap;
 import org.jetbrains.kotlin.resolve.*;
