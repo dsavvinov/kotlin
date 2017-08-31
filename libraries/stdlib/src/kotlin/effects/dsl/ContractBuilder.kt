@@ -17,7 +17,9 @@
 package kotlin.effects.dsl
 
 class ContractBuilder {
-    fun returns(value: ConstantValue): Effect = EffectStub
+    fun returns(): Effect = EffectStub
+    fun returns(value: Any?): Effect = EffectStub
+    fun returnsNotNull(): Effect = EffectStub
     inline fun <R> callsInPlace(lambda: Function<R>, kind: InvocationKind = InvocationKind.UNKNOWN): Effect = EffectStub
 
     object EffectStub : Effect
