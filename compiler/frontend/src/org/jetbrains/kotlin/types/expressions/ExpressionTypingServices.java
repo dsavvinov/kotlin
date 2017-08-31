@@ -70,7 +70,8 @@ public class ExpressionTypingServices {
         this.expressionTypingFacade = facade;
     }
 
-    @NotNull public StatementFilter getStatementFilter() {
+    @NotNull
+    public StatementFilter getStatementFilter() {
         return statementFilter;
     }
 
@@ -316,13 +317,19 @@ public class ExpressionTypingServices {
             if (isFirstStatement) {
                 isFirstStatement = false;
                 DeclarationDescriptor ownerDescriptor = scope.getOwnerDescriptor();
-                if (ownerDescriptor instanceof FunctionDescriptor) {
+                boolean isScopeOfFunction = ownerDescriptor instanceof FunctionDescriptor &&
+                                            scope.getKind() == LexicalScopeKind.CODE_BLOCK &&
+                                            scope.getParent() instanceof LexicalScope &&
+                                            ((LexicalScope) scope.getParent()).getKind() == LexicalScopeKind.FUNCTION_INNER_SCOPE;
+                if (isScopeOfFunction) {
                     FunctionDescriptor functionDescriptor = (FunctionDescriptor) ownerDescriptor;
-                    ContractDescriptor contract = expressionTypingComponents.contractParser.parseContract(statementExpression, context.trace);
+                    ContractDescriptor contract =
+                            expressionTypingComponents.contractParser.parseContract(statementExpression, context.trace, functionDescriptor);
 
                     LazyContractProvider contractProvider = functionDescriptor.getUserData(ContractProviderKey.INSTANCE);
-                    assert contractProvider != null : "Contract provider is null for FunctionDescriptor " + functionDescriptor.toString();
-                    contractProvider.setContractDescriptor(contract);
+                    if (contractProvider != null) {
+                        contractProvider.setContractDescriptor(contract);
+                    }
                 }
             }
         }
@@ -348,10 +355,10 @@ public class ExpressionTypingServices {
             ContextDependency dependency = context.contextDependency;
             if (KotlinResolutionConfigurationKt.getUSE_NEW_INFERENCE()) {
                 dependency = ContextDependency.INDEPENDENT;
-
             }
 
-            return blockLevelVisitor.getTypeInfo(statementExpression, context.replaceExpectedType(expectedType).replaceContextDependency(dependency), true);
+            return blockLevelVisitor
+                    .getTypeInfo(statementExpression, context.replaceExpectedType(expectedType).replaceContextDependency(dependency), true);
         }
         KotlinTypeInfo result = blockLevelVisitor.getTypeInfo(statementExpression, context, true);
         if (coercionStrategyForLastExpression == COERCION_TO_UNIT) {
