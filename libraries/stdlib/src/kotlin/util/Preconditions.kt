@@ -12,7 +12,7 @@ import kotlin.effects.dsl.*
 @kotlin.internal.InlineOnly
 public inline fun require(value: Boolean): Unit {
     contract {
-        returns(ConstantValue.WILDCARD) implies (value == true)
+        returns() implies value
     }
     require(value) { "Failed requirement." }
     return Unit
@@ -26,7 +26,7 @@ public inline fun require(value: Boolean): Unit {
 @kotlin.internal.InlineOnly
 public inline fun require(value: Boolean, lazyMessage: () -> Any): Unit {
     contract {
-        returns(ConstantValue.WILDCARD) implies (value == true)
+        returns() implies value
     }
     if (!value) {
         val message = lazyMessage()
@@ -40,7 +40,7 @@ public inline fun require(value: Boolean, lazyMessage: () -> Any): Unit {
 @kotlin.internal.InlineOnly
 public inline fun <T:Any> requireNotNull(value: T?): T {
     contract {
-        returns(ConstantValue.WILDCARD) implies (value != null)
+        returns() implies (value != null)
     }
     return requireNotNull(value) { "Required value was null." }
 }
@@ -54,7 +54,7 @@ public inline fun <T:Any> requireNotNull(value: T?): T {
 @kotlin.internal.InlineOnly
 public inline fun <T:Any> requireNotNull(value: T?, lazyMessage: () -> Any): T {
     contract {
-        returns(ConstantValue.WILDCARD) implies (value != null)
+        returns() implies (value != null)
     }
 
     if (value == null) {
@@ -73,7 +73,7 @@ public inline fun <T:Any> requireNotNull(value: T?, lazyMessage: () -> Any): T {
 @kotlin.internal.InlineOnly
 public inline fun check(value: Boolean): Unit {
     contract {
-        returns(ConstantValue.WILDCARD) implies (value == true)
+        returns() implies value
     }
     check(value) { "Check failed." }
 }
@@ -86,12 +86,17 @@ public inline fun check(value: Boolean): Unit {
 @kotlin.internal.InlineOnly
 public inline fun check(value: Boolean, lazyMessage: () -> Any): Unit {
     contract {
-        returns(ConstantValue.WILDCARD) implies (value == true)
+        returns() implies value
     }
     if (!value) {
         val message = lazyMessage()
         throw IllegalStateException(message.toString())
     }
+}
+
+fun test(x: Any?) {
+    throwIfNull(null)
+    x.length
 }
 
 /**
@@ -112,7 +117,7 @@ public inline fun <T:Any> checkNotNull(value: T?): T = checkNotNull(value) { "Re
 @kotlin.internal.InlineOnly
 public inline fun <T:Any> checkNotNull(value: T?, lazyMessage: () -> Any): T {
     contract {
-        returns(ConstantValue.WILDCARD) implies (value != null)
+        returns() implies (value != null)
     }
 
     if (value == null) {

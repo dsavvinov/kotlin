@@ -228,7 +228,7 @@ public fun String.padEnd(length: Int, padChar: Char = ' '): String
 @kotlin.internal.InlineOnly
 public inline fun CharSequence?.isNullOrEmpty(): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (this != null)
+        returns(false) implies (this != null)
     }
 
     return this == null || this.length == 0
@@ -262,7 +262,7 @@ public inline fun CharSequence.isNotBlank(): Boolean = !isBlank()
 @kotlin.internal.InlineOnly
 public inline fun CharSequence?.isNullOrBlank(): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (this != null)
+        returns(false) implies (this != null)
     }
 
     return this == null || this.isBlank()
