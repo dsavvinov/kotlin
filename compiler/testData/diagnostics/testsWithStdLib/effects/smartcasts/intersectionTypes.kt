@@ -4,14 +4,14 @@ import kotlin.effects.dsl.*
 
 fun notIsString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (x is String)
+        returns(false) implies (x is String)
     }
     return x !is String
 }
 
 fun notIsInt(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (x is Int)
+        returns(false) implies (x is Int)
     }
     return x !is Int
 }

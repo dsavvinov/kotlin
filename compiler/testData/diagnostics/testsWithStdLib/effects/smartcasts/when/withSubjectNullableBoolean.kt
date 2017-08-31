@@ -4,7 +4,7 @@ import kotlin.effects.dsl.*
 
 fun safeIsString(x: Any?): Boolean? {
     contract {
-        returns(ConstantValue.TRUE) implies (x is String)
+        returns(true) implies (x is String)
     }
     return x?.let { it is String }
 }

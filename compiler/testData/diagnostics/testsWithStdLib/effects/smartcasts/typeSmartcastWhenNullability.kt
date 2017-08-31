@@ -5,14 +5,14 @@ import kotlin.effects.dsl.*
 
 fun nullWhenString(x: Any?): Int? {
     contract {
-        returns(ConstantValue.NULL) implies (x is String)
+        returns(null) implies (x is String)
     }
     return if (x is String) null else 42
 }
 
 fun nullWhenNotString(x: Any?): Int? {
     contract {
-        returns(ConstantValue.NULL) implies (x !is String)
+        returns(null) implies (x !is String)
     }
     return if (x !is String) null else 42
 }

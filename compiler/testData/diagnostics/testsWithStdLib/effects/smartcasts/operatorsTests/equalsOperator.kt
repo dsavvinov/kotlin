@@ -4,14 +4,14 @@ import kotlin.effects.dsl.*
 
 fun myEqualsNull(x: Int?): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (x != null)
+        returns(false) implies (x != null)
     }
     return x == null
 }
 
 fun myEqualsNotNull(x: Int?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x != null)
+        returns(true) implies (x != null)
     }
     return x != null
 }

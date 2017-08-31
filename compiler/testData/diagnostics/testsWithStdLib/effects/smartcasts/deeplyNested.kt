@@ -4,49 +4,42 @@ import kotlin.effects.dsl.*
 
 fun myAssert(condition: Boolean) {
     contract {
-        returns(ConstantValue.WILDCARD) implies (condition)
+        returns() implies (condition)
     }
     if (!condition) throw kotlin.IllegalArgumentException("Assertion failed")
 }
 
 fun isString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x is String)
+        returns(true) implies (x is String)
     }
     return x is String
 }
 
 fun isInt(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x is Int)
+        returns(true) implies (x is Int)
     }
     return x is Int
 }
 
 fun notEqualsNull(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x != null)
+        returns(true) implies (x != null)
     }
     return x != null
 }
 
 fun equalsTrue(x: Boolean): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies x
+        returns(true) implies x
     }
     return x == true
 }
 
-fun equalsFalse(x: Boolean): Boolean {
-    contract {
-        returns(ConstantValue.TRUE) implies (x == false)
-    }
-    return !x
-}
-
 fun nullWhenNotString(x: Any?): String? {
     contract {
-        returns(ConstantValue.NOT_NULL) implies (x is String)
+        returnsNotNull() implies (x is String)
     }
     return x as? String
 }

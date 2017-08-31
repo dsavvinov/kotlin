@@ -4,7 +4,7 @@ import kotlin.effects.dsl.*
 
 fun myAssert(condition: Boolean) {
     contract {
-        returns(ConstantValue.WILDCARD) implies (condition)
+        returns() implies (condition)
     }
     if (!condition) throw kotlin.IllegalArgumentException("Assertion failed")
 }

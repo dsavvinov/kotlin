@@ -4,31 +4,34 @@ import kotlin.effects.dsl.*
 
 fun trueWhenString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x is String)
+        returns(true) implies (x is String)
     }
     return x is String
 }
 
 fun trueWhenInt(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x is Int)
+        returns(true) implies (x is Int)
     }
     return x is Int
 }
 
 fun falseWhenString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (x is String)
+        returns(false) implies (x is String)
     }
     return x !is String
 }
 
 fun falseWhenInt(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (x is Int)
+        returns(false) implies (x is Int)
     }
     return x !is Int
 }
+
+
+// ==== Actual tests ====
 
 fun truetrue(x: Any?) {
     if (trueWhenString(x) && trueWhenInt(x)) {

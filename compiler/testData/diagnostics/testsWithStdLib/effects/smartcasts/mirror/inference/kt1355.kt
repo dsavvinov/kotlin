@@ -7,7 +7,7 @@ import java.util.HashMap
 
 fun isNotNull(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x != null)
+        returns(true) implies (x != null)
     }
     return x != null
 }

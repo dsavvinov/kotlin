@@ -4,7 +4,7 @@ import kotlin.effects.dsl.*
 
 fun isString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x is String)
+        returns(true) implies (x is String)
     }
     return x is String
 }
@@ -12,10 +12,13 @@ fun isString(x: Any?): Boolean {
 
 fun notIsString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (x is String)
+        returns(false) implies (x is String)
     }
     return x !is String
 }
+
+
+
 
 fun testSimple(x: Any?) {
     x.<!UNRESOLVED_REFERENCE!>length<!>

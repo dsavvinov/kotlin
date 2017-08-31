@@ -5,21 +5,21 @@ import kotlin.effects.dsl.*
 // ===== Definitions ====
 fun isString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x is String)
+        returns(true) implies (x is String)
     }
     return x is String
 }
 
 fun notIsString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (x is String)
+        returns(false) implies (x is String)
     }
     return x !is String
 }
 
 fun notIsInt(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (x is String)
+        returns(false) implies (x is String)
     }
     return x !is Int
 }

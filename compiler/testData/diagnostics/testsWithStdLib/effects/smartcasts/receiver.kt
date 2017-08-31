@@ -4,7 +4,7 @@ import kotlin.effects.dsl.*
 
 fun Any?.isNull(): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (this@isNull != null)
+        returns(false) implies (this@isNull != null)
     }
     return this == null
 }

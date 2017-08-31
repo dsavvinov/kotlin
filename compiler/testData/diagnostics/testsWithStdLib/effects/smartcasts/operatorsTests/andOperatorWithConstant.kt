@@ -4,14 +4,14 @@ import kotlin.effects.dsl.*
 
 fun trueWhenString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x is String)
+        returns(true) implies (x is String)
     }
     return x is String
 }
 
 fun falseWhenString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.FALSE) implies (x is String)
+        returns(false) implies (x is String)
     }
     return x !is String
 }

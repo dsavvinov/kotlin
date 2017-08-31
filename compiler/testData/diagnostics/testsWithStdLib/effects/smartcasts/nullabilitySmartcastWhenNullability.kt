@@ -4,7 +4,7 @@ import kotlin.effects.dsl.*
 
 fun nullWhenNull(x: Int?): Int? {
     contract {
-        returns(ConstantValue.NOT_NULL) implies (x != null)
+        returnsNotNull() implies (x != null)
     }
     return x?.inc()
 }
@@ -28,7 +28,7 @@ fun testNullWhenNull(x: Int?) {
 // NB. it is the same function as `nullWhenNull`, but annotations specifies other facet of the function behaviour
 fun notNullWhenNotNull (x: Int?): Int? {
     contract {
-        returns(ConstantValue.NULL) implies (x == null)
+        returns(null) implies (x == null)
     }
     return x?.inc()
 }

@@ -4,7 +4,7 @@ import kotlin.effects.dsl.*
 
 fun isString(x: Any?): Boolean {
     contract {
-        returns(ConstantValue.TRUE) implies (x is String)
+        returns(true) implies (x is String)
     }
     return x is String
 }
