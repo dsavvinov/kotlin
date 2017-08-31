@@ -18,7 +18,7 @@ package org.jetbrains.kotlin.cfg.pseudocode.instructions.special
 
 import org.jetbrains.kotlin.cfg.pseudocode.Pseudocode
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.*
-import org.jetbrains.kotlin.effectsystem.effects.InvocationKind
+import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
 import org.jetbrains.kotlin.psi.KtElement
 
 class InlinedLocalFunctionDeclarationInstruction(

@@ -25,7 +25,7 @@ import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.*
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.jumps.*
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.special.*
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.effectsystem.effects.InvocationKind
+import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant

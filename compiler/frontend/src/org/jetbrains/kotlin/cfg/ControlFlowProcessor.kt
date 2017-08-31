@@ -31,9 +31,9 @@ import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.AccessTarget
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.InstructionWithValue
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.eval.MagicKind
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
 import org.jetbrains.kotlin.descriptors.impl.AnonymousFunctionDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors.*
-import org.jetbrains.kotlin.effectsystem.effects.InvocationKind
 import org.jetbrains.kotlin.effectsystem.effects.canBeRevisited
 import org.jetbrains.kotlin.effectsystem.effects.isDefinitelyVisited
 import org.jetbrains.kotlin.lexer.KtToken
