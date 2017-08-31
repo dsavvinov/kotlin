@@ -16,6 +16,8 @@
 
 package org.jetbrains.kotlin.descriptors.contracts
 
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+
 /**
  * This is actual model of contracts, i.e. what is expected to be parsed from
  * general protobuf format.
@@ -28,7 +30,7 @@ package org.jetbrains.kotlin.descriptors.contracts
  * backward compatibility. Ideally, this model should only be extended, but not
  * changed.
  */
-open class ContractDescriptor(val effects: List<EffectDeclaration>)
+open class ContractDescriptor(val effect: EffectDeclaration, val ownerFunction: FunctionDescriptor)
 
 interface ContractDescriptionElement {
     fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R

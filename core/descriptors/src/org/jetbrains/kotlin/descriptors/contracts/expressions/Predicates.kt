@@ -25,7 +25,7 @@ class IsInstancePredicate(val arg: VariableReference, val type: KotlinType, val 
             contractDescriptorVisitor.visitIsInstancePredicate(this, data)
 }
 
-class EqualsPredicate(val left: ContractDescriptionValue, val right: ContractDescriptionValue, val inverted: Boolean) : BooleanExpression {
+class IsNullPredicate(val arg: VariableReference, val inverted: Boolean) : BooleanExpression {
     override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
-            contractDescriptorVisitor.visitEqualsPredicate(this, data)
+            contractDescriptorVisitor.visitIsNullPredicate(this, data)
 }

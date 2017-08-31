@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.descriptors.contracts.expressions
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
+import org.jetbrains.kotlin.descriptors.ValueDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionElement
@@ -46,12 +47,12 @@ class BooleanConstantDescriptor(value: Constants) : ConstantDescriptor(value, De
             contractDescriptorVisitor.visitBooleanConstantDescriptor(this, data)
 }
 
-open class VariableReference(val descriptor: VariableDescriptor, val type: KotlinType) : ContractDescriptionValue {
+open class VariableReference(val descriptor: ValueDescriptor, val type: KotlinType) : ContractDescriptionValue {
     override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D) =
             contractDescriptorVisitor.visitVariableReference(this, data)
 }
 
-class BooleanVariableReference(descriptor: VariableDescriptor) : VariableReference(descriptor, DefaultBuiltIns.Instance.booleanType), BooleanExpression {
+class BooleanVariableReference(descriptor: ValueDescriptor) : VariableReference(descriptor, DefaultBuiltIns.Instance.booleanType), BooleanExpression {
     override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
             contractDescriptorVisitor.visitBooleanVariableReference(this, data)
 }

@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptorVisitor
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 
-class ReturnsEffectDeclaration(val value: ConstantDescriptor?) : EffectDeclaration {
+class ReturnsEffectDeclaration(val value: ConstantDescriptor) : EffectDeclaration {
     override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
             contractDescriptorVisitor.visitReturnsEffectDeclaration(this, data)
 }
