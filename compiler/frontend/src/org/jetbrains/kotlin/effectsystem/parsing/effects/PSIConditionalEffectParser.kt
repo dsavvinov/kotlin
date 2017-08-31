@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effectsystem.resolving.effects
+package org.jetbrains.kotlin.effectsystem.parsing.effects
 
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.AbstractPSIEffectParser
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.PSIContractParserDispatcher
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.firstArgumentAsExpressionOrNull
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.isImpliesCallDescriptor
+import org.jetbrains.kotlin.effectsystem.parsing.AbstractPSIEffectParser
+import org.jetbrains.kotlin.effectsystem.parsing.PSIContractParserDispatcher
+import org.jetbrains.kotlin.effectsystem.parsing.firstArgumentAsExpressionOrNull
+import org.jetbrains.kotlin.effectsystem.parsing.isImpliesCallDescriptor
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-class PSIConditionalEffectParser(
+internal class PSIConditionalEffectParser(
         trace: BindingTrace,
         dispatcher: PSIContractParserDispatcher
 ) : AbstractPSIEffectParser(trace, dispatcher) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effectsystem.resolving.dsl
+package org.jetbrains.kotlin.effectsystem.parsing
 
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.expressions.Constants
@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant
 import org.jetbrains.kotlin.types.KotlinType
 
-class PSIConstantParser(val trace: BindingTrace) : KtVisitor<ConstantDescriptor?, Unit>() {
+internal class PSIConstantParser(val trace: BindingTrace) : KtVisitor<ConstantDescriptor?, Unit>() {
     override fun visitKtElement(element: KtElement, data: Unit?): ConstantDescriptor? = null
 
     override fun visitConstantExpression(expression: KtConstantExpression, data: Unit?): ConstantDescriptor? {

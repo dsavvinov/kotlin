@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effectsystem.resolving.effects
+package org.jetbrains.kotlin.effectsystem.parsing.effects
 
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.CallsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.*
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.AT_LEAST_ONCE_NAME
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.AT_MOST_ONCE_NAME
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.EXACTLY_ONCE_NAME
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.INVOCATION_KIND_FQN
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.UNKNOWN_NAME
+import org.jetbrains.kotlin.effectsystem.parsing.AbstractPSIEffectParser
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.AT_LEAST_ONCE_NAME
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.AT_MOST_ONCE_NAME
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.EXACTLY_ONCE_NAME
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.INVOCATION_KIND_FQN
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.UNKNOWN_NAME
+import org.jetbrains.kotlin.effectsystem.parsing.PSIContractParserDispatcher
+import org.jetbrains.kotlin.effectsystem.parsing.firstArgumentAsExpressionOrNull
+import org.jetbrains.kotlin.effectsystem.parsing.isCallsInPlaceEffectDescriptor
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -33,7 +36,7 @@ import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 
-class PSICallsEffectParser(
+internal class PSICallsEffectParser(
         trace: BindingTrace,
         contractParserDispatcher: PSIContractParserDispatcher
 ) : AbstractPSIEffectParser(trace, contractParserDispatcher) {

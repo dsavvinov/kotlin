@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effectsystem.resolving.dsl
+package org.jetbrains.kotlin.effectsystem.parsing
 
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.CALLS_IN_PLACE_FQN
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.CONTRACT_FQN
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.EFFECT_FQN
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.EQUALS_NAME
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.IMPLIES_FQN
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.ContractsDslFqns.RETURNS_FQN
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.CALLS_IN_PLACE_FQN
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.CONTRACT_FQN
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.EFFECT_FQN
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.EQUALS_NAME
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.IMPLIES_FQN
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.RETURNS_FQN
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.RETURNS_NOT_NULL_FQN
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtExpression
@@ -41,6 +42,7 @@ object ContractsDslFqns {
     val IMPLIES_FQN = FqName("kotlin.effects.dsl.Effect.implies")
 
     val RETURNS_FQN = FqName("kotlin.effects.dsl.ContractBuilder.returns")
+    val RETURNS_NOT_NULL_FQN = FqName("kotlin.effects.dsl.ContractBuilder.returnsNotNull")
     val CALLS_IN_PLACE_FQN = FqName("kotlin.effects.dsl.ContractBuilder.callsInPlace")
 
     val EQUALS_NAME = Name.identifier("equals")
@@ -57,6 +59,8 @@ fun CallableDescriptor.isContractCallDescriptor(): Boolean = this is FunctionDes
 fun CallableDescriptor.isImpliesCallDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == IMPLIES_FQN
 
 fun CallableDescriptor.isReturnsEffectDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == RETURNS_FQN
+
+fun CallableDescriptor.isReturnsNotNullDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == RETURNS_NOT_NULL_FQN
 
 fun CallableDescriptor.isEqualsDescriptor(): Boolean =
         this is FunctionDescriptor && this.name == EQUALS_NAME && // fast checks

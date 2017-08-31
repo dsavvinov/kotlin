@@ -14,19 +14,24 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effectsystem.resolving.dsl
+package org.jetbrains.kotlin.effectsystem.parsing
 
+import org.jetbrains.kotlin.builtins.DefaultBuiltIns
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ValueDescriptor
 import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanVariableReference
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ContractDescriptionValue
 import org.jetbrains.kotlin.descriptors.contracts.expressions.VariableReference
 import org.jetbrains.kotlin.diagnostics.Errors
-import org.jetbrains.kotlin.effectsystem.resolving.effects.PSICallsEffectParser
-import org.jetbrains.kotlin.effectsystem.resolving.effects.PSIConditionalEffectParser
-import org.jetbrains.kotlin.effectsystem.resolving.effects.PSIReturnsEffectParser
+import org.jetbrains.kotlin.effectsystem.parsing.effects.PSICallsEffectParser
+import org.jetbrains.kotlin.effectsystem.parsing.effects.PSIConditionalEffectParser
+import org.jetbrains.kotlin.effectsystem.parsing.effects.PSIReturnsEffectParser
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.resolve.BindingContext
@@ -36,7 +41,7 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 class PSIContractParserDispatcher(val trace: BindingTrace) {
     private val conditionParser = PSIConditionParser(trace, this)
     private val constantParser = PSIConstantParser(trace)
-    private val effectsParserPSIS: List<PSIEffectParser> = listOf(
+    private val effectsParsers: List<PSIEffectParser> = listOf(
             PSIReturnsEffectParser(trace, this),
             PSICallsEffectParser(trace, this),
             PSIConditionalEffectParser(trace, this)
@@ -49,7 +54,7 @@ class PSIContractParserDispatcher(val trace: BindingTrace) {
         return isContractDescriptionCallFastCheck(firstExpression)
     }
 
-    fun parseContract(expression: KtExpression?, trace: BindingTrace): ContractDescriptor? {
+    fun parseContract(expression: KtExpression?, trace: BindingTrace, ownerDescriptor: FunctionDescriptor): ContractDescriptor? {
         if (expression == null) return null
         if (!expression.isContractDescriptionCall(trace.bindingContext)) return null
 
@@ -59,14 +64,23 @@ class PSIContractParserDispatcher(val trace: BindingTrace) {
 
         val effects = lambda.bodyExpression?.statements?.mapNotNull { parseEffect(it) } ?: return null
 
-        return ContractDescriptor(effects)
+        if (effects.isEmpty()) return null
+
+        if (effects.size > 1) {
+            trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(expression, "multi-effect contracts are not supported yet"))
+            return null
+        }
+
+        val singleEffect = effects.single()
+
+        return ContractDescriptor(singleEffect, ownerDescriptor)
     }
 
     fun parseCondition(expression: KtExpression?): BooleanExpression? = expression?.accept(conditionParser, Unit)
 
     fun parseEffect(expression: KtExpression?): EffectDeclaration? {
         if (expression == null) return null
-        val parsedEffects = effectsParserPSIS.mapNotNull { it.tryParseEffect(expression) }
+        val parsedEffects = effectsParsers.mapNotNull { it.tryParseEffect(expression) }
 
         if (parsedEffects.isEmpty()) {
             trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(expression, "Unrecognized effect"))
@@ -88,8 +102,11 @@ class PSIContractParserDispatcher(val trace: BindingTrace) {
 
     fun parseVariable(expression: KtExpression?): VariableReference? {
         if (expression == null) return null
-        val descriptor = expression.getResolvedCall(trace.bindingContext)?.resultingDescriptor as? VariableDescriptor ?: return null
-        return VariableReference(descriptor, descriptor.type)
+        val descriptor = expression.getResolvedCall(trace.bindingContext)?.resultingDescriptor as? ValueDescriptor ?: return null
+        return if (descriptor.type == DefaultBuiltIns.Instance.booleanType)
+            BooleanVariableReference(descriptor)
+        else
+            VariableReference(descriptor, descriptor.type)
     }
 
     fun parseValue(expression: KtExpression?): ContractDescriptionValue? {

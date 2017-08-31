@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effectsystem.resolving.dsl
+package org.jetbrains.kotlin.effectsystem.parsing
 
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 
-interface PSIEffectParser {
+internal interface PSIEffectParser {
     fun tryParseEffect(expression: KtExpression): EffectDeclaration?
 }
 
-abstract class AbstractPSIEffectParser(val trace: BindingTrace, val contractParserDispatcher: PSIContractParserDispatcher) : PSIEffectParser
+internal abstract class AbstractPSIEffectParser(val trace: BindingTrace, val contractParserDispatcher: PSIContractParserDispatcher) : PSIEffectParser

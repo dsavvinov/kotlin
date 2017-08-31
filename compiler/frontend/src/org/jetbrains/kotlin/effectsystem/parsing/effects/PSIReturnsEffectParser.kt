@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.effectsystem.resolving.effects
+package org.jetbrains.kotlin.effectsystem.parsing.effects
 
+import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.ReturnsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.expressions.Constants
-import org.jetbrains.kotlin.effectsystem.resolving.dsl.*
+import org.jetbrains.kotlin.effectsystem.parsing.*
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
+import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
-class PSIReturnsEffectParser(
+internal class PSIReturnsEffectParser(
         trace: BindingTrace,
         contractParserDispatcher: PSIContractParserDispatcher
 ) : AbstractPSIEffectParser(trace, contractParserDispatcher) {
@@ -34,13 +35,16 @@ class PSIReturnsEffectParser(
         val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
         val descriptor = resolvedCall.resultingDescriptor
 
+        // TODO: relax assertion
+        if (descriptor.isReturnsNotNullDescriptor()) return ReturnsEffectDeclaration(ConstantDescriptor(Constants.NOT_NULL, descriptor.returnType!!.makeNotNullable()))
+
         if (!descriptor.isReturnsEffectDescriptor()) return null
 
         val argumentExpression = resolvedCall.firstArgumentAsExpressionOrNull()
         val constantValue = if (argumentExpression == null)
-            null
+            ConstantDescriptor(Constants.WILDCARD, DefaultBuiltIns.Instance.anyType)
         else
-        // Note that we distinguish absence of an argument and unparsed argument
+            // Note that we distinguish absence of an argument and unparsed argument
             contractParserDispatcher.parseConstant(argumentExpression) ?: return null
 
         return ReturnsEffectDeclaration(constantValue)
