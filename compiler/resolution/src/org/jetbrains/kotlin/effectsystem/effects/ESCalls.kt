@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effectsystem.effects
 
+import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
 import org.jetbrains.kotlin.effectsystem.structure.ESEffect
 import org.jetbrains.kotlin.effectsystem.impls.ESVariable
 
@@ -29,13 +30,5 @@ data class ESCalls(val callable: ESVariable, val kind: InvocationKind): ESEffect
     }
 
 }
-
-enum class InvocationKind {
-    AT_MOST_ONCE,
-    EXACTLY_ONCE,
-    AT_LEAST_ONCE,
-    UNKNOWN
-}
-
 fun InvocationKind.isDefinitelyVisited(): Boolean = this == InvocationKind.EXACTLY_ONCE || this == InvocationKind.AT_LEAST_ONCE
 fun InvocationKind.canBeRevisited(): Boolean = this == InvocationKind.UNKNOWN || this == InvocationKind.AT_LEAST_ONCE
