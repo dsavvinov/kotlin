@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.cfg.LeakingThisDescriptor;
 import org.jetbrains.kotlin.cfg.TailRecursionKind;
 import org.jetbrains.kotlin.descriptors.*;
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor;
-import org.jetbrains.kotlin.effectsystem.effects.InvocationKind;
+import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind;
 import org.jetbrains.kotlin.effectsystem.structure.EffectSchema;
 import org.jetbrains.kotlin.effectsystem.structure.calltree.CTNode;
 import org.jetbrains.kotlin.name.FqName;
