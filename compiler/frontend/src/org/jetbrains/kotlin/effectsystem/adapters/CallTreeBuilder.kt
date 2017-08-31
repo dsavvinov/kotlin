@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey
 import org.jetbrains.kotlin.effectsystem.factories.createConstant
 import org.jetbrains.kotlin.effectsystem.functors.*
+import org.jetbrains.kotlin.effectsystem.interpretation.ContractInterpretationDispatcher
 import org.jetbrains.kotlin.effectsystem.structure.ESFunctor
 import org.jetbrains.kotlin.effectsystem.structure.EffectSchema
 import org.jetbrains.kotlin.effectsystem.structure.UNIT_ID
@@ -235,7 +236,7 @@ class CallTreeBuilder(
         val functionDescriptor = this.resultingDescriptor as? FunctionDescriptor ?: return null
         val contractProvider = functionDescriptor.getUserData(ContractProviderKey) ?: return null
         val contractDescriptor = contractProvider.getContractDescriptor() ?: return null
-        return ContractToFunctorConverter().convertContractDescriptorToFunctor(contractDescriptor)
+        return ContractInterpretationDispatcher().convertContractDescriptorToFunctor(contractDescriptor)
     }
 
     private val UNKNOWN_CALL = CTCall(UnknownFunctor, listOf())
