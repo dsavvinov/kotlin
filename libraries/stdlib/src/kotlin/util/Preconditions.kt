@@ -94,11 +94,6 @@ public inline fun check(value: Boolean, lazyMessage: () -> Any): Unit {
     }
 }
 
-fun test(x: Any?) {
-    throwIfNull(null)
-    x.length
-}
-
 /**
  * Throws an [IllegalStateException] if the [value] is null. Otherwise
  * returns the not null value.
