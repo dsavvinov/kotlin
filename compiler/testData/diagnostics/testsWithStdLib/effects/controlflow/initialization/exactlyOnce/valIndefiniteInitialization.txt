@@ -4,6 +4,8 @@ public fun branchingIndetermineFlow(/*0*/ a: kotlin.Any?): kotlin.Unit
 public fun funWithUnknownInvocations(/*0*/ block: () -> kotlin.Unit): kotlin.Unit
 public fun multipleAssignments(): kotlin.Unit
 public fun </*0*/ T> myRun(/*0*/ block: () -> T): T
+    CallsInPlace(block, EXACTLY_ONCE)
+
 public fun nestedIndefiniteAssignment(): kotlin.Unit
 public fun nonAnonymousLambdas(): kotlin.Unit
 

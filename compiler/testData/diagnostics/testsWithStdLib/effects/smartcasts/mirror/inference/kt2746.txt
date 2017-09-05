@@ -2,6 +2,8 @@ package
 
 public fun </*0*/ T> f(/*0*/ t: T): C<T>
 public fun isString(/*0*/ x: kotlin.Any?): kotlin.Boolean
+    Returns(TRUE) -> x is String
+
 public fun test1(/*0*/ a: kotlin.Any): kotlin.Unit
 public fun test2(/*0*/ a: kotlin.Any): kotlin.Unit
 

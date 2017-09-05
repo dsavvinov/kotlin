@@ -1,6 +1,8 @@
 package
 
 public fun myAssert(/*0*/ condition: kotlin.Boolean): kotlin.Unit
+    Returns(WILDCARD) -> condition
+
 public fun testAssertInIf(/*0*/ x: kotlin.Any?): kotlin.Unit
 public fun testAssertSmartcast(/*0*/ x: kotlin.Any?): kotlin.Unit
 public fun testAtLeastOnceFlow(/*0*/ x: kotlin.Any?): kotlin.Unit

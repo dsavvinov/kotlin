@@ -1,6 +1,8 @@
 package
 
 public fun isString(/*0*/ x: kotlin.Any?): kotlin.Boolean
+    Returns(TRUE) -> x is String
+
 public fun testEqualsWithConstant(/*0*/ x: kotlin.Any?): kotlin.Unit
 public fun testEqualsWithUnknown(/*0*/ x: kotlin.Any?): kotlin.Unit
 public fun testEqualsWithVariable(/*0*/ x: kotlin.Any?, /*1*/ b: kotlin.Boolean): kotlin.Unit
