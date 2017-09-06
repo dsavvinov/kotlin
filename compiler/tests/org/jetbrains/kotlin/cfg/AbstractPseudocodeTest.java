@@ -45,9 +45,11 @@ import java.util.List;
 import java.util.Set;
 
 public abstract class AbstractPseudocodeTest extends KotlinTestWithEnvironment {
+    private KotlinCoreEnvironment environment = createEnvironmentWithMockJdk(ConfigurationKind.NO_KOTLIN_REFLECT);
+
     @Override
     protected KotlinCoreEnvironment createEnvironment() {
-        return createEnvironmentWithMockJdk(ConfigurationKind.JDK_ONLY);
+        return environment;
     }
 
     protected void doTest(String fileName) throws Exception {
