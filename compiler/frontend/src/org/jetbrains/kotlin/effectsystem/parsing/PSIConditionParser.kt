@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effectsystem.parsing
 
+import org.jetbrains.kotlin.descriptors.ValueDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
 import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -40,12 +41,11 @@ internal class PSIConditionParser(val trace: BindingTrace, val dispatcher: PSICo
         val descriptor = resolvedCall?.resultingDescriptor ?: return null
 
         // boolean variable
-        val booleanVariable = dispatcher.parseVariable(element as? KtExpression) as? BooleanVariableReference
-        if (booleanVariable != null) return booleanVariable
-
-        // boolean constant (i.e. true/false or enum values)
-        val booleanConstant = dispatcher.parseConstant(element as? KtExpression) as? BooleanConstantDescriptor
-        if (booleanConstant != null) return booleanConstant
+        if (descriptor is ValueDescriptor) {
+            val booleanVariable = dispatcher.parseVariable(element as? KtExpression) ?: return null
+            // we don't report type mismatch because it will be reported by the typechecker
+            return booleanVariable as? BooleanVariableReference
+        }
 
         // operator
         when {
@@ -71,6 +71,39 @@ internal class PSIConditionParser(val trace: BindingTrace, val dispatcher: PSICo
                 return null
             }
         }
+    }
+
+    override fun visitConstantExpression(expression: KtConstantExpression, data: Unit?): BooleanExpression? {
+        // we don't report type mismatch because it will be reported by the typechecker
+        return dispatcher.parseConstant(expression) as? BooleanConstantDescriptor
+    }
+
+    override fun visitCallExpression(expression: KtCallExpression, data: Unit?): BooleanExpression? {
+        trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(expression, "call-expressions are not supported yet"))
+        return null
+    }
+
+    override fun visitBinaryExpression(expression: KtBinaryExpression, data: Unit): BooleanExpression? {
+        val operationConstructor: (BooleanExpression, BooleanExpression) -> BooleanExpression
+
+        when (expression.operationToken) {
+            KtTokens.ANDAND -> operationConstructor = ::LogicalAnd
+            KtTokens.OROR -> operationConstructor = ::LogicalOr
+            else -> return super.visitBinaryExpression(expression, data) // pass binary expression further
+        }
+
+        val left = expression.left?.accept(this, data) ?: return null
+        val right = expression.right?.accept(this, data) ?: return null
+        return operationConstructor(left, right)
+    }
+
+    override fun visitUnaryExpression(expression: KtUnaryExpression, data: Unit): BooleanExpression? {
+        if (expression.operationToken != KtTokens.EXCL) return super.visitUnaryExpression(expression, data)
+        val arg = expression.baseExpression?.accept(this, data) ?: return null
+        if (arg !is ContractDescriptionValue) {
+            trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(expression.baseExpression!!, "negations in contract description can be applied only to variables/values"))
+        }
+        return LogicalNot(arg)
     }
 
     override fun visitParenthesizedExpression(expression: KtParenthesizedExpression, data: Unit): BooleanExpression? =

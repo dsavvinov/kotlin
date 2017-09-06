@@ -16,13 +16,9 @@
 
 package org.jetbrains.kotlin.effectsystem.parsing.effects
 
-import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.effectsystem.parsing.AbstractPSIEffectParser
-import org.jetbrains.kotlin.effectsystem.parsing.PSIContractParserDispatcher
-import org.jetbrains.kotlin.effectsystem.parsing.firstArgumentAsExpressionOrNull
-import org.jetbrains.kotlin.effectsystem.parsing.isImpliesCallDescriptor
+import org.jetbrains.kotlin.diagnostics.Errors
+import org.jetbrains.kotlin.effectsystem.parsing.*
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -33,18 +29,16 @@ internal class PSIConditionalEffectParser(
         trace: BindingTrace,
         dispatcher: PSIContractParserDispatcher
 ) : AbstractPSIEffectParser(trace, dispatcher) {
-    override fun tryParseEffect(expression: KtExpression): EffectDeclaration? {
-        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
+    override fun tryParseEffect(expression: KtExpression): EffectParsingResult {
+        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return EffectParsingResult.UNRECOGNIZED
 
-        val effect: EffectDeclaration
-        val condition: BooleanExpression
+        if (!resolvedCall.resultingDescriptor.isImpliesCallDescriptor()) return EffectParsingResult.UNRECOGNIZED
 
-        if (!resolvedCall.resultingDescriptor.isImpliesCallDescriptor()) {
-            return null
-        }
+        val effect = contractParserDispatcher.parseEffect(resolvedCall.dispatchReceiver.safeAs<ExpressionReceiver>()?.expression)
+                     ?: return EffectParsingResult.PARSED_WITH_ERRORS
+        val condition = contractParserDispatcher.parseCondition(resolvedCall.firstArgumentAsExpressionOrNull())
+                        ?: return EffectParsingResult.PARSED_WITH_ERRORS
 
-        effect = contractParserDispatcher.parseEffect(resolvedCall.dispatchReceiver.safeAs<ExpressionReceiver>()?.expression) ?: return null
-        condition = contractParserDispatcher.parseCondition(resolvedCall.firstArgumentAsExpressionOrNull()) ?: return null
-        return ConditionalEffectDeclaration(effect, condition)
+        return EffectParsingResult.Success(ConditionalEffectDeclaration(effect, condition))
     }
 }

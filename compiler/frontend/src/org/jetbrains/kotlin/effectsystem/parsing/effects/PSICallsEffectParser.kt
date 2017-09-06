@@ -16,18 +16,15 @@
 
 package org.jetbrains.kotlin.effectsystem.parsing.effects
 
-import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.CallsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
-import org.jetbrains.kotlin.effectsystem.parsing.AbstractPSIEffectParser
+import org.jetbrains.kotlin.effectsystem.parsing.*
 import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.AT_LEAST_ONCE_NAME
 import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.AT_MOST_ONCE_NAME
 import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.EXACTLY_ONCE_NAME
 import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.INVOCATION_KIND_FQN
 import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.UNKNOWN_NAME
-import org.jetbrains.kotlin.effectsystem.parsing.PSIContractParserDispatcher
-import org.jetbrains.kotlin.effectsystem.parsing.firstArgumentAsExpressionOrNull
-import org.jetbrains.kotlin.effectsystem.parsing.isCallsInPlaceEffectDescriptor
+import org.jetbrains.kotlin.effectsystem.parsing.EffectParsingResult.*
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -41,25 +38,22 @@ internal class PSICallsEffectParser(
         contractParserDispatcher: PSIContractParserDispatcher
 ) : AbstractPSIEffectParser(trace, contractParserDispatcher) {
 
-
-    override fun tryParseEffect(expression: KtExpression): EffectDeclaration? {
-        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
+    override fun tryParseEffect(expression: KtExpression): EffectParsingResult {
+        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return EffectParsingResult.UNRECOGNIZED
         val descriptor = resolvedCall.resultingDescriptor
 
-        if (!descriptor.isCallsInPlaceEffectDescriptor()) return null
+        if (!descriptor.isCallsInPlaceEffectDescriptor()) return EffectParsingResult.UNRECOGNIZED
 
-        val lambda = contractParserDispatcher.parseVariable(resolvedCall.firstArgumentAsExpressionOrNull()) ?: return null
+        val lambda = contractParserDispatcher.parseVariable(resolvedCall.firstArgumentAsExpressionOrNull()) ?: return EffectParsingResult.PARSED_WITH_ERRORS
 
         val kindArgument = resolvedCall.valueArgumentsByIndex?.getOrNull(1)
 
-        val kind = if (kindArgument is DefaultValueArgument) {
+        val kind = if (kindArgument is DefaultValueArgument)
             InvocationKind.UNKNOWN
-        } else {
-            // Argument can't be parsed, don't default to unknown, return null instead to indicate some problems in description
-            (kindArgument as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.toInvocationKind(trace) ?: return null
-        }
+        else
+            (kindArgument as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.toInvocationKind(trace) ?: return EffectParsingResult.PARSED_WITH_ERRORS
 
-        return CallsEffectDeclaration(lambda, kind)
+        return Success(CallsEffectDeclaration(lambda, kind))
     }
 
     private fun KtExpression.toInvocationKind(trace: BindingTrace): InvocationKind? {

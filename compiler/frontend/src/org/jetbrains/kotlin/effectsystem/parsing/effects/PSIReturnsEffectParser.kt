@@ -17,10 +17,10 @@
 package org.jetbrains.kotlin.effectsystem.parsing.effects
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
-import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.ReturnsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.expressions.Constants
+import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.effectsystem.parsing.*
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -31,22 +31,29 @@ internal class PSIReturnsEffectParser(
         trace: BindingTrace,
         contractParserDispatcher: PSIContractParserDispatcher
 ) : AbstractPSIEffectParser(trace, contractParserDispatcher) {
-    override fun tryParseEffect(expression: KtExpression): EffectDeclaration? {
-        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
+    override fun tryParseEffect(expression: KtExpression): EffectParsingResult {
+        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return EffectParsingResult.UNRECOGNIZED
         val descriptor = resolvedCall.resultingDescriptor
 
         // TODO: relax assertion
-        if (descriptor.isReturnsNotNullDescriptor()) return ReturnsEffectDeclaration(ConstantDescriptor(Constants.NOT_NULL, descriptor.returnType!!.makeNotNullable()))
+        if (descriptor.isReturnsNotNullDescriptor())
+            return EffectParsingResult.Success(ReturnsEffectDeclaration(ConstantDescriptor(Constants.NOT_NULL, descriptor.returnType!!.makeNotNullable())))
 
-        if (!descriptor.isReturnsEffectDescriptor()) return null
+        if (!descriptor.isReturnsEffectDescriptor()) return EffectParsingResult.UNRECOGNIZED
 
         val argumentExpression = resolvedCall.firstArgumentAsExpressionOrNull()
         val constantValue = if (argumentExpression == null)
             ConstantDescriptor(Constants.WILDCARD, DefaultBuiltIns.Instance.anyType)
-        else
+        else {
             // Note that we distinguish absence of an argument and unparsed argument
-            contractParserDispatcher.parseConstant(argumentExpression) ?: return null
+            val constant = contractParserDispatcher.parseConstant(argumentExpression)
+            if (constant == null) {
+                trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(argumentExpression, "only true/false/null constants in Returns-effect are currently supported"))
+                return EffectParsingResult.PARSED_WITH_ERRORS
+            }
+            constant
+        }
 
-        return ReturnsEffectDeclaration(constantValue)
+        return EffectParsingResult.Success(ReturnsEffectDeclaration(constantValue))
     }
 }

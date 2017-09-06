@@ -21,7 +21,24 @@ import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 
 internal interface PSIEffectParser {
-    fun tryParseEffect(expression: KtExpression): EffectDeclaration?
+    fun tryParseEffect(expression: KtExpression): EffectParsingResult
+}
+
+sealed class EffectParsingResult(val isSuccessful: Boolean) {
+    class Success(val effectDeclaration: EffectDeclaration) : EffectParsingResult(true)
+
+    // Parser doesn't know about passed effect
+    class Unrecognized : EffectParsingResult(false)
+
+    // Parser knows about passed effect, but there were some errors in description
+    // Difference only matters for error reporting (e.g. we should report
+    // "Unrecognized effect" only if all parsers responded with "Unrecognized")
+    class ParsedWithErrors : EffectParsingResult(false)
+
+    companion object {
+        val UNRECOGNIZED = Unrecognized()
+        val PARSED_WITH_ERRORS = ParsedWithErrors()
+    }
 }
 
 internal abstract class AbstractPSIEffectParser(val trace: BindingTrace, val contractParserDispatcher: PSIContractParserDispatcher) : PSIEffectParser
