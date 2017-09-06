@@ -16,20 +16,20 @@
 
 package org.jetbrains.kotlin.effectsystem.interpretation
 
+import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanConstantDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.expressions.Constants
 import org.jetbrains.kotlin.effectsystem.factories.NOT_NULL_CONSTANT
 import org.jetbrains.kotlin.effectsystem.factories.UNKNOWN_CONSTANT
 import org.jetbrains.kotlin.effectsystem.factories.lift
 import org.jetbrains.kotlin.effectsystem.impls.ESConstant
 
 internal class ConstantValuesInterpreter {
-    fun interpretConstant(constantDescriptor: ConstantDescriptor): ESConstant? = when (constantDescriptor.constantValue) {
-        Constants.TRUE -> true.lift()
-        Constants.FALSE -> false.lift()
-        Constants.NULL -> null.lift()
-        Constants.NOT_NULL -> NOT_NULL_CONSTANT
-        Constants.WILDCARD -> UNKNOWN_CONSTANT
+    fun interpretConstant(constantDescriptor: ConstantDescriptor): ESConstant? = when (constantDescriptor) {
+        BooleanConstantDescriptor.TRUE -> true.lift()
+        BooleanConstantDescriptor.FALSE -> false.lift()
+        ConstantDescriptor.NULL-> null.lift()
+        ConstantDescriptor.NOT_NULL -> NOT_NULL_CONSTANT
+        ConstantDescriptor.WILDCARD -> UNKNOWN_CONSTANT
         else -> null
     }
 }

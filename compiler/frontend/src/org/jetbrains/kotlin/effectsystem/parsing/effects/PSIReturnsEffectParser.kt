@@ -16,16 +16,13 @@
 
 package org.jetbrains.kotlin.effectsystem.parsing.effects
 
-import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.contracts.effects.ReturnsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.expressions.Constants
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.effectsystem.parsing.*
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
-import org.jetbrains.kotlin.types.typeUtil.makeNotNullable
 
 internal class PSIReturnsEffectParser(
         trace: BindingTrace,
@@ -37,13 +34,13 @@ internal class PSIReturnsEffectParser(
 
         // TODO: relax assertion
         if (descriptor.isReturnsNotNullDescriptor())
-            return EffectParsingResult.Success(ReturnsEffectDeclaration(ConstantDescriptor(Constants.NOT_NULL, descriptor.returnType!!.makeNotNullable())))
+            return EffectParsingResult.Success(ReturnsEffectDeclaration(ConstantDescriptor.NOT_NULL))
 
         if (!descriptor.isReturnsEffectDescriptor()) return EffectParsingResult.UNRECOGNIZED
 
         val argumentExpression = resolvedCall.firstArgumentAsExpressionOrNull()
         val constantValue = if (argumentExpression == null)
-            ConstantDescriptor(Constants.WILDCARD, DefaultBuiltIns.Instance.anyType)
+            ConstantDescriptor.WILDCARD
         else {
             // Note that we distinguish absence of an argument and unparsed argument
             val constant = contractParserDispatcher.parseConstant(argumentExpression)

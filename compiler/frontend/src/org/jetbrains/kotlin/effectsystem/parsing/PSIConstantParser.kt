@@ -16,8 +16,8 @@
 
 package org.jetbrains.kotlin.effectsystem.parsing
 
+import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanConstantDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.expressions.Constants
 import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtVisitor
@@ -37,9 +37,9 @@ internal class PSIConstantParser(val trace: BindingTrace) : KtVisitor<ConstantDe
         val value: Any? = compileTimeConstant.getValue(type)
 
         return when (value) {
-            true -> ConstantDescriptor(Constants.TRUE, type)
-            false -> ConstantDescriptor(Constants.FALSE, type)
-            null -> ConstantDescriptor(Constants.NULL, type)
+            true -> BooleanConstantDescriptor.TRUE
+            false -> BooleanConstantDescriptor.FALSE
+            null -> ConstantDescriptor.NULL
             else -> null
         }
     }

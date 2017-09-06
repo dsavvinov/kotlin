@@ -54,11 +54,11 @@ internal class PSIConditionParser(val trace: BindingTrace, val dispatcher: PSICo
                 val right = dispatcher.parseValue(resolvedCall.firstArgumentAsExpressionOrNull()) ?: return null
                 val isNegated = (element as? KtBinaryExpression)?.operationToken == KtTokens.EXCLEQ ?: false
 
-                if (left is ConstantDescriptor && left.constantValue == Constants.NULL && right is VariableReference) {
+                if (left is ConstantDescriptor && left == ConstantDescriptor.NULL && right is VariableReference) {
                     return IsNullPredicate(right, isNegated)
                 }
 
-                if (right is ConstantDescriptor && right.constantValue == Constants.NULL && left is VariableReference) {
+                if (right is ConstantDescriptor && right == ConstantDescriptor.NULL && left is VariableReference) {
                     return IsNullPredicate(left, isNegated)
                 }
 
