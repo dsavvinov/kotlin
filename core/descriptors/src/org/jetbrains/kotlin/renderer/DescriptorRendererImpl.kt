@@ -21,6 +21,9 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey
+import org.jetbrains.kotlin.descriptors.contracts.LazyContractProvider
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.FqNameUnsafe
 import org.jetbrains.kotlin.name.Name
@@ -694,6 +697,14 @@ internal class DescriptorRendererImpl(
         }
 
         renderWhereSuffix(function.typeParameters, builder)
+    }
+
+    override fun renderContract(contractDescriptor: ContractDescriptor): String {
+        val builder = StringBuilder()
+        val contractRenderer = ContractDescriptorRenderer(builder)
+        val effect = contractDescriptor.effect
+        effect.accept(contractRenderer, Unit)
+        return builder.toString()
     }
 
     private fun renderReceiverAfterName(callableDescriptor: CallableDescriptor, builder: StringBuilder) {
