@@ -956,6 +956,7 @@ public interface Errors {
 
     // Function contracts
     DiagnosticFactory1<KtElement, String> ERROR_IN_CONTRACT_DESCRIPTION = DiagnosticFactory1.create(ERROR);
+    DiagnosticFactory0<KtElement> CONTRACT_NOT_ALLOWED = DiagnosticFactory0.create(ERROR);
 
     // Error sets
     ImmutableSet<? extends DiagnosticFactory<?>> UNRESOLVED_REFERENCE_DIAGNOSTICS = ImmutableSet.of(
