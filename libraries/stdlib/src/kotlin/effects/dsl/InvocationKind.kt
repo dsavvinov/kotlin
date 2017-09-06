@@ -16,6 +16,9 @@
 
 package kotlin.effects.dsl
 
+import kotlin.internal.ContractsDSL
+
+@ContractsDSL
 enum class InvocationKind {
     AT_MOST_ONCE,
     AT_LEAST_ONCE,

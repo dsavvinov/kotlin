@@ -16,9 +16,16 @@
 
 package kotlin.effects.dsl
 
+import kotlin.internal.ContractsDSL
+
+@ContractsDSL
 interface Effect {
+    @ContractsDSL
     infix fun implies(booleanExpression: Boolean) = Unit
 }
 
+@ContractsDSL
 class Returns : Effect
+
+@ContractsDSL
 class CallsInPlace : Effect

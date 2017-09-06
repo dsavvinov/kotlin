@@ -16,13 +16,19 @@
 
 package kotlin.effects.dsl
 
+import kotlin.internal.ContractsDSL
+import kotlin.internal.InlineOnly
+
+@ContractsDSL
 class ContractBuilder {
-    fun returns(): Effect = EffectStub
-    fun returns(value: Any?): Effect = EffectStub
-    fun returnsNotNull(): Effect = EffectStub
-    inline fun <R> callsInPlace(lambda: Function<R>, kind: InvocationKind = InvocationKind.UNKNOWN): Effect = EffectStub
+    @ContractsDSL fun returns(): Effect = EffectStub
+    @ContractsDSL fun returns(value: Any?): Effect = EffectStub
+    @ContractsDSL fun returnsNotNull(): Effect = EffectStub
+    @ContractsDSL inline fun <R> callsInPlace(lambda: Function<R>, kind: InvocationKind = InvocationKind.UNKNOWN): Effect = EffectStub
 
     object EffectStub : Effect
 }
 
+@ContractsDSL
+@InlineOnly
 inline fun contract(builder: ContractBuilder.() -> Unit) = Unit
