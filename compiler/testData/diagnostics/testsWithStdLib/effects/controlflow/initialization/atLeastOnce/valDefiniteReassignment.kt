@@ -1,6 +1,6 @@
 // !LANGUAGE: +CalledInPlaceEffect
 
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 
 fun <T> runTwice(block: () -> T): T {
     contract {

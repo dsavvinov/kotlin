@@ -1,6 +1,6 @@
 // !LANGUAGE: +ContractEffects
 
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 
 fun foo(b: Boolean): Boolean {
     contract {

@@ -1,6 +1,6 @@
 // !LANGUAGE: +CalledInPlaceEffect
 
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 
 inline fun <T> myRun(block: () -> T): T {
     contract {

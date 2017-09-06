@@ -1,3 +1,5 @@
+// !LANGUAGE: +ContractEffects
+
 fun testIsNullOrEmpty(x: String?) {
     if (x.isNullOrEmpty()) {
         x<!UNSAFE_CALL!>.<!>length

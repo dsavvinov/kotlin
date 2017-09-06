@@ -1,3 +1,5 @@
+// !LANGUAGE: +ContractEffects
+
 fun testRequireSmartcast(x: Any?) {
     require(x is String)
     <!DEBUG_INFO_SMARTCAST!>x<!>.length

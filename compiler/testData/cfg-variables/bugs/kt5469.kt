@@ -1,3 +1,5 @@
+// !LANGUAGE: +CalledInPlaceEffect
+
 fun f() {
     var foo = 1
     try {

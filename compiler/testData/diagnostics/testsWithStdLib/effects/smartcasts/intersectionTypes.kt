@@ -1,6 +1,6 @@
 // !LANGUAGE: +ContractEffects
 
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 
 fun notIsString(x: Any?): Boolean {
     contract {

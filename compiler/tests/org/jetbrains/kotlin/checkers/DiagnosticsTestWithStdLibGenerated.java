@@ -1471,6 +1471,12 @@ public class DiagnosticsTestWithStdLibGenerated extends AbstractDiagnosticsTestW
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/testsWithStdLib/effects/smartcasts"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
             }
 
+            @TestMetadata("catchExceptionSpilling.kt")
+            public void testCatchExceptionSpilling() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/smartcasts/catchExceptionSpilling.kt");
+                doTest(fileName);
+            }
+
             @TestMetadata("compositions.kt")
             public void testCompositions() throws Exception {
                 String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/smartcasts/compositions.kt");

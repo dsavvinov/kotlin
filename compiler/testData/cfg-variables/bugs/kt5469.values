@@ -15,10 +15,9 @@ fun f() {
 RuntimeException()                                                                               <v2>: {<: Throwable}   NEW: call(RuntimeException(), <init>) -> <v2>
 throw RuntimeException()                                                                         !<v3>: *
 { foo = 2 throw RuntimeException() }                                                             !<v3>: *               COPY
-println                                                                                          !<v6>: *
-foo                                                                                              <v5>: *                NEW: r(foo) -> <v5>
-println(foo)                                                                                     <v7>: *                NEW: magic[UNRESOLVED_CALL](println(foo)|<v5>, !<v6>) -> <v7>
-{ println(foo) }                                                                                 <v7>: *                COPY
-try { foo = 2 throw RuntimeException() } catch (e: Throwable) { println(foo) }                   <v8>: *                NEW: merge(try { foo = 2 throw RuntimeException() } catch (e: Throwable) { println(foo) }|!<v3>, <v7>) -> <v8>
-{ var foo = 1 try { foo = 2 throw RuntimeException() } catch (e: Throwable) { println(foo) } }   <v8>: *                COPY
+foo                                                                                              <v5>: Int              NEW: r(foo) -> <v5>
+println(foo)                                                                                     <v6>: *                NEW: call(println(foo), println|<v5>) -> <v6>
+{ println(foo) }                                                                                 <v6>: *                COPY
+try { foo = 2 throw RuntimeException() } catch (e: Throwable) { println(foo) }                   <v7>: *                NEW: merge(try { foo = 2 throw RuntimeException() } catch (e: Throwable) { println(foo) }|!<v3>, <v6>) -> <v7>
+{ var foo = 1 try { foo = 2 throw RuntimeException() } catch (e: Throwable) { println(foo) } }   <v7>: *                COPY
 =====================

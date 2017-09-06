@@ -1,6 +1,6 @@
 // !LANGUAGE: +CalledInPlaceEffect
 
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 
 fun <T> inPlace(block: () -> T): T {
     contract {

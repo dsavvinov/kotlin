@@ -1,9 +1,30 @@
 == myRun ==
-inline fun <T> myRun(@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> T): T = block()
+inline fun <T> myRun(block: () -> T): T {
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+    return block()
+}
 ---------------------
-          <v0>: {<: () -> T}   NEW: magic[FAKE_INITIALIZER](@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> T) -> <v0>
-block     <v1>: {<: () -> T}   NEW: r(block) -> <v1>
-block()   <v2>: {<: T}         NEW: call(block(), invoke|<v1>) -> <v2>
+                                                                                   <v0>: {<: () -> T}                      NEW: magic[FAKE_INITIALIZER](block: () -> T) -> <v0>
+{ callsInPlace(block, InvocationKind.EXACTLY_ONCE) }                               <v1>: {<: ContractBuilder.() -> Unit}   NEW: r({ callsInPlace(block, InvocationKind.EXACTLY_ONCE) }) -> <v1>
+contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }                      <v2>: *                                 NEW: call(contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }, contract|<v1>) -> <v2>
+block                                                                              <v3>: {<: () -> T}                      NEW: r(block) -> <v3>
+block()                                                                            <v4>: {<: T}                            NEW: call(block(), invoke|<v3>) -> <v4>
+return block()                                                                     !<v5>: *
+{ contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) } return block() }   !<v5>: *                                COPY
+=====================
+== anonymous_0 ==
+{
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+---------------------
+                                                   <v0>: {<: ContractBuilder}   NEW: magic[IMPLICIT_RECEIVER](callsInPlace(block, InvocationKind.EXACTLY_ONCE)) -> <v0>
+block                                              <v1>: {<: Function<T>}       NEW: r(block) -> <v1>
+EXACTLY_ONCE                                       <v2>: {<: InvocationKind}    NEW: r(EXACTLY_ONCE) -> <v2>
+InvocationKind.EXACTLY_ONCE                        <v2>: {<: InvocationKind}    COPY
+callsInPlace(block, InvocationKind.EXACTLY_ONCE)   <v3>: *                      NEW: call(callsInPlace(block, InvocationKind.EXACTLY_ONCE), callsInPlace|<v0>, <v1>, <v2>) -> <v3>
+callsInPlace(block, InvocationKind.EXACTLY_ONCE)   <v3>: *                      COPY
 =====================
 == getBoolean ==
 fun getBoolean(): Boolean = false
@@ -58,7 +79,7 @@ inc()                                                                           
 x.inc()                                                                                                                                                                                                                            <v8>: *                 COPY
 { val x: Int if (getBoolean()) run { while (getBoolean()) { do { run { if (getBoolean()) { x = 42 } else { x = 43 } } break } while (getBoolean()) run { x.inc() } run { x = 42 } break } x = 42 } else run { x = 42 } x.inc() }   <v8>: *                 COPY
 =====================
-== anonymous_0 ==
+== anonymous_1 ==
 {
             while (getBoolean()) {
                 do {
@@ -96,7 +117,7 @@ break                                                                           
 x = 42                                                                                                                                                        !<v13>: *
 while (getBoolean()) { do { run { if (getBoolean()) { x = 42 } else { x = 43 } } break } while (getBoolean()) run { x.inc() } run { x = 42 } break } x = 42   !<v13>: *               COPY
 =====================
-== anonymous_1 ==
+== anonymous_2 ==
 {
                         if (getBoolean()) {
                             x = 42
@@ -116,7 +137,7 @@ x = 43                                         !<v5>: *
 if (getBoolean()) { x = 42 } else { x = 43 }   <v6>: *         NEW: merge(if (getBoolean()) { x = 42 } else { x = 43 }|!<v3>, !<v5>) -> <v6>
 if (getBoolean()) { x = 42 } else { x = 43 }   <v6>: *         COPY
 =====================
-== anonymous_2 ==
+== anonymous_3 ==
 { x.inc() }
 ---------------------
 x         <v0>: Int   NEW: r(x) -> <v0>
@@ -124,14 +145,14 @@ inc()     <v1>: Int   NEW: call(inc(), inc|<v0>) -> <v1>
 x.inc()   <v1>: Int   COPY
 x.inc()   <v1>: Int   COPY
 =====================
-== anonymous_3 ==
+== anonymous_4 ==
 { x = 42 }
 ---------------------
 42       <v0>: Int   NEW: r(42) -> <v0>
 x = 42   !<v1>: *
 x = 42   !<v1>: *    COPY
 =====================
-== anonymous_4 ==
+== anonymous_5 ==
 {
             x = 42
         }

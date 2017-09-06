@@ -34,10 +34,10 @@ L2 [onException]:
   4 mark({ println(foo) })                                                                                       INIT: in: {e=ID, foo=ID} out: {e=ID, foo=ID}    USE: in: {foo=READ} out: {foo=READ}
     r(foo) -> <v5>                                                                                                                                               USE: in: {} out: {foo=READ}
     mark(println(foo))
-    magic[UNRESOLVED_CALL](println(foo)|<v5>, !<v6>) -> <v7>
+    call(println(foo), println|<v5>) -> <v6>
   3 jmp(L3)
 L3 [afterCatches]:
-  2 merge(try { foo = 2 throw RuntimeException() } catch (e: Throwable) { println(foo) }|!<v3>, <v7>) -> <v8>    INIT: in: {foo=ID} out: {foo=ID}
+  2 merge(try { foo = 2 throw RuntimeException() } catch (e: Throwable) { println(foo) }|!<v3>, <v6>) -> <v7>    INIT: in: {foo=ID} out: {foo=ID}
 L1:
   1 <END>                                                                                                        INIT: in: {} out: {}
 error:

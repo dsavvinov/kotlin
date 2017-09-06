@@ -1,3 +1,5 @@
+// !LANGUAGE: +CalledInPlaceEffect
+
 fun sample(): String? {
     try {
         if (false) {

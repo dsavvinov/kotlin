@@ -61,14 +61,14 @@ L0:
     mark("Hello!")
     r("Hello!") -> <v0>
     mark(println("Hello!"))
-    magic[UNRESOLVED_CALL](println("Hello!")|<v0>, !<v1>) -> <v2>
-    ret(*|<v2>) L1
+    call(println("Hello!"), println|<v0>) -> <v1>
+    ret(*|<v1>) L1
 L1:
-    <END>                                                            NEXT:[<SINK>]
+    <END>                                            NEXT:[<SINK>]
 error:
--   <ERROR>                                                          PREV:[]
+-   <ERROR>                                          PREV:[]
 sink:
-    <SINK>                                                           PREV:[<END>]
+    <SINK>                                           PREV:[<END>]
 =====================
 == with ==
 inline fun <T, R> with(receiver: T, block: T.() -> R): R = receiver.block()
@@ -137,9 +137,8 @@ L5 [after local declaration]:
     r({ A.foo() }) -> <v1>                                PREV:[jmp?(L5)]
     mark(with(B) { A.foo() })
     call(with(B) { A.foo() }, with|<v0>, <v1>) -> <v2>
-  2 ret(*|<v2>) L4
 L4:
-    <END>                                                 NEXT:[<SINK>]
+  2 <END>                                                 NEXT:[<SINK>]
 error:
 -   <ERROR>                                               PREV:[]
 sink:
@@ -161,9 +160,8 @@ L6:
     magic[IMPLICIT_RECEIVER](foo()) -> <v3>
     mark(foo())
     call(foo(), invoke|<v2>, <v3>) -> <v4>
-  4 ret(*|<v4>) L7
 L7:
-    <END>                                      NEXT:[<SINK>]
+  4 <END>                                      NEXT:[<SINK>]
 error:
 -   <ERROR>                                    PREV:[]
 sink:

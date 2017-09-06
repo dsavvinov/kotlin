@@ -1,3 +1,5 @@
+// !LANGUAGE: +ContractEffects
+
 fun testCheckSmartcast(x: Any?) {
     check(x is String)
     <!DEBUG_INFO_SMARTCAST!>x<!>.length

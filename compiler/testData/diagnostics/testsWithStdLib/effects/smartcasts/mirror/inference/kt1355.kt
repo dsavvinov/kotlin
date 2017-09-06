@@ -2,7 +2,7 @@
 
 package a
 
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 import java.util.HashMap
 
 fun isNotNull(x: Any?): Boolean {

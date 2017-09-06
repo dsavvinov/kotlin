@@ -76,7 +76,7 @@ L12 [start finally]:
   9 mark({ println(foo) // Variable 'foo' must be initialized })                                                                                                                                                                                                                                                                     USE: in: {foo=READ} out: {foo=READ}
     r(foo) -> <v10>                                                                                                                                                                                                                                                                                                                  USE: in: {} out: {foo=READ}
     mark(println(foo))
-    magic[UNRESOLVED_CALL](println(foo)|<v10>, !<v11>) -> <v12>
+    call(println(foo), println|<v10>) -> <v11>
 L13 [finish finally]:
   5 mark({})                                                                                                                                                                                                                                                                         INIT: in: {} out: {}
     read (Unit)
@@ -88,7 +88,7 @@ L10 [onExceptionToFinallyBlock]:
   9 mark({ println(foo) // Variable 'foo' must be initialized })                                                                                                                                                                                                                                                                     USE: in: {foo=READ} out: {foo=READ}
     r(foo) -> <v10>                                                                                                                                                                                                                                                                                                                  USE: in: {} out: {foo=READ}
     mark(println(foo))
-    magic[UNRESOLVED_CALL](println(foo)|<v10>, !<v11>) -> <v12>
+    call(println(foo), println|<v10>) -> <v11>
   5 mark({})                                                                                                                                                                                                                                                                         INIT: in: {} out: {}
     read (Unit)
   6 jmp(error)                                                                                                                                                                                                                                                                                                                       USE: in: {} out: {}
@@ -96,26 +96,26 @@ L14 [skipFinallyToErrorBlock]:
   9 mark({ println(foo) // Variable 'foo' must be initialized })                                                                                                                                                                                                                     INIT: in: {foo=ID} out: {foo=ID}                USE: in: {foo=READ} out: {foo=READ}
     r(foo) -> <v10>                                                                                                                                                                                                                                                                                                                  USE: in: {} out: {foo=READ}
     mark(println(foo))
-    magic[UNRESOLVED_CALL](println(foo)|<v10>, !<v11>) -> <v12>
-  6 merge(try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized }|!<v7>, !<v13>) -> <v14>
+    call(println(foo), println|<v10>) -> <v11>
+  6 merge(try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized }|!<v7>, !<v12>) -> <v13>
   5 jmp(L15)                                                                                                                                                                                                                                                                         INIT: in: {} out: {}
 L8 [else branch]:
     read (Unit)
 L15 ['if' expression result]:
-    merge(if (false) { var foo: String? = null try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized } }|<v14>) -> <v15>
+    merge(if (false) { var foo: String? = null try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized } }|<v13>) -> <v14>
     jmp?(L2)
     mark("fail")
-    r("fail") -> <v16>
+    r("fail") -> <v15>
     mark({})
     read (Unit)
-    ret(*|<v16>) L1                                                                                                                                                                                                                                                                                                                  USE: in: {} out: {}
+    ret(*|<v15>) L1                                                                                                                                                                                                                                                                                                                  USE: in: {} out: {}
 - 4 jmp(L16)
 L7 [else branch]:
     read (Unit)                                                                                                                                                                                                                                                                      INIT: in: {} out: {}
 L16 ['if' expression result]:
-    merge(if (false) { if (false) { var foo: String? = null try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized } } return "fail" }|!<v17>) -> <v18>
+    merge(if (false) { if (false) { var foo: String? = null try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized } } return "fail" }|!<v16>) -> <v17>
 L6 ['if' expression result]:
-  3 merge(if (false) { return "fail" } else { if (false) { if (false) { var foo: String? = null try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized } } return "fail" } }|!<v2>, <v18>) -> <v19>
+  3 merge(if (false) { return "fail" } else { if (false) { if (false) { var foo: String? = null try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized } } return "fail" } }|!<v2>, <v17>) -> <v18>
   2 jmp?(L2)
     jmp(L17)
 L2 [onExceptionToFinallyBlock]:
@@ -125,9 +125,9 @@ L2 [onExceptionToFinallyBlock]:
 L17 [skipFinallyToErrorBlock]:
   5 mark({})
     read (Unit)
-  2 merge(try { if (false) { return "fail" } else { if (false) { if (false) { var foo: String? = null try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized } } return "fail" } } } finally {}|<v19>) -> <v20>
-    r(null) -> <v21>
-    ret(*|<v21>) L1
+  2 merge(try { if (false) { return "fail" } else { if (false) { if (false) { var foo: String? = null try { foo = "test" } catch (e: Exception) { return "fail" } finally { println(foo) // Variable 'foo' must be initialized } } return "fail" } } } finally {}|<v18>) -> <v19>
+    r(null) -> <v20>
+    ret(*|<v20>) L1
 L1:
   1 <END>
 error:

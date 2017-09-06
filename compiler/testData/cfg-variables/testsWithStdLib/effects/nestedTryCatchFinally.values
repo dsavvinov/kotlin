@@ -1,9 +1,30 @@
 == myRun ==
-inline fun <T> myRun(@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> T): T = block()
+inline fun <T> myRun(block: () -> T): T {
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+    return block()
+}
 ---------------------
-          <v0>: {<: () -> T}   NEW: magic[FAKE_INITIALIZER](@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> T) -> <v0>
-block     <v1>: {<: () -> T}   NEW: r(block) -> <v1>
-block()   <v2>: {<: T}         NEW: call(block(), invoke|<v1>) -> <v2>
+                                                                                   <v0>: {<: () -> T}                      NEW: magic[FAKE_INITIALIZER](block: () -> T) -> <v0>
+{ callsInPlace(block, InvocationKind.EXACTLY_ONCE) }                               <v1>: {<: ContractBuilder.() -> Unit}   NEW: r({ callsInPlace(block, InvocationKind.EXACTLY_ONCE) }) -> <v1>
+contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }                      <v2>: *                                 NEW: call(contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }, contract|<v1>) -> <v2>
+block                                                                              <v3>: {<: () -> T}                      NEW: r(block) -> <v3>
+block()                                                                            <v4>: {<: T}                            NEW: call(block(), invoke|<v3>) -> <v4>
+return block()                                                                     !<v5>: *
+{ contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) } return block() }   !<v5>: *                                COPY
+=====================
+== anonymous_0 ==
+{
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+---------------------
+                                                   <v0>: {<: ContractBuilder}   NEW: magic[IMPLICIT_RECEIVER](callsInPlace(block, InvocationKind.EXACTLY_ONCE)) -> <v0>
+block                                              <v1>: {<: Function<T>}       NEW: r(block) -> <v1>
+EXACTLY_ONCE                                       <v2>: {<: InvocationKind}    NEW: r(EXACTLY_ONCE) -> <v2>
+InvocationKind.EXACTLY_ONCE                        <v2>: {<: InvocationKind}    COPY
+callsInPlace(block, InvocationKind.EXACTLY_ONCE)   <v3>: *                      NEW: call(callsInPlace(block, InvocationKind.EXACTLY_ONCE), callsInPlace|<v0>, <v1>, <v2>) -> <v3>
+callsInPlace(block, InvocationKind.EXACTLY_ONCE)   <v3>: *                      COPY
 =====================
 == innerComputation ==
 fun innerComputation(): Int = 42
@@ -66,7 +87,7 @@ inc()                                                                           
 x.inc()                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           <v10>: *                COPY
 { val x: Int try { myRun { try { x = innerComputation() } catch (e: java.lang.Exception) { log() } // possible reassignment if innerComputation finished x = 42 } // Definite reassignment here, cause can get here only if myRun finished x = outerComputation() } catch (e: java.lang.Exception) { // can catch exception thrown by the inner, so x can be not initalized log() } finally { // Possible reassignment (e.g. if everything finished) x = 42 } // Properly initialized x.inc() }   <v10>: *                COPY
 =====================
-== anonymous_0 ==
+== anonymous_1 ==
 {
             try {
                 x = innerComputation()
@@ -127,7 +148,7 @@ inc()                                                                           
 x.inc()                                                                                                                                                                                                                                                                         <v8>: *                COPY
 { val x: Int try { myRun { try { innerComputation() } catch (e: java.lang.Exception) { log() } finally { x = 42 } } // Properly initialized x.inc() } catch (e: java.lang.Exception) { log() } // Still can be non-initialized (e.g. if x.inc() threw an exception) x.inc() }   <v8>: *                COPY
 =====================
-== anonymous_1 ==
+== anonymous_2 ==
 {
             try {
                 innerComputation()

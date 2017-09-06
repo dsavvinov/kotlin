@@ -1,9 +1,9 @@
 // !LANGUAGE: +ContractEffects
 
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 
 fun foo(boolean: Boolean) {
     contract {
-        <!ERROR_IN_CONTRACT_DESCRIPTION!>(returns() implies (boolean)) <!UNRESOLVED_REFERENCE!>implies<!> (!boolean)<!>
+        (returns() implies (boolean)) <!UNRESOLVED_REFERENCE!>implies<!> (!boolean)
     }
 }

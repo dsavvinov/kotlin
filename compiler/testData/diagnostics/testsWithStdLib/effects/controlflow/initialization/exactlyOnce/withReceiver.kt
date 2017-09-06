@@ -1,6 +1,6 @@
 // !LANGUAGE: +CalledInPlaceEffect
 
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 
 fun <T, R> T.myLet(block: (T) -> R): R {
     contract {

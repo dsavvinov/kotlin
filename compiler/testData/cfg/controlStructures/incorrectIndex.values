@@ -1,8 +1,7 @@
 == s ==
 val s = mutableListOf<String>()
 ---------------------
-mutableListOf             !<v0>: *
-mutableListOf<String>()   <v1>: {<: [ERROR : Type for mutableListOf<String>()]}   NEW: magic[UNRESOLVED_CALL](mutableListOf<String>()|!<v0>) -> <v1>
+mutableListOf<String>()   <v0>: {<: MutableList<String>}   NEW: call(mutableListOf<String>(), mutableListOf) -> <v0>
 =====================
 == test ==
 fun test(name: String?, flag: Boolean): Boolean {
@@ -48,21 +47,19 @@ try { name?.let { if (flag) { s.add(it) } else { s.remove(it) } return true } re
             return true
         }
 ---------------------
-                                                            <v3>: *          NEW: magic[VALUE_CONSUMER](it|<v2>) -> <v3>
-                                                            <v7>: *          NEW: magic[VALUE_CONSUMER](it|<v6>) -> <v7>
-flag                                                        <v0>: Boolean    NEW: r(flag) -> <v0>
-s                                                           <v1>: *          NEW: r(s) -> <v1>
-it                                                          <v2>: *          NEW: r(it) -> <v2>
-add(it)                                                     <v4>: *          NEW: call(add(it), <ERROR FUNCTION>|<v1>) -> <v4>
-s.add(it)                                                   <v4>: *          COPY
-{ s.add(it) }                                               <v4>: *          COPY
-s                                                           <v5>: *          NEW: r(s) -> <v5>
-it                                                          <v6>: *          NEW: r(it) -> <v6>
-remove(it)                                                  <v8>: *          NEW: call(remove(it), <ERROR FUNCTION>|<v5>) -> <v8>
-s.remove(it)                                                <v8>: *          COPY
-{ s.remove(it) }                                            <v8>: *          COPY
-if (flag) { s.add(it) } else { s.remove(it) }               <v9>: *          NEW: merge(if (flag) { s.add(it) } else { s.remove(it) }|<v4>, <v8>) -> <v9>
-true                                                        <v10>: Boolean   NEW: r(true) -> <v10>
-return true                                                 !<v13>: *
-if (flag) { s.add(it) } else { s.remove(it) } return true   !<v13>: *        COPY
+flag                                                        <v0>: Boolean                          NEW: r(flag) -> <v0>
+s                                                           <v1>: {<: MutableCollection<String>}   NEW: r(s) -> <v1>
+it                                                          <v2>: String                           NEW: r(it) -> <v2>
+add(it)                                                     <v3>: *                                NEW: call(add(it), add|<v1>, <v2>) -> <v3>
+s.add(it)                                                   <v3>: *                                COPY
+{ s.add(it) }                                               <v3>: *                                COPY
+s                                                           <v4>: {<: MutableCollection<String>}   NEW: r(s) -> <v4>
+it                                                          <v5>: String                           NEW: r(it) -> <v5>
+remove(it)                                                  <v6>: *                                NEW: call(remove(it), remove|<v4>, <v5>) -> <v6>
+s.remove(it)                                                <v6>: *                                COPY
+{ s.remove(it) }                                            <v6>: *                                COPY
+if (flag) { s.add(it) } else { s.remove(it) }               <v7>: *                                NEW: merge(if (flag) { s.add(it) } else { s.remove(it) }|<v3>, <v6>) -> <v7>
+true                                                        <v8>: Boolean                          NEW: r(true) -> <v8>
+return true                                                 !<v11>: *
+if (flag) { s.add(it) } else { s.remove(it) } return true   !<v11>: *                              COPY
 =====================

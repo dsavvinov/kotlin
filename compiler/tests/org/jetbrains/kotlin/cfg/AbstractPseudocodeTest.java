@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.cfg.pseudocode.instructions.Instruction;
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.InstructionImpl;
 import org.jetbrains.kotlin.cfg.pseudocode.instructions.special.LocalFunctionDeclarationInstruction;
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment;
+import org.jetbrains.kotlin.config.LanguageVersionSettings;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.BindingContext;
 import org.jetbrains.kotlin.test.ConfigurationKind;
@@ -45,11 +46,9 @@ import java.util.List;
 import java.util.Set;
 
 public abstract class AbstractPseudocodeTest extends KotlinTestWithEnvironment {
-    private KotlinCoreEnvironment environment = createEnvironmentWithMockJdk(ConfigurationKind.NO_KOTLIN_REFLECT);
-
     @Override
     protected KotlinCoreEnvironment createEnvironment() {
-        return environment;
+        return createEnvironmentWithMockJdk(ConfigurationKind.NO_KOTLIN_REFLECT);
     }
 
     protected void doTest(String fileName) throws Exception {

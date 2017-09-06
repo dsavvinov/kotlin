@@ -60,7 +60,7 @@ L5 [body exit point]:
     mark("OK")
     r("OK") -> <v9>
     mark(println("OK"))
-    magic[UNRESOLVED_CALL](println("OK")|<v9>, !<v10>) -> <v11>
+    call(println("OK"), println|<v9>) -> <v10>
 L1:
   1 <END>                                                                                                       NEXT:[<SINK>]
 error:

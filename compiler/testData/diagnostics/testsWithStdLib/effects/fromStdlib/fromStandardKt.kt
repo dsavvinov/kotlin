@@ -1,3 +1,5 @@
+// !LANGUAGE: +CalledInPlaceEffect
+
 fun testRunWithUnitReturn() {
     val x: Int
     run { x  = 42 }

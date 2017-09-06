@@ -1,3 +1,5 @@
+// !LANGUAGE: +CalledInPlaceEffect
+
 fun println(obj: Any?) {}
 
 class Demo0 {

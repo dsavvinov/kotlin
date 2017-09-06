@@ -5,14 +5,14 @@ L0:
   1 <START>
     v(val s = mutableListOf<String>())
     mark(mutableListOf<String>())
-    magic[UNRESOLVED_CALL](mutableListOf<String>()|!<v0>) -> <v1>
-    w(s|<v1>)
+    call(mutableListOf<String>(), mutableListOf) -> <v0>
+    w(s|<v0>)
 L1:
-    <END>                                                            NEXT:[<SINK>]
+    <END>                                                   NEXT:[<SINK>]
 error:
--   <ERROR>                                                          PREV:[]
+-   <ERROR>                                                 PREV:[]
 sink:
-    <SINK>                                                           PREV:[<END>]
+    <SINK>                                                  PREV:[<END>]
 =====================
 == test ==
 fun test(name: String?, flag: Boolean): Boolean {
@@ -57,38 +57,38 @@ L4 [before inlined declaration]:
     inlined({ if (flag) { s.add(it) } else { s.remove(it) } return true })                                                                            NEXT:[<SINK>]
 L3 [result of call]:
 L5 [after inlined declaration]:
-    jmp?(L2)                                                                                                                                          NEXT:[mark({ name?.hashCode() }), r(false) -> <v5>]                                                                                                                        PREV:[jf(L3)]
+    jmp?(L2)                                                                                                                                          NEXT:[mark({ name?.hashCode() }), r(false) -> <v5>]                                                                                                                       PREV:[jf(L3)]
     r(false) -> <v5>
   6 mark({ name?.hashCode() })
     mark(name?.hashCode())
-    jf(L13)                                                                                                                                           NEXT:[ret(*|<v5>) L1, r(name) -> <v11>]
-    r(name) -> <v11>
+    jf(L13)                                                                                                                                           NEXT:[ret(*|<v5>) L1, r(name) -> <v9>]
+    r(name) -> <v9>
     mark(hashCode())
-    call(hashCode(), hashCode|<v11>) -> <v12>
+    call(hashCode(), hashCode|<v9>) -> <v10>
 L13 [copy of L11, result of call]:
-  3 ret(*|<v5>) L1                                                                                                                                    NEXT:[<END>]                                                                                                                                                               PREV:[jf(L13), call(hashCode(), hashCode|<v11>) -> <v12>]
-- 2 jmp?(L2)                                                                                                                                          NEXT:[mark({ name?.hashCode() }), jmp(L14)]                                                                                                                                PREV:[]
--   jmp(L14)                                                                                                                                          NEXT:[mark({ name?.hashCode() })]                                                                                                                                          PREV:[]
+  3 ret(*|<v5>) L1                                                                                                                                    NEXT:[<END>]                                                                                                                                                              PREV:[jf(L13), call(hashCode(), hashCode|<v9>) -> <v10>]
+- 2 jmp?(L2)                                                                                                                                          NEXT:[mark({ name?.hashCode() }), jmp(L14)]                                                                                                                               PREV:[]
+-   jmp(L14)                                                                                                                                          NEXT:[mark({ name?.hashCode() })]                                                                                                                                         PREV:[]
 L2 [onExceptionToFinallyBlock]:
   6 mark({ name?.hashCode() })                                                                                                                        PREV:[jmp?(L2), jmp?(L2)]
     mark(name?.hashCode())
-    jf(L15)                                                                                                                                           NEXT:[jmp(error), r(name) -> <v11>]
-    r(name) -> <v11>
+    jf(L15)                                                                                                                                           NEXT:[jmp(error), r(name) -> <v9>]
+    r(name) -> <v9>
     mark(hashCode())
-    call(hashCode(), hashCode|<v11>) -> <v12>
+    call(hashCode(), hashCode|<v9>) -> <v10>
 L15 [copy of L11, result of call]:
-  2 jmp(error)                                                                                                                                        NEXT:[<ERROR>]                                                                                                                                                             PREV:[jf(L15), call(hashCode(), hashCode|<v11>) -> <v12>]
+  2 jmp(error)                                                                                                                                        NEXT:[<ERROR>]                                                                                                                                                            PREV:[jf(L15), call(hashCode(), hashCode|<v9>) -> <v10>]
 L14 [skipFinallyToErrorBlock]:
 - 6 mark({ name?.hashCode() })                                                                                                                        PREV:[]
 -   mark(name?.hashCode())                                                                                                                            PREV:[]
--   jf(L16)                                                                                                                                           NEXT:[merge(try { name?.let { if (flag) { s.add(it) } else { s.remove(it) } return true } return false } finally { name?.hashCode() }|!<v6>) -> <v7>, r(name) -> <v11>]    PREV:[]
--   r(name) -> <v11>                                                                                                                                  PREV:[]
+-   jf(L16)                                                                                                                                           NEXT:[merge(try { name?.let { if (flag) { s.add(it) } else { s.remove(it) } return true } return false } finally { name?.hashCode() }|!<v6>) -> <v7>, r(name) -> <v9>]    PREV:[]
+-   r(name) -> <v9>                                                                                                                                   PREV:[]
 -   mark(hashCode())                                                                                                                                  PREV:[]
--   call(hashCode(), hashCode|<v11>) -> <v12>                                                                                                         PREV:[]
+-   call(hashCode(), hashCode|<v9>) -> <v10>                                                                                                          PREV:[]
 L16 [copy of L11, result of call]:
 - 2 merge(try { name?.let { if (flag) { s.add(it) } else { s.remove(it) } return true } return false } finally { name?.hashCode() }|!<v6>) -> <v7>    PREV:[]
 L1:
-  1 <END>                                                                                                                                             NEXT:[<SINK>]                                                                                                                                                              PREV:[ret(*|<v10>) L1, ret(*|<v5>) L1]
+  1 <END>                                                                                                                                             NEXT:[<SINK>]                                                                                                                                                             PREV:[ret(*|<v8>) L1, ret(*|<v5>) L1]
 error:
     <ERROR>                                                                                                                                           PREV:[jmp(error)]
 sink:
@@ -116,32 +116,30 @@ L6:
     mark(s.add(it))
     r(s) -> <v1>
     r(it) -> <v2>
-    magic[VALUE_CONSUMER](it|<v2>) -> <v3>
     mark(add(it))
-    call(add(it), <ERROR FUNCTION>|<v1>) -> <v4>
-  5 jmp(L9)                                                                    NEXT:[merge(if (flag) { s.add(it) } else { s.remove(it) }|<v4>, <v8>) -> <v9>]
+    call(add(it), add|<v1>, <v2>) -> <v3>
+  5 jmp(L9)                                                                    NEXT:[merge(if (flag) { s.add(it) } else { s.remove(it) }|<v3>, <v6>) -> <v7>]
 L8 [else branch]:
   6 mark({ s.remove(it) })                                                     PREV:[jf(L8|<v0>)]
     mark(s.remove(it))
-    r(s) -> <v5>
-    r(it) -> <v6>
-    magic[VALUE_CONSUMER](it|<v6>) -> <v7>
+    r(s) -> <v4>
+    r(it) -> <v5>
     mark(remove(it))
-    call(remove(it), <ERROR FUNCTION>|<v5>) -> <v8>
+    call(remove(it), remove|<v4>, <v5>) -> <v6>
 L9 ['if' expression result]:
-  5 merge(if (flag) { s.add(it) } else { s.remove(it) }|<v4>, <v8>) -> <v9>    PREV:[jmp(L9), call(remove(it), <ERROR FUNCTION>|<v5>) -> <v8>]
-    r(true) -> <v10>
+  5 merge(if (flag) { s.add(it) } else { s.remove(it) }|<v3>, <v6>) -> <v7>    PREV:[jmp(L9), call(remove(it), remove|<v4>, <v5>) -> <v6>]
+    r(true) -> <v8>
 L10 [start finally]:
   6 mark({ name?.hashCode() })
     mark(name?.hashCode())
-    jf(L11)                                                                    NEXT:[ret(*|<v10>) L1, r(name) -> <v11>]
-    r(name) -> <v11>
+    jf(L11)                                                                    NEXT:[ret(*|<v8>) L1, r(name) -> <v9>]
+    r(name) -> <v9>
     mark(hashCode())
-    call(hashCode(), hashCode|<v11>) -> <v12>
+    call(hashCode(), hashCode|<v9>) -> <v10>
 L11 [result of call]:
 L12 [finish finally]:
-  5 ret(*|<v10>) L1                                                            NEXT:[<END>]                                                                      PREV:[jf(L11), call(hashCode(), hashCode|<v11>) -> <v12>]
-- 4 ret(*|!<v13>) L7                                                           PREV:[]
+  5 ret(*|<v8>) L1                                                             NEXT:[<END>]                                                                      PREV:[jf(L11), call(hashCode(), hashCode|<v9>) -> <v10>]
+- 4 ret(*|!<v11>) L7                                                           PREV:[]
 L7:
 -   <END>                                                                      NEXT:[<SINK>]                                                                     PREV:[]
 error:
