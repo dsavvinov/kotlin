@@ -17,17 +17,14 @@
 package org.jetbrains.kotlin.effectsystem.structure
 
 /**
- * An abstraction of effect-generating nature of some operation.
+ * An abstraction of effect-generating nature of some compitation.
  *
- * [ESFunctor] roughly corresponds to some call, but it cares only
- * about effects of this call, so instead of value arguments, its [apply]
- * method takes just description of effects of each argument
- * (represented by [EffectSchema]), and produces effects of the whole call
- * (instead of some value, compared to usual calls).
- *
- * Implementors should never produce non-conservative effects.
- * However, they are not obliged to produce most precise description
- * of effects, though they are encouraged to do so.
+ * Its difference from [ContractDescriptor] is the same as the difference
+ * between function' signature and its body. [ContractDescriptor] describes
+ * some rules about how computation behaves, while [ESFunctor] describes, how exactly
+ * those rules should be mapped into inner representation of EffectSystem,
+ * i.e. which new effects this computation produces and how existing effects
+ * are transformed.
  */
 
 interface ESFunctor {

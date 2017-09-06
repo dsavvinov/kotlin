@@ -41,6 +41,10 @@ import org.jetbrains.kotlin.effectsystem.structure.ESFunctor
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValue
 import org.jetbrains.kotlin.resolve.calls.smartcasts.IdentifierInfo
 
+/**
+ * This class manages conversion of ContractDescriptor (which is a stable declarative representation of function contract)
+ * to [ESFunctor], i.e. imperative description of how and which effects should be produced during the call.
+ */
 class ContractInterpretationDispatcher {
     private val constantsInterpreter = ConstantValuesInterpreter()
     private val conditionInterpreter = ConditionInterpreter(this)
