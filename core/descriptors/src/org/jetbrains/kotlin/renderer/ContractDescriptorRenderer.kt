@@ -71,7 +71,7 @@ class ContractDescriptorRenderer(private val builder: StringBuilder) : ContractD
     }
 
     override fun visitConstantDescriptor(constantDescriptor: ConstantDescriptor, data: Unit) {
-        builder.append(constantDescriptor)
+        builder.append(constantDescriptor.name)
     }
 
     override fun visitVariableReference(variableReference: VariableReference, data: Unit) {

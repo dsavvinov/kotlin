@@ -18,8 +18,6 @@ package org.jetbrains.kotlin.descriptors.contracts.expressions
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.ValueDescriptor
-import org.jetbrains.kotlin.descriptors.VariableDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionElement
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptorVisitor
@@ -31,24 +29,24 @@ interface ContractDescriptionValue : ContractDescriptionElement {
             contractDescriptorVisitor.visitValue(this, data)
 }
 
-open class ConstantDescriptor(val type: KotlinType) : ContractDescriptionValue {
+open class ConstantDescriptor(val type: KotlinType, val name: String) : ContractDescriptionValue {
     override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
             contractDescriptorVisitor.visitConstantDescriptor(this, data)
 
     companion object {
-        val NULL = ConstantDescriptor(DefaultBuiltIns.Instance.nullableAnyType)
-        val WILDCARD = ConstantDescriptor(DefaultBuiltIns.Instance.nullableAnyType)
-        val NOT_NULL = ConstantDescriptor(DefaultBuiltIns.Instance.anyType)
+        val NULL = ConstantDescriptor(DefaultBuiltIns.Instance.nullableAnyType, "NULL")
+        val WILDCARD = ConstantDescriptor(DefaultBuiltIns.Instance.nullableAnyType, "WILDCARD")
+        val NOT_NULL = ConstantDescriptor(DefaultBuiltIns.Instance.anyType, "NOT_NULL")
     }
 }
 
-class BooleanConstantDescriptor : ConstantDescriptor(DefaultBuiltIns.Instance.booleanType), BooleanExpression {
+class BooleanConstantDescriptor(name: String) : ConstantDescriptor(DefaultBuiltIns.Instance.booleanType, name), BooleanExpression {
     override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
             contractDescriptorVisitor.visitBooleanConstantDescriptor(this, data)
 
     companion object {
-        val TRUE = BooleanConstantDescriptor()
-        val FALSE = BooleanConstantDescriptor()
+        val TRUE = BooleanConstantDescriptor("TRUE")
+        val FALSE = BooleanConstantDescriptor("FALSE")
     }
 }
 
