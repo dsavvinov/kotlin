@@ -23,9 +23,6 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor;
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor;
 import org.jetbrains.kotlin.descriptors.ScriptDescriptor;
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor;
-import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey;
-import org.jetbrains.kotlin.descriptors.contracts.LazyContractProvider;
 import org.jetbrains.kotlin.lexer.KtTokens;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.resolve.*;
@@ -249,7 +246,6 @@ public class ExpressionTypingServices {
         if (block.isEmpty()) {
             return TypeInfoFactoryKt.createTypeInfo(expressionTypingComponents.builtIns.getUnitType(), context);
         }
-
         ExpressionTypingInternals blockLevelVisitor = new ExpressionTypingVisitorDispatcher.ForBlock(
                 expressionTypingComponents, annotationChecker, scope);
         ExpressionTypingContext newContext = context.replaceScope(scope).replaceExpectedType(NO_EXPECTED_TYPE);
@@ -313,24 +309,10 @@ public class ExpressionTypingServices {
                     true
             );
 
-            // Check if function has contract and record it if so
+            expressionTypingComponents.contractParsingServices.checkContractAndRecordIfPresent(statementExpression, context.trace, scope, isFirstStatement);
+            
             if (isFirstStatement) {
                 isFirstStatement = false;
-                DeclarationDescriptor ownerDescriptor = scope.getOwnerDescriptor();
-                boolean isScopeOfFunction = ownerDescriptor instanceof FunctionDescriptor &&
-                                            scope.getKind() == LexicalScopeKind.CODE_BLOCK &&
-                                            scope.getParent() instanceof LexicalScope &&
-                                            ((LexicalScope) scope.getParent()).getKind() == LexicalScopeKind.FUNCTION_INNER_SCOPE;
-                if (isScopeOfFunction) {
-                    FunctionDescriptor functionDescriptor = (FunctionDescriptor) ownerDescriptor;
-                    ContractDescriptor contract =
-                            expressionTypingComponents.contractParser.parseContract(statementExpression, context.trace, functionDescriptor);
-
-                    LazyContractProvider contractProvider = functionDescriptor.getUserData(ContractProviderKey.INSTANCE);
-                    if (contractProvider != null) {
-                        contractProvider.setContractDescriptor(contract);
-                    }
-                }
             }
         }
         return result.replaceJumpOutPossible(jumpOutPossible).replaceJumpFlowInfo(beforeJumpInfo);
