@@ -1208,30 +1208,6 @@ public class DiagnosticsTestWithStdLibGenerated extends AbstractDiagnosticsTestW
             KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/testsWithStdLib/effects"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
         }
 
-        @TestMetadata("check.kt")
-        public void testCheck() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/check.kt");
-            doTest(fileName);
-        }
-
-        @TestMetadata("isNullOrBlank.kt")
-        public void testIsNullOrBlank() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/isNullOrBlank.kt");
-            doTest(fileName);
-        }
-
-        @TestMetadata("isNullOrEmpty.kt")
-        public void testIsNullOrEmpty() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/isNullOrEmpty.kt");
-            doTest(fileName);
-        }
-
-        @TestMetadata("require.kt")
-        public void testRequire() throws Exception {
-            String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/require.kt");
-            doTest(fileName);
-        }
-
         @TestMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/controlflow")
         @TestDataPath("$PROJECT_ROOT")
         @RunWith(JUnit3RunnerWithInners.class)
@@ -1402,15 +1378,87 @@ public class DiagnosticsTestWithStdLibGenerated extends AbstractDiagnosticsTestW
                 KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/testsWithStdLib/effects/dsl"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
             }
 
-            @TestMetadata("recursiveProblem.kt")
-            public void testRecursiveProblem() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/recursiveProblem.kt");
+            @TestMetadata("useBeforeDeclaration.kt")
+            public void testUseBeforeDeclaration() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/useBeforeDeclaration.kt");
                 doTest(fileName);
             }
 
-            @TestMetadata("simpleDslTest.kt")
-            public void testSimpleDslTest() throws Exception {
-                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/simpleDslTest.kt");
+            @TestMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/errors")
+            @TestDataPath("$PROJECT_ROOT")
+            @RunWith(JUnit3RunnerWithInners.class)
+            public static class Errors extends AbstractDiagnosticsTestWithStdLib {
+                public void testAllFilesPresentInErrors() throws Exception {
+                    KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/errors"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                }
+
+                @TestMetadata("booleanComparisons.kt")
+                public void testBooleanComparisons() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/errors/booleanComparisons.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("callInContractDescription.kt")
+                public void testCallInContractDescription() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/errors/callInContractDescription.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("nestedConditionalEffects.kt")
+                public void testNestedConditionalEffects() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/errors/nestedConditionalEffects.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("notFirstStatement.kt")
+                public void testNotFirstStatement() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/errors/notFirstStatement.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("referenceToProperty.kt")
+                public void testReferenceToProperty() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/dsl/errors/referenceToProperty.kt");
+                    doTest(fileName);
+                }
+            }
+        }
+
+        @TestMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/fromStdlib")
+        @TestDataPath("$PROJECT_ROOT")
+        @RunWith(JUnit3RunnerWithInners.class)
+        public static class FromStdlib extends AbstractDiagnosticsTestWithStdLib {
+            public void testAllFilesPresentInFromStdlib() throws Exception {
+                KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/testsWithStdLib/effects/fromStdlib"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+            }
+
+            @TestMetadata("check.kt")
+            public void testCheck() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/fromStdlib/check.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("fromStandardKt.kt")
+            public void testFromStandardKt() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/fromStdlib/fromStandardKt.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("isNullOrBlank.kt")
+            public void testIsNullOrBlank() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/fromStdlib/isNullOrBlank.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("isNullOrEmpty.kt")
+            public void testIsNullOrEmpty() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/fromStdlib/isNullOrEmpty.kt");
+                doTest(fileName);
+            }
+
+            @TestMetadata("require.kt")
+            public void testRequire() throws Exception {
+                String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/testsWithStdLib/effects/fromStdlib/require.kt");
                 doTest(fileName);
             }
         }
