@@ -46,12 +46,12 @@ internal class ConditionInterpreter(private val dispatcher: ContractInterpretati
 
     override fun visitIsInstancePredicate(isInstancePredicate: IsInstancePredicate, data: Unit): ESBooleanExpression? {
         val esVariable = dispatcher.interpretVariable(isInstancePredicate.arg) ?: return null
-        return ESIs(esVariable, IsFunctor(isInstancePredicate.type, isInstancePredicate.inverted))
+        return ESIs(esVariable, IsFunctor(isInstancePredicate.type, isInstancePredicate.isNegated))
     }
 
     override fun visitIsNullPredicate(isNullPredicate: IsNullPredicate, data: Unit): ESBooleanExpression? {
         val variable = dispatcher.interpretVariable(isNullPredicate.arg) ?: return null
-        return ESEqual(variable, null.lift(), isNullPredicate.inverted, true)
+        return ESEqual(variable, null.lift(), isNullPredicate.isNegated, true)
     }
 
     override fun visitBooleanConstantDescriptor(booleanConstantDescriptor: BooleanConstantDescriptor, data: Unit): ESBooleanExpression? =
