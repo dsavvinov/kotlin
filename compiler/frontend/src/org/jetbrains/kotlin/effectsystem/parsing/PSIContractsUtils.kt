@@ -17,14 +17,17 @@
 package org.jetbrains.kotlin.effectsystem.parsing
 
 import org.jetbrains.kotlin.descriptors.CallableDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.CALLS_IN_PLACE_FQN
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.CONTRACT_FQN
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.EFFECT_FQN
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.EQUALS_NAME
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.IMPLIES_FQN
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.RETURNS_FQN
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.RETURNS_NOT_NULL_FQN
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.CALLS_IN_PLACE
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.CONTRACT
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.CONTRACTS_DSL_ANNOTATION_FQN
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.EFFECT
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.EQUALS_NAME
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.IMPLIES
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.INVOCATION_KIND_ENUM
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.RETURNS
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.RETURNS_NOT_NULL
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtExpression
@@ -36,39 +39,50 @@ import org.jetbrains.kotlin.types.typeUtil.isNullableAny
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 
-object ContractsDslFqns {
-    val CONTRACT_FQN = FqName("kotlin.effects.dsl.contract")
-    val EFFECT_FQN = FqName("kotlin.effects.dsl.Effect")
-    val IMPLIES_FQN = FqName("kotlin.effects.dsl.Effect.implies")
+object ContractsDslNames {
+    val CONTRACTS_DSL_ANNOTATION_FQN = FqName("kotlin.annotation.ContractsDSL")
 
-    val RETURNS_FQN = FqName("kotlin.effects.dsl.ContractBuilder.returns")
-    val RETURNS_NOT_NULL_FQN = FqName("kotlin.effects.dsl.ContractBuilder.returnsNotNull")
-    val CALLS_IN_PLACE_FQN = FqName("kotlin.effects.dsl.ContractBuilder.callsInPlace")
+    val CONTRACT = Name.identifier("contract")
+    val EFFECT = Name.identifier("Effect")
+    val IMPLIES = Name.identifier("implies")
+
+    val RETURNS = Name.identifier("returns")
+    val RETURNS_NOT_NULL = Name.identifier("returnsNotNull")
+    val CALLS_IN_PLACE = Name.identifier("callsInPlace")
 
     val EQUALS_NAME = Name.identifier("equals")
 
-    val INVOCATION_KIND_FQN = FqName("kotlin.effects.dsl.InvocationKind")
-    val EXACTLY_ONCE_NAME = Name.identifier("EXACTLY_ONCE")
-    val AT_LEAST_ONCE_NAME = Name.identifier("AT_LEAST_ONCE")
-    val UNKNOWN_NAME = Name.identifier("UNKNOWN")
-    val AT_MOST_ONCE_NAME = Name.identifier("AT_MOST_ONCE")
+    val INVOCATION_KIND_ENUM = Name.identifier("InvocationKind")
+    val EXACTLY_ONCE_KIND = Name.identifier("EXACTLY_ONCE")
+    val AT_LEAST_ONCE_KIND = Name.identifier("AT_LEAST_ONCE")
+    val UNKNOWN_KIND = Name.identifier("UNKNOWN")
+    val AT_MOST_ONCE_KIND = Name.identifier("AT_MOST_ONCE")
 }
 
-fun CallableDescriptor.isContractCallDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == CONTRACT_FQN
+fun DeclarationDescriptor.isFromContractsDSL(): Boolean = this.annotations.hasAnnotation(CONTRACTS_DSL_ANNOTATION_FQN)
 
-fun CallableDescriptor.isImpliesCallDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == IMPLIES_FQN
+fun DeclarationDescriptor.isContractCallDescriptor(): Boolean = equalsDSLDescriptor(CONTRACT)
 
-fun CallableDescriptor.isReturnsEffectDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == RETURNS_FQN
+fun DeclarationDescriptor.isImpliesCallDescriptor(): Boolean = equalsDSLDescriptor(IMPLIES)
 
-fun CallableDescriptor.isReturnsNotNullDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == RETURNS_NOT_NULL_FQN
+fun DeclarationDescriptor.isReturnsEffectDescriptor(): Boolean = equalsDSLDescriptor(RETURNS)
 
-fun CallableDescriptor.isEqualsDescriptor(): Boolean =
+fun DeclarationDescriptor.isReturnsNotNullDescriptor(): Boolean = equalsDSLDescriptor(RETURNS_NOT_NULL)
+
+fun DeclarationDescriptor.isEffectDescriptor(): Boolean = equalsDSLDescriptor(EFFECT)
+
+fun DeclarationDescriptor.isCallsInPlaceEffectDescriptor(): Boolean = equalsDSLDescriptor(CALLS_IN_PLACE)
+
+fun DeclarationDescriptor.isInvocationKindEnum(): Boolean = equalsDSLDescriptor(INVOCATION_KIND_ENUM)
+
+fun DeclarationDescriptor.isEqualsDescriptor(): Boolean =
         this is FunctionDescriptor && this.name == EQUALS_NAME && // fast checks
         this.returnType?.isBoolean() == true && this.valueParameters.singleOrNull()?.type?.isNullableAny() == true // signature matches
 
-fun CallableDescriptor.isCallsInPlaceEffectDescriptor(): Boolean = this is FunctionDescriptor && this.fqNameSafe == CALLS_IN_PLACE_FQN
+fun DeclarationDescriptor.isEffectDeclarationCall(): Boolean =
+        this is CallableDescriptor && this.returnType?.constructor?.declarationDescriptor?.isEffectDescriptor() ?: false
 
-fun CallableDescriptor.isEffectCall(): Boolean = this.returnType?.constructor?.declarationDescriptor?.fqNameSafe == EFFECT_FQN
-
-fun ResolvedCall<*>.firstArgumentAsExpressionOrNull(): KtExpression? =
+internal fun ResolvedCall<*>.firstArgumentAsExpressionOrNull(): KtExpression? =
         this.valueArgumentsByIndex?.firstOrNull()?.safeAs<ExpressionValueArgument>()?.valueArgument?.getArgumentExpression()
+
+private fun DeclarationDescriptor.equalsDSLDescriptor(dslName: Name): Boolean = this.name == dslName && this.isFromContractsDSL()

@@ -19,12 +19,7 @@ package org.jetbrains.kotlin.effectsystem.parsing.effects
 import org.jetbrains.kotlin.descriptors.contracts.effects.CallsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
 import org.jetbrains.kotlin.effectsystem.parsing.*
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.AT_LEAST_ONCE_NAME
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.AT_MOST_ONCE_NAME
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.EXACTLY_ONCE_NAME
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.INVOCATION_KIND_FQN
-import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslFqns.UNKNOWN_NAME
-import org.jetbrains.kotlin.effectsystem.parsing.EffectParsingResult.*
+import org.jetbrains.kotlin.effectsystem.parsing.EffectParsingResult.Success
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -58,13 +53,13 @@ internal class PSICallsEffectParser(
 
     private fun KtExpression.toInvocationKind(trace: BindingTrace): InvocationKind? {
         val descriptor = this.getResolvedCall(trace.bindingContext)?.resultingDescriptor ?: return null
-        if (descriptor.parents.first().fqNameSafe != INVOCATION_KIND_FQN) return null
+        if (descriptor.parents.first().isInvocationKindEnum()) return null
 
         return when (descriptor.fqNameSafe.shortName()) {
-            AT_MOST_ONCE_NAME -> InvocationKind.AT_MOST_ONCE
-            EXACTLY_ONCE_NAME -> InvocationKind.EXACTLY_ONCE
-            AT_LEAST_ONCE_NAME -> InvocationKind.AT_LEAST_ONCE
-            UNKNOWN_NAME -> InvocationKind.UNKNOWN
+            ContractsDslNames.AT_MOST_ONCE_KIND -> InvocationKind.AT_MOST_ONCE
+            ContractsDslNames.EXACTLY_ONCE_KIND -> InvocationKind.EXACTLY_ONCE
+            ContractsDslNames.AT_LEAST_ONCE_KIND -> InvocationKind.AT_LEAST_ONCE
+            ContractsDslNames.UNKNOWN_KIND -> InvocationKind.UNKNOWN
             else -> null
         }
     }
