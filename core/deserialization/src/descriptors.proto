@@ -475,18 +475,15 @@ message Effect {
   // Those arguments are expected to be found in 'effectConstructorArguments' in exactly the same
   // order and amount as defined by signature, otherwise message should be dropped.
   enum EffectType {
-    // Fallback for future extensions to be safe
-    UNRECOGNIZED_TYPE = 0;
-
     // Returns(value: ConstantValue?)
-    RETURNS_CONSTANT = 1;
+    RETURNS_CONSTANT = 0;
 
     // CallsInPlace(callable: ParameterReference)
     // Additionally, InvocationKind in the field 'kind' may be provided to define exact amount of invocations.
-    CALLS = 2;
+    CALLS = 1;
 
     // ReturnsNotNull()
-    RETURNS_NOT_NULL = 3;
+    RETURNS_NOT_NULL = 2;
   }
   optional EffectType effectType = 1;
 
@@ -497,10 +494,9 @@ message Effect {
   optional Expression conclusionOfConditionalEffect = 3;
 
   enum InvocationKind {
-    UNRECOGNIZED_KIND = 0;
-    AT_MOST_ONCE = 1;
-    EXACTLY_ONCE = 2;
-    AT_LEAST_ONCE = 3;
+    AT_MOST_ONCE = 0;
+    EXACTLY_ONCE = 1;
+    AT_LEAST_ONCE = 2;
   }
   optional InvocationKind kind = 4;
 }
@@ -519,10 +515,9 @@ message Expression {
   optional int32 valueParameterReference = 2;
 
   enum ConstantValue {
-    UNRECOGNIZED_VALUE = 0;
-    TRUE = 1;
-    FALSE = 2;
-    NULL = 3;
+    TRUE = 0;
+    FALSE = 1;
+    NULL = 2;
   }
   optional ConstantValue constantValue = 3;
 
