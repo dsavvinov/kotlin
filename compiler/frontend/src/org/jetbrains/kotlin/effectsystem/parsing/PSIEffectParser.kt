@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 
 internal interface PSIEffectParser {
-    fun tryParseEffect(expression: KtExpression): EffectParsingResult
+    fun tryParseEffect(expression: KtExpression): EffectDeclaration?
 }
 
 sealed class EffectParsingResult(val isSuccessful: Boolean) {

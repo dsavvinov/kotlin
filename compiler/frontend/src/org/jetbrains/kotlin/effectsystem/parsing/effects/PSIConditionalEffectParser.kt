@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effectsystem.parsing.effects
 
+import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.effectsystem.parsing.*
@@ -29,16 +30,16 @@ internal class PSIConditionalEffectParser(
         trace: BindingTrace,
         dispatcher: PSIContractParserDispatcher
 ) : AbstractPSIEffectParser(trace, dispatcher) {
-    override fun tryParseEffect(expression: KtExpression): EffectParsingResult {
-        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return EffectParsingResult.UNRECOGNIZED
+    override fun tryParseEffect(expression: KtExpression): EffectDeclaration? {
+        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
 
-        if (!resolvedCall.resultingDescriptor.isImpliesCallDescriptor()) return EffectParsingResult.UNRECOGNIZED
+        if (!resolvedCall.resultingDescriptor.isImpliesCallDescriptor()) return null
 
         val effect = contractParserDispatcher.parseEffect(resolvedCall.dispatchReceiver.safeAs<ExpressionReceiver>()?.expression)
-                     ?: return EffectParsingResult.PARSED_WITH_ERRORS
+                     ?: return null
         val condition = contractParserDispatcher.parseCondition(resolvedCall.firstArgumentAsExpressionOrNull())
-                        ?: return EffectParsingResult.PARSED_WITH_ERRORS
+                        ?: return null
 
-        return EffectParsingResult.Success(ConditionalEffectDeclaration(effect, condition))
+        return ConditionalEffectDeclaration(effect, condition)
     }
 }

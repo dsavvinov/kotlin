@@ -16,10 +16,10 @@
 
 package org.jetbrains.kotlin.effectsystem.parsing.effects
 
+import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.CallsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
 import org.jetbrains.kotlin.effectsystem.parsing.*
-import org.jetbrains.kotlin.effectsystem.parsing.EffectParsingResult.Success
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
@@ -33,27 +33,27 @@ internal class PSICallsEffectParser(
         contractParserDispatcher: PSIContractParserDispatcher
 ) : AbstractPSIEffectParser(trace, contractParserDispatcher) {
 
-    override fun tryParseEffect(expression: KtExpression): EffectParsingResult {
-        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return EffectParsingResult.UNRECOGNIZED
+    override fun tryParseEffect(expression: KtExpression): EffectDeclaration? {
+        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
         val descriptor = resolvedCall.resultingDescriptor
 
-        if (!descriptor.isCallsInPlaceEffectDescriptor()) return EffectParsingResult.UNRECOGNIZED
+        if (!descriptor.isCallsInPlaceEffectDescriptor()) return null
 
-        val lambda = contractParserDispatcher.parseVariable(resolvedCall.firstArgumentAsExpressionOrNull()) ?: return EffectParsingResult.PARSED_WITH_ERRORS
+        val lambda = contractParserDispatcher.parseVariable(resolvedCall.firstArgumentAsExpressionOrNull()) ?: return null
 
         val kindArgument = resolvedCall.valueArgumentsByIndex?.getOrNull(1)
 
         val kind = if (kindArgument is DefaultValueArgument)
             InvocationKind.UNKNOWN
         else
-            (kindArgument as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.toInvocationKind(trace) ?: return EffectParsingResult.PARSED_WITH_ERRORS
+            (kindArgument as? ExpressionValueArgument)?.valueArgument?.getArgumentExpression()?.toInvocationKind(trace) ?: return null
 
-        return Success(CallsEffectDeclaration(lambda, kind))
+        return CallsEffectDeclaration(lambda, kind)
     }
 
     private fun KtExpression.toInvocationKind(trace: BindingTrace): InvocationKind? {
         val descriptor = this.getResolvedCall(trace.bindingContext)?.resultingDescriptor ?: return null
-        if (descriptor.parents.first().isInvocationKindEnum()) return null
+        if (!descriptor.parents.first().isInvocationKindEnum()) return null
 
         return when (descriptor.fqNameSafe.shortName()) {
             ContractsDslNames.AT_MOST_ONCE_KIND -> InvocationKind.AT_MOST_ONCE

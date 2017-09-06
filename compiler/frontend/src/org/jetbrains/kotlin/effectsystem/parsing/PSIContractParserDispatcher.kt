@@ -27,21 +27,28 @@ import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ContractDescriptionValue
 import org.jetbrains.kotlin.descriptors.contracts.expressions.VariableReference
 import org.jetbrains.kotlin.diagnostics.Errors
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.CALLS_IN_PLACE_EFFECT
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.CONDITIONAL_EFFECT
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.RETURNS_EFFECT
+import org.jetbrains.kotlin.effectsystem.parsing.ContractsDslNames.RETURNS_NOT_NULL_EFFECT
 import org.jetbrains.kotlin.effectsystem.parsing.effects.PSICallsEffectParser
 import org.jetbrains.kotlin.effectsystem.parsing.effects.PSIConditionalEffectParser
 import org.jetbrains.kotlin.effectsystem.parsing.effects.PSIReturnsEffectParser
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
+import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 
-internal class PSIContractParserDispatcher(val trace: BindingTrace, val contractParsingServices: ContractParsingServices) {
+internal class PSIContractParserDispatcher(val trace: BindingTrace, private val contractParsingServices: ContractParsingServices) {
     private val conditionParser = PSIConditionParser(trace, this)
     private val constantParser = PSIConstantParser(trace)
-    private val effectsParsers: List<PSIEffectParser> = listOf(
-            PSIReturnsEffectParser(trace, this),
-            PSICallsEffectParser(trace, this),
-            PSIConditionalEffectParser(trace, this)
+    private val effectsParsers: Map<Name, PSIEffectParser> = mapOf(
+            RETURNS_EFFECT to PSIReturnsEffectParser(trace, this),
+            RETURNS_NOT_NULL_EFFECT to PSIReturnsEffectParser(trace, this),
+            CALLS_IN_PLACE_EFFECT to PSICallsEffectParser(trace, this),
+            CONDITIONAL_EFFECT to PSIConditionalEffectParser(trace, this)
     )
 
     fun parseContract(expression: KtExpression?, ownerDescriptor: FunctionDescriptor): ContractDescriptor? {
@@ -70,23 +77,13 @@ internal class PSIContractParserDispatcher(val trace: BindingTrace, val contract
 
     fun parseEffect(expression: KtExpression?): EffectDeclaration? {
         if (expression == null) return null
-        val parsedEffects = effectsParsers.map { it.tryParseEffect(expression) }
-        val successfulResults = parsedEffects.filterIsInstance<EffectParsingResult.Success>()
-        val errorsAreReported = parsedEffects.any { it is EffectParsingResult.ParsedWithErrors }
-
-        if (errorsAreReported) return null
-
-        if (successfulResults.isEmpty()) {
+        val returnType = expression.getType(trace.bindingContext) ?: return null
+        val parser = effectsParsers[returnType.constructor.declarationDescriptor?.name]
+        if (parser == null) {
             trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(expression, "Unrecognized effect"))
             return null
         }
-
-        if (successfulResults.size > 1) {
-            trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(expression, "Ambiguous effect parsing"))
-            return null
-        }
-
-        return successfulResults.single().effectDeclaration
+        return parser.tryParseEffect(expression)
     }
 
     fun parseConstant(expression: KtExpression?): ConstantDescriptor? {

@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.effectsystem.parsing.effects
 
+import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.effects.ReturnsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -28,15 +29,14 @@ internal class PSIReturnsEffectParser(
         trace: BindingTrace,
         contractParserDispatcher: PSIContractParserDispatcher
 ) : AbstractPSIEffectParser(trace, contractParserDispatcher) {
-    override fun tryParseEffect(expression: KtExpression): EffectParsingResult {
-        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return EffectParsingResult.UNRECOGNIZED
+    override fun tryParseEffect(expression: KtExpression): EffectDeclaration? {
+        val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
         val descriptor = resolvedCall.resultingDescriptor
 
-        // TODO: relax assertion
         if (descriptor.isReturnsNotNullDescriptor())
-            return EffectParsingResult.Success(ReturnsEffectDeclaration(ConstantDescriptor.NOT_NULL))
+            return ReturnsEffectDeclaration(ConstantDescriptor.NOT_NULL)
 
-        if (!descriptor.isReturnsEffectDescriptor()) return EffectParsingResult.UNRECOGNIZED
+        if (!descriptor.isReturnsEffectDescriptor()) return null
 
         val argumentExpression = resolvedCall.firstArgumentAsExpressionOrNull()
         val constantValue = if (argumentExpression == null)
@@ -46,11 +46,11 @@ internal class PSIReturnsEffectParser(
             val constant = contractParserDispatcher.parseConstant(argumentExpression)
             if (constant == null) {
                 trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(argumentExpression, "only true/false/null constants in Returns-effect are currently supported"))
-                return EffectParsingResult.PARSED_WITH_ERRORS
+                return null
             }
             constant
         }
 
-        return EffectParsingResult.Success(ReturnsEffectDeclaration(constantValue))
+        return ReturnsEffectDeclaration(constantValue)
     }
 }
