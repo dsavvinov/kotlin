@@ -21,7 +21,7 @@
 package kotlin.text
 
 import kotlin.comparisons.*
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 
 
 /**

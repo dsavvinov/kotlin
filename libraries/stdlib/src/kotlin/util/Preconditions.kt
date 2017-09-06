@@ -2,7 +2,7 @@
 @file:kotlin.jvm.JvmName("PreconditionsKt")
 package kotlin
 
-import kotlin.effects.dsl.*
+import kotlin.internal.contracts.*
 
 /**
  * Throws an [IllegalArgumentException] if the [value] is false.
