@@ -20,12 +20,16 @@ import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptorVisitor
 import org.jetbrains.kotlin.types.KotlinType
 
-class IsInstancePredicate(val arg: VariableReference, val type: KotlinType, val inverted: Boolean) : BooleanExpression {
+class IsInstancePredicate(val arg: VariableReference, val type: KotlinType, val isNegated: Boolean) : BooleanExpression {
     override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
             contractDescriptorVisitor.visitIsInstancePredicate(this, data)
+
+    fun negated(): IsInstancePredicate = IsInstancePredicate(arg, type, isNegated.not())
 }
 
-class IsNullPredicate(val arg: VariableReference, val inverted: Boolean) : BooleanExpression {
+class IsNullPredicate(val arg: VariableReference, val isNegated: Boolean) : BooleanExpression {
     override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
             contractDescriptorVisitor.visitIsNullPredicate(this, data)
+
+    fun negated(): IsNullPredicate = IsNullPredicate(arg, isNegated.not())
 }
