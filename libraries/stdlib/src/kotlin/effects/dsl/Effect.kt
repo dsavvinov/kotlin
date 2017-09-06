@@ -21,4 +21,4 @@ interface Effect {
 }
 
 class Returns : Effect
-class CalledInPlace : Effect
+class CallsInPlace : Effect

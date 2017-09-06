@@ -1,21 +1,55 @@
 == myRun ==
-inline fun <T> myRun(@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> T): T = block()
+inline fun <T> myRun(block: () -> T): T {
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+    return block()
+}
 ---------------------
 L0:
-  1 <START>                                                                                         INIT: in: {} out: {}
-    v(@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> T)                                  INIT: in: {} out: {block=D}
-    magic[FAKE_INITIALIZER](@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> T) -> <v0>    INIT: in: {block=D} out: {block=D}
-    w(block|<v0>)                                                                                   INIT: in: {block=D} out: {block=ID}     USE: in: {block=READ} out: {block=READ}
-    r(block) -> <v1>                                                                                INIT: in: {block=ID} out: {block=ID}    USE: in: {} out: {block=READ}
+  1 <START>                                                                                       INIT: in: {} out: {}
+    v(block: () -> T)                                                                             INIT: in: {} out: {block=D}
+    magic[FAKE_INITIALIZER](block: () -> T) -> <v0>                                               INIT: in: {block=D} out: {block=D}
+    w(block|<v0>)                                                                                 INIT: in: {block=D} out: {block=ID}
+  2 mark({ contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) } return block() })        INIT: in: {block=ID} out: {block=ID}
+    mark({ callsInPlace(block, InvocationKind.EXACTLY_ONCE) })
+    jmp?(L2)
+    d({ callsInPlace(block, InvocationKind.EXACTLY_ONCE) })                                                                               USE: in: {EXACTLY_ONCE=READ, block=READ} out: {EXACTLY_ONCE=READ, block=READ}
+L2 [after local declaration]:
+    r({ callsInPlace(block, InvocationKind.EXACTLY_ONCE) }) -> <v1>
+    mark(contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) })
+    call(contract { callsInPlace(block, InvocationKind.EXACTLY_ONCE) }, contract|<v1>) -> <v2>                                            USE: in: {block=READ} out: {block=READ}
+    r(block) -> <v3>                                                                                                                      USE: in: {} out: {block=READ}
     mark(block())
-    call(block(), invoke|<v1>) -> <v2>
-    ret(*|<v2>) L1
+    call(block(), invoke|<v3>) -> <v4>
+    ret(*|<v4>) L1
 L1:
-    <END>                                                                                                                                   USE: in: {} out: {}
+  1 <END>                                                                                                                                 USE: in: {} out: {}
 error:
 -   <ERROR>
 sink:
-    <SINK>                                                                                          INIT: in: {block=ID} out: {block=ID}    USE: in: {} out: {}
+    <SINK>                                                                                        INIT: in: {block=ID} out: {block=ID}    USE: in: {} out: {}
+=====================
+== anonymous_0 ==
+{
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+---------------------
+L3:
+  3 <START>                                                                                          INIT: in: {block=ID} out: {block=ID}
+  4 mark(callsInPlace(block, InvocationKind.EXACTLY_ONCE))
+    magic[IMPLICIT_RECEIVER](callsInPlace(block, InvocationKind.EXACTLY_ONCE)) -> <v0>                                                       USE: in: {EXACTLY_ONCE=READ, block=READ} out: {EXACTLY_ONCE=READ, block=READ}
+    r(block) -> <v1>                                                                                                                         USE: in: {EXACTLY_ONCE=READ} out: {EXACTLY_ONCE=READ, block=READ}
+    mark(InvocationKind.EXACTLY_ONCE)                                                                                                        USE: in: {EXACTLY_ONCE=READ} out: {EXACTLY_ONCE=READ}
+    r(EXACTLY_ONCE) -> <v2>                                                                                                                  USE: in: {} out: {EXACTLY_ONCE=READ}
+    mark(callsInPlace(block, InvocationKind.EXACTLY_ONCE))
+    call(callsInPlace(block, InvocationKind.EXACTLY_ONCE), callsInPlace|<v0>, <v1>, <v2>) -> <v3>
+L4:
+  3 <END>                                                                                                                                    USE: in: {} out: {}
+error:
+-   <ERROR>
+sink:
+    <SINK>                                                                                           INIT: in: {block=ID} out: {block=ID}    USE: in: {} out: {}
 =====================
 == innerComputation ==
 fun innerComputation(): Int = 42
@@ -143,7 +177,7 @@ error:
 sink:
     <SINK>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 USE: in: {} out: {}
 =====================
-== anonymous_0 ==
+== anonymous_1 ==
 {
             try {
                 x = innerComputation()
@@ -249,7 +283,7 @@ error:
 sink:
     <SINK>                                                                                                                                                                                                                                                                                 INIT: in: {} out: {}                          USE: in: {} out: {}
 =====================
-== anonymous_1 ==
+== anonymous_2 ==
 {
             try {
                 innerComputation()

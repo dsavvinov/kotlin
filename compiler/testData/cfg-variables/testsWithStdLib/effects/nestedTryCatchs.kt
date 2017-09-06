@@ -1,9 +1,13 @@
-// !DIAGNOSTICS: -INVISIBLE_MEMBER -INVISIBLE_REFERENCE
 // !LANGUAGE: +CalledInPlaceEffect
 
-import kotlin.internal.*
+import kotlin.effects.dsl.*
 
-inline fun <T> myRun(@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> T): T = block()
+inline fun <T> myRun(block: () -> T): T {
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+    return block()
+}
 
 fun innerComputation(): Int = 42
 fun outerComputation(): Int = 52

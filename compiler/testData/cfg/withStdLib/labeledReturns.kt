@@ -1,10 +1,21 @@
-// !DIAGNOSTICS: -INVISIBLE_MEMBER -INVISIBLE_REFERENCE
 // !LANGUAGE: +CalledInPlaceEffect
 
-import kotlin.internal.*
+import kotlin.effects.dsl.*
 
-inline fun <T, R> T.myLet(@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: (T) -> R) = block(this)
-inline fun myRun(@CalledInPlace(InvocationCount.EXACTLY_ONCE) block: () -> Unit) = block()
+inline fun <T, R> T.myLet(block: (T) -> R): R {
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+    return block(this)
+}
+
+inline fun myRun(block: () -> Unit) {
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+    block()
+}
+
 inline fun unknownRun(block: () -> Unit) = block()
 
 fun getBool(): Boolean = false
