@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package kotlin.effects.dsl
+package kotlin.internal.contracts
 
 import kotlin.internal.ContractsDSL
 import kotlin.internal.InlineOnly
 
 @ContractsDSL
-class ContractBuilder {
-    @ContractsDSL fun returns(): Effect = EffectStub
-    @ContractsDSL fun returns(value: Any?): Effect = EffectStub
-    @ContractsDSL fun returnsNotNull(): Effect = EffectStub
-    @ContractsDSL inline fun <R> callsInPlace(lambda: Function<R>, kind: InvocationKind = InvocationKind.UNKNOWN): Effect = EffectStub
-
-    object EffectStub : Effect
+interface ContractBuilder {
+    @ContractsDSL fun returns(): Returns
+    @ContractsDSL fun returns(value: Any?): Returns
+    @ContractsDSL fun returnsNotNull(): ReturnsNotNull
+    @ContractsDSL fun <R> callsInPlace(lambda: Function<R>, kind: InvocationKind = InvocationKind.UNKNOWN): CallsInPlace
 }
 
 @ContractsDSL
 @InlineOnly
-inline fun contract(builder: ContractBuilder.() -> Unit) = Unit
+inline fun contract(builder: ContractBuilder.() -> Unit) = {}

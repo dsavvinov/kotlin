@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package kotlin.effects.dsl
+package kotlin.internal.contracts
 
 import kotlin.internal.ContractsDSL
 

@@ -14,18 +14,28 @@
  * limitations under the License.
  */
 
-package kotlin.effects.dsl
+package kotlin.internal.contracts
 
 import kotlin.internal.ContractsDSL
 
 @ContractsDSL
-interface Effect {
+interface Effect
+
+@ContractsDSL
+interface ConditionalEffect : Effect
+
+@ContractsDSL
+interface SimpleEffect {
     @ContractsDSL
-    infix fun implies(booleanExpression: Boolean) = Unit
+    infix fun implies(booleanExpression: Boolean): ConditionalEffect
 }
 
-@ContractsDSL
-class Returns : Effect
 
 @ContractsDSL
-class CallsInPlace : Effect
+interface Returns : SimpleEffect
+
+@ContractsDSL
+interface ReturnsNotNull : SimpleEffect
+
+@ContractsDSL
+interface CallsInPlace : SimpleEffect
