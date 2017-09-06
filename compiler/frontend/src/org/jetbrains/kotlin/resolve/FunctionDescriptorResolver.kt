@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.DiagnosticUtils
 import org.jetbrains.kotlin.diagnostics.Errors.*
+import org.jetbrains.kotlin.effectsystem.parsing.ContractParsingServices
 import org.jetbrains.kotlin.effectsystem.parsing.PSIContractParserDispatcher
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
@@ -67,8 +68,8 @@ class FunctionDescriptorResolver(
         private val builtIns: KotlinBuiltIns,
         private val modifiersChecker: ModifiersChecker,
         private val overloadChecker: OverloadChecker,
-        private val contractParser: PSIContractParserDispatcher,
-        private val bodyResolver: BodyResolver
+        private val bodyResolver: BodyResolver,
+        private val contractParsingServices: ContractParsingServices
 ) {
     fun resolveFunctionDescriptor(
             containingDescriptor: DeclarationDescriptor,
@@ -174,7 +175,7 @@ class FunctionDescriptorResolver(
         val visibility = resolveVisibilityFromModifiers(function, getDefaultVisibility(function, containingDescriptor))
         val modality = resolveMemberModalityFromModifiers(function, getDefaultModality(containingDescriptor, visibility, function.hasBody()),
                                                           trace.bindingContext, containingDescriptor)
-        val contractProvider = if (contractParser.fastCheckIfContractPresent(function)) {
+        val contractProvider = if (contractParsingServices.fastCheckIfContractPresent(function)) {
             LazyContractProvider(functionDescriptor) { bodyResolver.resolveFunctionBody(dataFlowInfo, trace, function, functionDescriptor, scope) }
         } else {
             LazyContractProvider.createInitialized(functionDescriptor, null)
