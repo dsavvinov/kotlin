@@ -699,12 +699,13 @@ internal class DescriptorRendererImpl(
         renderWhereSuffix(function.typeParameters, builder)
     }
 
-    override fun renderContract(contractDescriptor: ContractDescriptor): String {
-        val builder = StringBuilder()
-        val contractRenderer = ContractDescriptorRenderer(builder)
-        val effect = contractDescriptor.effect
-        effect.accept(contractRenderer, Unit)
-        return builder.toString()
+    override fun renderContract(contractDescriptor: ContractDescriptor): List<String> {
+        return contractDescriptor.effects.map { effect ->
+            val builder = StringBuilder()
+            val contractRenderer = ContractDescriptorRenderer(builder)
+            effect.accept(contractRenderer, Unit)
+            builder.toString()
+        }
     }
 
     private fun renderReceiverAfterName(callableDescriptor: CallableDescriptor, builder: StringBuilder) {

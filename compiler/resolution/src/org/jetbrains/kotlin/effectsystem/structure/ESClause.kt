@@ -17,11 +17,13 @@
 package org.jetbrains.kotlin.effectsystem.structure
 
 /**
- * Description of some set of effects and corresponding to them conditions
+ * Effect with possibly condition attached to it.
  *
- * [condition] is some expression, which result-type is Boolean. Clause should be
- * interpreted as: "if [effect] took place then [condition]-expression is guaranteed
- * to be true"
+ * If [condition] is null, then the semantic of clause is: "[effect] was fired"
+ *
+ * Otherwise, [condition] is some expression, which result-type is Boolean, and
+ * clause should be interpreted as: "if [effect] took place then [condition]-expression
+ * is guaranteed to be true"
  *
  * NB. [effect] and [condition] connected with implication in math logic sense:
  * [effect] => [condition]. In particular this means that:

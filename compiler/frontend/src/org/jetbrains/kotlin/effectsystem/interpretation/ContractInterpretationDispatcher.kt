@@ -26,10 +26,7 @@ import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDecla
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.expressions.VariableReference
 import org.jetbrains.kotlin.effectsystem.adapters.ValueIdsFactory
-import org.jetbrains.kotlin.effectsystem.factories.createVariable
-import org.jetbrains.kotlin.effectsystem.factories.lift
-import org.jetbrains.kotlin.effectsystem.factories.schemaFromClauses
-import org.jetbrains.kotlin.effectsystem.factories.singleClauseSchema
+import org.jetbrains.kotlin.effectsystem.factories.*
 import org.jetbrains.kotlin.effectsystem.impls.ESConstant
 import org.jetbrains.kotlin.effectsystem.impls.ESVariable
 import org.jetbrains.kotlin.effectsystem.interpretation.effects.CallsEffectInterpreter
@@ -60,13 +57,16 @@ class ContractInterpretationDispatcher {
         val receiver = listOfNotNull(ownerFunction.dispatchReceiverParameter?.toESVariable(), ownerFunction.extensionReceiverParameter?.toESVariable())
         val parameters = receiver + ownerFunction.valueParameters.map { it.toESVariable() ?: return null }
 
-        if (contractDescriptor.effect is ConditionalEffectDeclaration) {
-            val clause = conditionalEffectInterpreter.interpret(contractDescriptor.effect as ConditionalEffectDeclaration) ?: return null
-            return schemaFromClauses(listOf(clause), parameters)
-        } else {
-            val singleEffect = effectsInterpreters.mapNotNull { it.tryInterpret(contractDescriptor.effect) }.singleOrNull() ?: return null
-            return singleClauseSchema(true.lift(), singleEffect, parameters)
+        val resultingClauses = contractDescriptor.effects.map { effect ->
+            if (effect is ConditionalEffectDeclaration) {
+                conditionalEffectInterpreter.interpret(effect) ?: return null
+            } else {
+                val singleEffect = effectsInterpreters.mapNotNull { it.tryInterpret(effect) }.singleOrNull() ?: return null
+                createClause(true.lift(), singleEffect)
+            }
         }
+
+        return schemaFromClauses(resultingClauses, parameters)
     }
 
     internal fun interpretEffect(effectDeclaration: EffectDeclaration): ESEffect? {

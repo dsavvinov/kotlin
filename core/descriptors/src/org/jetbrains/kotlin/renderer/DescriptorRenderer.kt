@@ -54,7 +54,7 @@ abstract class DescriptorRenderer {
 
     abstract fun render(declarationDescriptor: DeclarationDescriptor): String
 
-    abstract fun renderContract(contractDescriptor: ContractDescriptor): String
+    abstract fun renderContract(contractDescriptor: ContractDescriptor): List<String>
 
     abstract fun renderValueParameters(parameters: Collection<ValueParameterDescriptor>, synthesizedParameterNames: Boolean): String
 

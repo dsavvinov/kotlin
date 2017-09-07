@@ -602,7 +602,7 @@ class DescriptorSerializer private constructor(
 
     private fun contractProto(contractDescriptor: ContractDescriptor): ProtoBuf.Contract.Builder? {
         return ProtoBuf.Contract.newBuilder().apply {
-            addEffect(effectProto(contractDescriptor.effect, contractDescriptor))
+            contractDescriptor.effects.forEach { addEffect(effectProto(it, contractDescriptor)) }
         }
     }
 

@@ -122,7 +122,7 @@ public class RecursiveDescriptorComparator {
                 if (contractDescriptor != null) {
                     printer.println();
                     printer.pushIndent();
-                    printer.println(conf.renderer.renderContract(contractDescriptor));
+                    conf.renderer.renderContract(contractDescriptor).forEach(printer::println);
                     printer.popIndent();
                 }
             }

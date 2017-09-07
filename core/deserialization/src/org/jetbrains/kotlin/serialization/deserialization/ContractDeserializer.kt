@@ -36,9 +36,8 @@ class ContractDeserializer(private val c: DeserializationContext, private val ow
         // TODO: check version
 
         // TODO: issue a warning when expectation of single-effect contract is not met?
-        val singleEffect = proto.effectList.singleOrNull() ?: return null
-        val effectDeclaration = deserializePossiblyConditionalEffect(singleEffect) ?: return null
-        return ContractDescriptor(effectDeclaration, ownerFunction)
+        val effects = proto.effectList.map { deserializePossiblyConditionalEffect(it) ?: return null }
+        return ContractDescriptor(effects, ownerFunction)
     }
 
     private fun deserializePossiblyConditionalEffect(proto: ProtoBuf.Effect): EffectDeclaration? {

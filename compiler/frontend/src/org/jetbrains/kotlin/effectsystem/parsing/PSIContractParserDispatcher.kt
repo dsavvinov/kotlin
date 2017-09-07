@@ -63,14 +63,7 @@ internal class PSIContractParserDispatcher(val trace: BindingTrace, private val 
 
         if (effects.isEmpty()) return null
 
-        if (effects.size > 1) {
-            trace.report(Errors.ERROR_IN_CONTRACT_DESCRIPTION.on(expression, "multi-effect contracts are not supported yet"))
-            return null
-        }
-
-        val singleEffect = effects.single()
-
-        return ContractDescriptor(singleEffect, ownerDescriptor)
+        return ContractDescriptor(effects, ownerDescriptor)
     }
 
     fun parseCondition(expression: KtExpression?): BooleanExpression? = expression?.accept(conditionParser, Unit)
