@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.contracts.impls.ESConstant
 import org.jetbrains.kotlin.contracts.model.ESValue
 import org.jetbrains.kotlin.contracts.model.ESEffect
 import org.jetbrains.kotlin.contracts.model.SimpleEffect
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
 
 data class ESReturns(val value: ESValue): SimpleEffect() {
     override fun isImplies(other: ESEffect): Boolean? {
@@ -29,7 +29,7 @@ data class ESReturns(val value: ESValue): SimpleEffect() {
         if (this.value !is ESConstant || other.value !is ESConstant) return this.value == other.value
 
         // ESReturns(x) implies ESReturns(?) for any 'x'
-        if (other.value.constantDescriptor == ConstantDescriptor.WILDCARD) return true
+        if (other.value.constantReference == ConstantReference.WILDCARD) return true
 
         return value == other.value
     }

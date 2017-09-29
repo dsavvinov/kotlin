@@ -19,7 +19,7 @@ package org.jetbrains.kotlin.contracts.effects
 import org.jetbrains.kotlin.contracts.model.ESValue
 import org.jetbrains.kotlin.contracts.model.ESEffect
 import org.jetbrains.kotlin.contracts.model.SimpleEffect
-import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
+import org.jetbrains.kotlin.descriptors.contracts.InvocationKind
 
 data class ESCalls(val callable: ESValue, val kind: InvocationKind): SimpleEffect() {
     override fun isImplies(other: ESEffect): Boolean? {

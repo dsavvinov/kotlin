@@ -20,8 +20,8 @@ import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.contracts.model.ESExpressionVisitor
 import org.jetbrains.kotlin.contracts.model.ESValue
 import org.jetbrains.kotlin.descriptors.ValueDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanConstantDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanConstantReference
+import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.makeNullable
 import java.util.*
@@ -45,7 +45,7 @@ open class ESVariable(val descriptor: ValueDescriptor) : ESValue(descriptor.type
     override fun toString(): String = descriptor.toString()
 }
 
-open class ESConstant private constructor(open val constantDescriptor: ConstantDescriptor, override val type: KotlinType) : ESValue(type) {
+open class ESConstant private constructor(open val constantReference: ConstantReference, override val type: KotlinType) : ESValue(type) {
     override fun <T> accept(visitor: ESExpressionVisitor<T>): T = visitor.visitConstant(this)
 
     override fun equals(other: Any?): Boolean {
@@ -54,21 +54,21 @@ open class ESConstant private constructor(open val constantDescriptor: ConstantD
 
         other as ESConstant
 
-        if (constantDescriptor != other.constantDescriptor) return false
+        if (constantReference != other.constantReference) return false
 
         return true
     }
 
-    override fun hashCode(): Int = Objects.hashCode(constantDescriptor)
+    override fun hashCode(): Int = Objects.hashCode(constantReference)
 
-    override fun toString(): String = constantDescriptor.name
+    override fun toString(): String = constantReference.name
 
     companion object {
-        val TRUE = ESConstant(BooleanConstantDescriptor.TRUE, DefaultBuiltIns.Instance.booleanType)
-        val FALSE = ESConstant(BooleanConstantDescriptor.FALSE, DefaultBuiltIns.Instance.booleanType)
-        val NULL = ESConstant(ConstantDescriptor.NULL, DefaultBuiltIns.Instance.nothingType.makeNullable())
-        val NOT_NULL = ESConstant(ConstantDescriptor.NOT_NULL, DefaultBuiltIns.Instance.anyType)
-        val WILDCARD = ESConstant(ConstantDescriptor.WILDCARD, DefaultBuiltIns.Instance.anyType.makeNullable())
+        val TRUE = ESConstant(BooleanConstantReference.TRUE, DefaultBuiltIns.Instance.booleanType)
+        val FALSE = ESConstant(BooleanConstantReference.FALSE, DefaultBuiltIns.Instance.booleanType)
+        val NULL = ESConstant(ConstantReference.NULL, DefaultBuiltIns.Instance.nothingType.makeNullable())
+        val NOT_NULL = ESConstant(ConstantReference.NOT_NULL, DefaultBuiltIns.Instance.anyType)
+        val WILDCARD = ESConstant(ConstantReference.WILDCARD, DefaultBuiltIns.Instance.anyType.makeNullable())
     }
 
     fun isNullConstant(): Boolean = this == NULL || this == NOT_NULL
