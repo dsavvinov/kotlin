@@ -27,15 +27,15 @@ import org.jetbrains.kotlin.contracts.model.ESExpression
 import org.jetbrains.kotlin.contracts.model.Functor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescription
 import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
 import org.jetbrains.kotlin.descriptors.contracts.expressions.VariableReference
 
 /**
- * This class manages conversion of [ContractDescriptor] to [Functor]
+ * This class manages conversion of [ContractDescription] to [Functor]
  */
 class ContractInterpretationDispatcher {
     private val constantsInterpreter = ConstantValuesInterpreter()
@@ -50,8 +50,8 @@ class ContractInterpretationDispatcher {
         return convertContractDescriptorToFunctor(contractDescriptor)
     }
 
-    private fun convertContractDescriptorToFunctor(contractDescriptor: ContractDescriptor): Functor? {
-        val resultingClauses = contractDescriptor.effects.map { effect ->
+    private fun convertContractDescriptorToFunctor(contractDescription: ContractDescription): Functor? {
+        val resultingClauses = contractDescription.effects.map { effect ->
             if (effect is ConditionalEffectDeclaration) {
                 conditionalEffectInterpreter.interpret(effect) ?: return null
             }
@@ -60,7 +60,7 @@ class ContractInterpretationDispatcher {
             }
         }
 
-        return SubstitutingFunctor(resultingClauses, contractDescriptor.ownerFunction)
+        return SubstitutingFunctor(resultingClauses, contractDescription.ownerFunction)
     }
 
     internal fun interpretEffect(effectDeclaration: EffectDeclaration): ESEffect? {
@@ -68,8 +68,8 @@ class ContractInterpretationDispatcher {
         return convertedFunctors.singleOrNull()
     }
 
-    internal fun interpretConstant(constantDescriptor: ConstantDescriptor): ESConstant? =
-            constantsInterpreter.interpretConstant(constantDescriptor)
+    internal fun interpretConstant(constantReference: ConstantReference): ESConstant? =
+            constantsInterpreter.interpretConstant(constantReference)
 
     internal fun interpretCondition(booleanExpression: BooleanExpression): ESExpression? =
             booleanExpression.accept(conditionInterpreter, Unit)
