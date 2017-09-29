@@ -23,7 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
 import org.jetbrains.kotlin.descriptors.*;
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor;
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescription;
 import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey;
 import org.jetbrains.kotlin.descriptors.contracts.LazyContractProvider;
 import org.jetbrains.kotlin.descriptors.impl.SubpackagesScope;
@@ -118,11 +118,11 @@ public class RecursiveDescriptorComparator {
             FunctionDescriptor functionDescriptor = (FunctionDescriptor) descriptor;
             LazyContractProvider contractProvider = functionDescriptor.getUserData(ContractProviderKey.INSTANCE);
             if (contractProvider != null) {
-                ContractDescriptor contractDescriptor = contractProvider.getContractDescriptor();
-                if (contractDescriptor != null) {
+                ContractDescription contractDescription = contractProvider.getContractDescriptor();
+                if (contractDescription != null) {
                     printer.println();
                     printer.pushIndent();
-                    conf.renderer.renderContract(contractDescriptor).forEach(printer::println);
+                    conf.renderer.renderContract(contractDescription).forEach(printer::println);
                     printer.popIndent();
                 }
             }

@@ -17,13 +17,13 @@
 package org.jetbrains.kotlin.renderer
 
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionElement
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptorVisitor
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionVisitor
 import org.jetbrains.kotlin.descriptors.contracts.CallsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.ReturnsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 
-class ContractDescriptorRenderer(private val builder: StringBuilder) : ContractDescriptorVisitor<Unit, Unit> {
+class ContractDescriptionRenderer(private val builder: StringBuilder) : ContractDescriptionVisitor<Unit, Unit> {
     override fun visitConditionalEffectDeclaration(conditionalEffect: ConditionalEffectDeclaration, data: Unit) {
         conditionalEffect.effect.accept(this, data)
         builder.append(" -> ")
