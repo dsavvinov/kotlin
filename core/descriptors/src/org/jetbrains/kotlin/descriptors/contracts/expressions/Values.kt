@@ -22,7 +22,6 @@ import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionElement
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionVisitor
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.typeUtil.makeNullable
 
 
 interface ContractDescriptionValue : ContractDescriptionElement {
@@ -30,18 +29,18 @@ interface ContractDescriptionValue : ContractDescriptionElement {
             contractDescriptionVisitor.visitValue(this, data)
 }
 
-open class ConstantReference(val type: KotlinType, val name: String) : ContractDescriptionValue {
+open class ConstantReference(val name: String) : ContractDescriptionValue {
     override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R =
             contractDescriptionVisitor.visitConstantDescriptor(this, data)
 
     companion object {
-        val NULL = ConstantReference(DefaultBuiltIns.Instance.nothingType.makeNullable(), "NULL")
-        val WILDCARD = ConstantReference(DefaultBuiltIns.Instance.nullableAnyType, "WILDCARD")
-        val NOT_NULL = ConstantReference(DefaultBuiltIns.Instance.anyType, "NOT_NULL")
+        val NULL = ConstantReference("NULL")
+        val WILDCARD = ConstantReference("WILDCARD")
+        val NOT_NULL = ConstantReference("NOT_NULL")
     }
 }
 
-class BooleanConstantReference(name: String) : ConstantReference(DefaultBuiltIns.Instance.booleanType, name), BooleanExpression {
+class BooleanConstantReference(name: String) : ConstantReference(name), BooleanExpression {
     override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R =
             contractDescriptionVisitor.visitBooleanConstantDescriptor(this, data)
 
