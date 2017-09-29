@@ -24,26 +24,26 @@ import org.jetbrains.kotlin.contracts.model.MutableContextInfo
 import org.jetbrains.kotlin.resolve.calls.smartcasts.*
 
 fun MutableContextInfo.toDataFlowInfo(languageVersionSettings: LanguageVersionSettings): DataFlowInfo {
-    var resultDFI = DataFlowInfoFactory.EMPTY
+    var resultingDataFlowInfo = DataFlowInfoFactory.EMPTY
 
     extractDataFlowStatements(equalValues) { leftDfv, rightValue ->
         val rightDfv = rightValue.toDataFlowValue() ?: return@extractDataFlowStatements
-        resultDFI = resultDFI.equate(leftDfv, rightDfv, false, languageVersionSettings)
+        resultingDataFlowInfo = resultingDataFlowInfo.equate(leftDfv, rightDfv, false, languageVersionSettings)
     }
 
     extractDataFlowStatements(notEqualValues) { leftDfv, rightValue ->
         val rightDfv = rightValue.toDataFlowValue() ?: return@extractDataFlowStatements
-        resultDFI = resultDFI.disequate(leftDfv, rightDfv, languageVersionSettings)
+        resultingDataFlowInfo = resultingDataFlowInfo.disequate(leftDfv, rightDfv, languageVersionSettings)
     }
 
     extractDataFlowStatements(subtypes) { leftDfv, type ->
-        resultDFI = resultDFI.establishSubtyping(leftDfv, type, languageVersionSettings)
+        resultingDataFlowInfo = resultingDataFlowInfo.establishSubtyping(leftDfv, type, languageVersionSettings)
     }
 
-    return resultDFI
+    return resultingDataFlowInfo
 }
 
-private fun <D> extractDataFlowStatements(dictionary: Map<ESValue, Set<D>>, callback: (DataFlowValue, D) -> Unit) {
+inline private fun <D> extractDataFlowStatements(dictionary: Map<ESValue, Set<D>>, callback: (DataFlowValue, D) -> Unit) {
     for ((key, setOfValues) in dictionary) {
         val leftDfv = key.toDataFlowValue() ?: continue
         setOfValues.forEach { callback(leftDfv, it) }
