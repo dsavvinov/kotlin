@@ -25,10 +25,10 @@ import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 
-internal class PSIReturnsEffectParser(
+internal class PsiReturnsEffectParser(
         trace: BindingTrace,
-        contractParserDispatcher: PSIContractParserDispatcher
-) : AbstractPSIEffectParser(trace, contractParserDispatcher) {
+        contractParserDispatcher: PsiContractParserDispatcher
+) : AbstractPsiEffectParser(trace, contractParserDispatcher) {
     override fun tryParseEffect(expression: KtExpression): EffectDeclaration? {
         val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
         val descriptor = resolvedCall.resultingDescriptor

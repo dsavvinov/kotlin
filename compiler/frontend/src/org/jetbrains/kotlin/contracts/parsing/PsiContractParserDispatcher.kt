@@ -31,26 +31,25 @@ import org.jetbrains.kotlin.contracts.parsing.ContractsDslNames.CALLS_IN_PLACE_E
 import org.jetbrains.kotlin.contracts.parsing.ContractsDslNames.CONDITIONAL_EFFECT
 import org.jetbrains.kotlin.contracts.parsing.ContractsDslNames.RETURNS_EFFECT
 import org.jetbrains.kotlin.contracts.parsing.ContractsDslNames.RETURNS_NOT_NULL_EFFECT
-import org.jetbrains.kotlin.contracts.parsing.effects.PSICallsEffectParser
-import org.jetbrains.kotlin.contracts.parsing.effects.PSIConditionalEffectParser
-import org.jetbrains.kotlin.contracts.parsing.effects.PSIReturnsEffectParser
+import org.jetbrains.kotlin.contracts.parsing.effects.PsiCallsEffectParser
+import org.jetbrains.kotlin.contracts.parsing.effects.PsiConditionalEffectParser
+import org.jetbrains.kotlin.contracts.parsing.effects.PsiReturnsEffectParser
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression
-import org.jetbrains.kotlin.psi.KtThisExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.calls.callUtil.getType
 
-internal class PSIContractParserDispatcher(val trace: BindingTrace, val contractParsingServices: ContractParsingServices) {
-    private val conditionParser = PSIConditionParser(trace, this)
-    private val constantParser = PSIConstantParser(trace)
-    private val effectsParsers: Map<Name, PSIEffectParser> = mapOf(
-            RETURNS_EFFECT to PSIReturnsEffectParser(trace, this),
-            RETURNS_NOT_NULL_EFFECT to PSIReturnsEffectParser(trace, this),
-            CALLS_IN_PLACE_EFFECT to PSICallsEffectParser(trace, this),
-            CONDITIONAL_EFFECT to PSIConditionalEffectParser(trace, this)
+internal class PsiContractParserDispatcher(val trace: BindingTrace, val contractParsingServices: ContractParsingServices) {
+    private val conditionParser = PsiConditionParser(trace, this)
+    private val constantParser = PsiConstantParser(trace)
+    private val effectsParsers: Map<Name, PsiEffectParser> = mapOf(
+            RETURNS_EFFECT to PsiReturnsEffectParser(trace, this),
+            RETURNS_NOT_NULL_EFFECT to PsiReturnsEffectParser(trace, this),
+            CALLS_IN_PLACE_EFFECT to PsiCallsEffectParser(trace, this),
+            CONDITIONAL_EFFECT to PsiConditionalEffectParser(trace, this)
     )
 
     fun parseContract(expression: KtExpression?, ownerDescriptor: FunctionDescriptor): ContractDescriptor? {

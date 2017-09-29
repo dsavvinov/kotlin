@@ -20,8 +20,8 @@ import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 
-internal interface PSIEffectParser {
+internal interface PsiEffectParser {
     fun tryParseEffect(expression: KtExpression): EffectDeclaration?
 }
 
-internal abstract class AbstractPSIEffectParser(val trace: BindingTrace, val contractParserDispatcher: PSIContractParserDispatcher) : PSIEffectParser
+internal abstract class AbstractPsiEffectParser(val trace: BindingTrace, val contractParserDispatcher: PsiContractParserDispatcher) : PsiEffectParser

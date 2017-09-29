@@ -25,10 +25,10 @@ import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-internal class PSIConditionalEffectParser(
+internal class PsiConditionalEffectParser(
         trace: BindingTrace,
-        dispatcher: PSIContractParserDispatcher
-) : AbstractPSIEffectParser(trace, dispatcher) {
+        dispatcher: PsiContractParserDispatcher
+) : AbstractPsiEffectParser(trace, dispatcher) {
     override fun tryParseEffect(expression: KtExpression): EffectDeclaration? {
         val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null
 

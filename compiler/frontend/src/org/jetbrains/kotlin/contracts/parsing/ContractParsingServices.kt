@@ -63,10 +63,8 @@ class ContractParsingServices(val languageVersionSettings: LanguageVersionSettin
         contractProvider.setContractDescriptor(contractDescriptor)
     }
 
-    private fun parseContract(expression: KtExpression?, trace: BindingTrace, ownerDescriptor: FunctionDescriptor): ContractDescriptor? {
-        val dispatcher = PSIContractParserDispatcher(trace, this)
-        return dispatcher.parseContract(expression, ownerDescriptor)
-    }
+    private fun parseContract(expression: KtExpression?, trace: BindingTrace, ownerDescriptor: FunctionDescriptor): ContractDescriptor? =
+            PsiContractParserDispatcher(trace, this).parseContract(expression, ownerDescriptor)
 
     internal fun isContractDescriptionCall(expression: KtExpression, context: BindingContext): Boolean =
             isContractDescriptionCallFastCheck(expression) && isContractDescriptionCallPreciseCheck(expression, context)
@@ -77,13 +75,9 @@ class ContractParsingServices(val languageVersionSettings: LanguageVersionSettin
     private fun isContractAllowedHere(scope: LexicalScope): Boolean =
             scope.kind == LexicalScopeKind.CODE_BLOCK && (scope.parent as? LexicalScope)?.kind == LexicalScopeKind.FUNCTION_INNER_SCOPE
 
-    private fun isContractDescriptionCallFastCheck(expression: KtExpression): Boolean {
-        if (expression !is KtCallExpression) return false
-        return expression.calleeExpression?.text == "contract"
-    }
+    private fun isContractDescriptionCallFastCheck(expression: KtExpression): Boolean =
+            expression is KtCallExpression && expression.calleeExpression?.text == "contract"
 
-    private fun isContractDescriptionCallPreciseCheck(expression: KtExpression, context: BindingContext): Boolean {
-        val resolvedCall = expression.getResolvedCall(context) ?: return false
-        return resolvedCall.resultingDescriptor.isContractCallDescriptor()
-    }
+    private fun isContractDescriptionCallPreciseCheck(expression: KtExpression, context: BindingContext): Boolean =
+            expression.getResolvedCall(context)?.resultingDescriptor?.isContractCallDescriptor() ?: false
 }

@@ -27,7 +27,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver
 
-internal class PSIConditionParser(val trace: BindingTrace, val dispatcher: PSIContractParserDispatcher) : KtVisitor<BooleanExpression?, Unit>() {
+internal class PsiConditionParser(val trace: BindingTrace, val dispatcher: PsiContractParserDispatcher) : KtVisitor<BooleanExpression?, Unit>() {
     override fun visitIsExpression(expression: KtIsExpression, data: Unit): BooleanExpression? {
         val variable = dispatcher.parseVariable(expression.leftHandSide) ?: return null
         val typeReference = expression.typeReference ?: return null

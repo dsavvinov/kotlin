@@ -28,10 +28,10 @@ import org.jetbrains.kotlin.resolve.calls.model.ExpressionValueArgument
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 
-internal class PSICallsEffectParser(
+internal class PsiCallsEffectParser(
         trace: BindingTrace,
-        contractParserDispatcher: PSIContractParserDispatcher
-) : AbstractPSIEffectParser(trace, contractParserDispatcher) {
+        contractParserDispatcher: PsiContractParserDispatcher
+) : AbstractPsiEffectParser(trace, contractParserDispatcher) {
 
     override fun tryParseEffect(expression: KtExpression): EffectDeclaration? {
         val resolvedCall = expression.getResolvedCall(trace.bindingContext) ?: return null

@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant
 import org.jetbrains.kotlin.types.KotlinType
 
-internal class PSIConstantParser(val trace: BindingTrace) : KtVisitor<ConstantDescriptor?, Unit>() {
+internal class PsiConstantParser(val trace: BindingTrace) : KtVisitor<ConstantDescriptor?, Unit>() {
     override fun visitKtElement(element: KtElement, data: Unit?): ConstantDescriptor? = null
 
     override fun visitConstantExpression(expression: KtConstantExpression, data: Unit?): ConstantDescriptor? {
