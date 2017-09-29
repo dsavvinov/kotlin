@@ -36,16 +36,7 @@ abstract class SimpleEffect : ESEffect()
 /**
  * Effect with condition attached to it.
  *
- * [condition] is some expression, which result-type is Boolean, and clause should
- * be interpreted as: "if [simpleEffect] took place then [condition]-expression is
- * guaranteed to be true"
- *
- * NB. [simpleEffect] and [condition] connected with implication in math logic sense:
- * [simpleEffect] => [condition]. In particular this means that:
- *  - there can be multiple ways how [simpleEffect] can be produced, but for any of them
- *    [condition] holds.
- *  - if [simpleEffect] wasn't observed, we *can't* reason that [condition] is false
- *  - if [condition] is true, we *can't* reason that [simpleEffect] will be observed.
+ * Has the same semantics as [org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration]
  */
 class ConditionalEffect(val condition: ESExpression, val simpleEffect: SimpleEffect) : ESEffect() {
     // Conservatively, always return null, indicating absence of information
