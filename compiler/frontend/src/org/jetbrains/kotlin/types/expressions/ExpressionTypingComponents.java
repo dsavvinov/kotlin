@@ -185,7 +185,7 @@ public class ExpressionTypingComponents {
     }
 
     @Inject
-    public void setLocalVariableResolver(@NotNull  LocalVariableResolver localVariableResolver) {
+    public void setLocalVariableResolver(@NotNull LocalVariableResolver localVariableResolver) {
         this.localVariableResolver = localVariableResolver;
     }
 
@@ -230,5 +230,7 @@ public class ExpressionTypingComponents {
     }
 
     @Inject
-    public void setContractParsingServices(@NotNull ContractParsingServices contractParsingServices) { this.contractParsingServices = contractParsingServices; }
+    public void setContractParsingServices(@NotNull ContractParsingServices contractParsingServices) {
+        this.contractParsingServices = contractParsingServices;
+    }
 }
