@@ -285,8 +285,7 @@ class DescriptorSerializer private constructor(
 
         val contractDescriptor = descriptor.getUserData(ContractProviderKey)?.getContractDescriptor()
         if (contractDescriptor != null) {
-            val serializedContract = contractProto(contractDescriptor)
-            builder.setContract(serializedContract)
+            builder.setContract(contractProto(contractDescriptor))
         }
 
         extension.serializeFunction(descriptor, builder)
@@ -599,13 +598,13 @@ class DescriptorSerializer private constructor(
     private fun getTypeParameterId(descriptor: TypeParameterDescriptor): Int =
             typeParameters.intern(descriptor)
 
-    private fun contractProto(contractDescription: ContractDescription): ProtoBuf.Contract.Builder? {
+    private fun contractProto(contractDescription: ContractDescription): ProtoBuf.Contract.Builder {
         return ProtoBuf.Contract.newBuilder().apply {
             contractDescription.effects.forEach { addEffect(effectProto(it, contractDescription)) }
         }
     }
 
-    private fun effectProto(effectDeclaration: EffectDeclaration, contractDescription: ContractDescription): ProtoBuf.Effect.Builder? {
+    private fun effectProto(effectDeclaration: EffectDeclaration, contractDescription: ContractDescription): ProtoBuf.Effect.Builder {
         return ProtoBuf.Effect.newBuilder().apply {
             fillEffectProto(this, effectDeclaration, contractDescription)
         }
