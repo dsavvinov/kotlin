@@ -21,33 +21,26 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 /**
  * Essentially, this is a composition of two fields: value of type 'ContractDescription' and
  * 'computation', which guarantees to initialize this field.
- *
- * However, we do some extra bit of work to detect errors and report them properly.
  */
 class LazyContractProvider(private val ownerFunction: FunctionDescriptor, private val computation: () -> Any?) {
-    private enum class ComputationState { NOT_PROCESSED, IN_PROCESS, PROCESSED }
+    @Volatile
+    private var isComputed: Boolean = false
+
     private var contractDescription: ContractDescription? = null
-    private var state: ComputationState = ComputationState.NOT_PROCESSED
 
 
-    fun getContractDescriptor(): ContractDescription? = when (state) {
-        LazyContractProvider.ComputationState.NOT_PROCESSED -> {
-            state = ComputationState.IN_PROCESS
+    fun getContractDescriptor(): ContractDescription? {
+        if (!isComputed) {
             computation.invoke() // should initialize contractDescription
-            assert(state == ComputationState.PROCESSED) { "Computation of contract for function $ownerFunction hasn't initialized contract properly" }
-            contractDescription
+            assert(isComputed) { "Computation of contract for function $ownerFunction hasn't initialized contract properly" }
         }
 
-        LazyContractProvider.ComputationState.IN_PROCESS -> {
-            throw IllegalStateException("Recursive evaluation during resolving of contract for function $ownerFunction")
-        }
-
-        LazyContractProvider.ComputationState.PROCESSED -> contractDescription
+        return contractDescription
     }
 
     fun setContractDescriptor(contractDescription: ContractDescription?) {
         this.contractDescription = contractDescription
-        state = ComputationState.PROCESSED
+        isComputed = true // publish
     }
 
     companion object {
