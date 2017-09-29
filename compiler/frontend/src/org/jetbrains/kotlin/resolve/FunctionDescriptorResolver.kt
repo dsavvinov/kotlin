@@ -209,10 +209,10 @@ class FunctionDescriptorResolver(
     }
 
     private fun getContractProvider(functionDescriptor: SimpleFunctionDescriptorImpl, trace: BindingTrace, scope: LexicalScope, dataFlowInfo: DataFlowInfo, function: KtFunction): LazyContractProvider {
-        val provideByDeferredForceResolve = LazyContractProvider(functionDescriptor) {
+        val provideByDeferredForceResolve = LazyContractProvider {
             expressionTypingServices.getBodyExpressionType(trace, scope, dataFlowInfo, function, functionDescriptor)
         }
-        val emptyContract = LazyContractProvider.createInitialized(functionDescriptor, null)
+        val emptyContract = LazyContractProvider.createInitialized(null)
 
         val isContractsEnabled = languageVersionSettings.supportsFeature(LanguageFeature.CallsInPlaceEffect) ||
                                  languageVersionSettings.supportsFeature(LanguageFeature.ReturnsEffect) ||

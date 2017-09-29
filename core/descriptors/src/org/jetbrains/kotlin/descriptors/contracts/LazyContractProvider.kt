@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
  * Essentially, this is a composition of two fields: value of type 'ContractDescription' and
  * 'computation', which guarantees to initialize this field.
  */
-class LazyContractProvider(private val ownerFunction: FunctionDescriptor, private val computation: () -> Any?) {
+class LazyContractProvider(private val computation: () -> Any?) {
     @Volatile
     private var isComputed: Boolean = false
 
@@ -32,7 +32,7 @@ class LazyContractProvider(private val ownerFunction: FunctionDescriptor, privat
     fun getContractDescriptor(): ContractDescription? {
         if (!isComputed) {
             computation.invoke() // should initialize contractDescription
-            assert(isComputed) { "Computation of contract for function $ownerFunction hasn't initialized contract properly" }
+            assert(isComputed) { "Computation of contract hasn't initialized contract properly" }
         }
 
         return contractDescription
@@ -44,8 +44,8 @@ class LazyContractProvider(private val ownerFunction: FunctionDescriptor, privat
     }
 
     companion object {
-        fun createInitialized(ownerFunction: FunctionDescriptor, contract: ContractDescription?): LazyContractProvider =
-                LazyContractProvider(ownerFunction, {}).apply { setContractDescriptor(contract) }
+        fun createInitialized(contract: ContractDescription?): LazyContractProvider =
+                LazyContractProvider({}).apply { setContractDescriptor(contract) }
     }
 }
 

@@ -162,7 +162,7 @@ class MemberDeserializer(private val c: DeserializationContext) {
                 c.containerSource
         )
         val local = c.childContext(function, proto.typeParameterList)
-        val lazyContractProvider = LazyContractProvider(function, {})
+
         function.initialize(
                 proto.receiverType(c.typeTable)?.let { local.typeDeserializer.type(it, receiverAnnotations) },
                 getDispatchReceiverParameter(),
@@ -171,7 +171,7 @@ class MemberDeserializer(private val c: DeserializationContext) {
                 local.typeDeserializer.type(proto.returnType(c.typeTable)),
                 Deserialization.modality(Flags.MODALITY.get(flags)),
                 Deserialization.visibility(Flags.VISIBILITY.get(flags)),
-                mapOf(ContractProviderKey to lazyContractProvider)
+                emptyMap<FunctionDescriptor.UserDataKey<*>, Any?>()
         )
         function.isOperator = Flags.IS_OPERATOR.get(flags)
         function.isInfix = Flags.IS_INFIX.get(flags)
@@ -181,7 +181,11 @@ class MemberDeserializer(private val c: DeserializationContext) {
         function.isSuspend = Flags.IS_SUSPEND.get(flags)
         function.isExpect = Flags.IS_EXPECT_FUNCTION.get(flags)
 
-        lazyContractProvider.setContractDescriptor(ContractDeserializer(c, function).deserializeContractFromFunction(proto))
+        val mapValueForContract = c.components.contractDeserializer.deserializeContractFromFunction(proto, function, c.typeTable, c.typeDeserializer)
+        if (mapValueForContract != null) {
+            function.putInUserDataMap(mapValueForContract.first, mapValueForContract.second)
+        }
+
         return function
     }
 
