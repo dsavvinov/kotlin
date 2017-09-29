@@ -43,7 +43,8 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addIfNotNull
 
 /**
- * Visits a given PSI-tree and extracts information about
+ * Visits a given PSI-tree of call (and nested calls, if any) and extracts information
+ * about effects of that call.
  */
 class EffectsExtractingVisitor(
         private val trace: BindingTrace,
