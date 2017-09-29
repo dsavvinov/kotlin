@@ -19,12 +19,12 @@ package org.jetbrains.kotlin.serialization.deserialization
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescription
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.CallsEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
-import org.jetbrains.kotlin.descriptors.contracts.effects.ReturnsEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.CallsEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.InvocationKind
+import org.jetbrains.kotlin.descriptors.contracts.ReturnsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 import org.jetbrains.kotlin.serialization.Flags
 import org.jetbrains.kotlin.serialization.ProtoBuf
@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.utils.addIfNotNull
 
 class ContractDeserializer(private val c: DeserializationContext, private val ownerFunction: FunctionDescriptor) {
-    fun deserializeContractFromFunction(proto: ProtoBuf.Function): ContractDescriptor? {
+    fun deserializeContractFromFunction(proto: ProtoBuf.Function): ContractDescription? {
         if (!proto.hasContract()) return null
 
         val deserializationConfiguration = c.components.configuration
@@ -41,9 +41,9 @@ class ContractDeserializer(private val c: DeserializationContext, private val ow
         return deserializeContract(proto.contract)
     }
 
-    private fun deserializeContract(proto: ProtoBuf.Contract): ContractDescriptor? {
+    private fun deserializeContract(proto: ProtoBuf.Contract): ContractDescription? {
         val effects = proto.effectList.map { deserializePossiblyConditionalEffect(it) ?: return null }
-        return ContractDescriptor(effects, ownerFunction)
+        return ContractDescription(effects, ownerFunction)
     }
 
     private fun deserializePossiblyConditionalEffect(proto: ProtoBuf.Effect): EffectDeclaration? {
@@ -61,12 +61,12 @@ class ContractDeserializer(private val c: DeserializationContext, private val ow
         return when (type!!) {
             ProtoBuf.Effect.EffectType.RETURNS_CONSTANT -> {
                 val argument = proto.effectConstructorArgumentsList.getOrNull(0)
-                val returnValue = if (argument == null) ConstantDescriptor.WILDCARD else deserializeExpression(argument) as? ConstantDescriptor ?: return null
+                val returnValue = if (argument == null) ConstantReference.WILDCARD else deserializeExpression(argument) as? ConstantReference ?: return null
                 ReturnsEffectDeclaration(returnValue)
             }
 
             ProtoBuf.Effect.EffectType.RETURNS_NOT_NULL -> {
-                ReturnsEffectDeclaration(ConstantDescriptor.NOT_NULL)
+                ReturnsEffectDeclaration(ConstantReference.NOT_NULL)
             }
 
             ProtoBuf.Effect.EffectType.CALLS -> {
@@ -113,7 +113,7 @@ class ContractDeserializer(private val c: DeserializationContext, private val ow
             }
 
             PrimitiveExpressionType.CONSTANT ->
-                (deserializeConstant(proto.constantValue) as? BooleanConstantDescriptor)?.invertIfNecessary(isInverted)
+                (deserializeConstant(proto.constantValue) as? BooleanConstantReference)?.invertIfNecessary(isInverted)
 
             PrimitiveExpressionType.INSTANCE_CHECK -> {
                 val variable = extractVariable(proto) ?: return null
@@ -161,10 +161,10 @@ class ContractDeserializer(private val c: DeserializationContext, private val ow
         return c.typeDeserializer.type(protoType)
     }
 
-    private fun deserializeConstant(value: ProtoBuf.Expression.ConstantValue): ConstantDescriptor? = when (value) {
-        ProtoBuf.Expression.ConstantValue.TRUE -> BooleanConstantDescriptor.TRUE
-        ProtoBuf.Expression.ConstantValue.FALSE -> BooleanConstantDescriptor.FALSE
-        ProtoBuf.Expression.ConstantValue.NULL -> ConstantDescriptor.NULL
+    private fun deserializeConstant(value: ProtoBuf.Expression.ConstantValue): ConstantReference? = when (value) {
+        ProtoBuf.Expression.ConstantValue.TRUE -> BooleanConstantReference.TRUE
+        ProtoBuf.Expression.ConstantValue.FALSE -> BooleanConstantReference.FALSE
+        ProtoBuf.Expression.ConstantValue.NULL -> ConstantReference.NULL
     }
 
     private fun getComplexType(proto: ProtoBuf.Expression): ComplexExpressionType? {

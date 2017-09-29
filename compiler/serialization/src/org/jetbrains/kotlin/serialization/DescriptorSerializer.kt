@@ -23,10 +23,10 @@ import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.contracts.*
-import org.jetbrains.kotlin.descriptors.contracts.effects.CallsEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
-import org.jetbrains.kotlin.descriptors.contracts.effects.ReturnsEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.CallsEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.InvocationKind
+import org.jetbrains.kotlin.descriptors.contracts.ReturnsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -599,39 +599,39 @@ class DescriptorSerializer private constructor(
     private fun getTypeParameterId(descriptor: TypeParameterDescriptor): Int =
             typeParameters.intern(descriptor)
 
-    private fun contractProto(contractDescriptor: ContractDescriptor): ProtoBuf.Contract.Builder? {
+    private fun contractProto(contractDescription: ContractDescription): ProtoBuf.Contract.Builder? {
         return ProtoBuf.Contract.newBuilder().apply {
-            contractDescriptor.effects.forEach { addEffect(effectProto(it, contractDescriptor)) }
+            contractDescription.effects.forEach { addEffect(effectProto(it, contractDescription)) }
         }
     }
 
-    private fun effectProto(effectDeclaration: EffectDeclaration, contractDescriptor: ContractDescriptor): ProtoBuf.Effect.Builder? {
+    private fun effectProto(effectDeclaration: EffectDeclaration, contractDescription: ContractDescription): ProtoBuf.Effect.Builder? {
         return ProtoBuf.Effect.newBuilder().apply {
-            fillEffectProto(this, effectDeclaration, contractDescriptor)
+            fillEffectProto(this, effectDeclaration, contractDescription)
         }
     }
 
-    private fun fillEffectProto(builder: ProtoBuf.Effect.Builder, effectDeclaration: EffectDeclaration, contractDescriptor: ContractDescriptor) {
+    private fun fillEffectProto(builder: ProtoBuf.Effect.Builder, effectDeclaration: EffectDeclaration, contractDescription: ContractDescription) {
         when (effectDeclaration) {
             is ConditionalEffectDeclaration -> {
-                builder.setConclusionOfConditionalEffect(contractExpressionProto(effectDeclaration.condition, contractDescriptor))
-                fillEffectProto(builder, effectDeclaration.effect, contractDescriptor)
+                builder.setConclusionOfConditionalEffect(contractExpressionProto(effectDeclaration.condition, contractDescription))
+                fillEffectProto(builder, effectDeclaration.effect, contractDescription)
             }
 
             is ReturnsEffectDeclaration -> {
                 when {
-                    effectDeclaration.value == ConstantDescriptor.NOT_NULL -> builder.effectType = ProtoBuf.Effect.EffectType.RETURNS_NOT_NULL
-                    effectDeclaration.value == ConstantDescriptor.WILDCARD -> builder.effectType = ProtoBuf.Effect.EffectType.RETURNS_CONSTANT
+                    effectDeclaration.value == ConstantReference.NOT_NULL -> builder.effectType = ProtoBuf.Effect.EffectType.RETURNS_NOT_NULL
+                    effectDeclaration.value == ConstantReference.WILDCARD -> builder.effectType = ProtoBuf.Effect.EffectType.RETURNS_CONSTANT
                     else -> {
                         builder.effectType = ProtoBuf.Effect.EffectType.RETURNS_CONSTANT
-                        builder.addEffectConstructorArguments(contractExpressionProto(effectDeclaration.value, contractDescriptor))
+                        builder.addEffectConstructorArguments(contractExpressionProto(effectDeclaration.value, contractDescription))
                     }
                 }
             }
 
             is CallsEffectDeclaration -> {
                 builder.effectType = ProtoBuf.Effect.EffectType.CALLS
-                builder.addEffectConstructorArguments(contractExpressionProto(effectDeclaration.variableReference, contractDescriptor))
+                builder.addEffectConstructorArguments(contractExpressionProto(effectDeclaration.variableReference, contractDescription))
                 val invocationKindProtobufEnum = invocationKindProtobufEnum(effectDeclaration.kind)
                 if (invocationKindProtobufEnum != null) {
                     builder.kind = invocationKindProtobufEnum
@@ -642,8 +642,8 @@ class DescriptorSerializer private constructor(
         }
     }
 
-    private fun contractExpressionProto(contractDescriptionElement: ContractDescriptionElement, contractDescriptor: ContractDescriptor): ProtoBuf.Expression.Builder {
-        return contractDescriptionElement.accept(object: ContractDescriptorVisitor<ProtoBuf.Expression.Builder, Unit> {
+    private fun contractExpressionProto(contractDescriptionElement: ContractDescriptionElement, contractDescription: ContractDescription): ProtoBuf.Expression.Builder {
+        return contractDescriptionElement.accept(object: ContractDescriptionVisitor<ProtoBuf.Expression.Builder, Unit> {
             override fun visitLogicalOr(logicalOr: LogicalOr, data: Unit): ProtoBuf.Expression.Builder {
                 val leftBuilder = logicalOr.left.accept(this, data)
 
@@ -651,12 +651,12 @@ class DescriptorSerializer private constructor(
                     // can't flatten and re-use left builder
                     ProtoBuf.Expression.newBuilder().apply {
                         addOrArguments(leftBuilder)
-                        addOrArguments(contractExpressionProto(logicalOr.right, contractDescriptor))
+                        addOrArguments(contractExpressionProto(logicalOr.right, contractDescription))
                     }
                 }
                 else {
                     // we can save some space by re-using left builder instead of nesting new one
-                    leftBuilder.apply { addOrArguments(contractExpressionProto(logicalOr.right, contractDescriptor)) }
+                    leftBuilder.apply { addOrArguments(contractExpressionProto(logicalOr.right, contractDescription)) }
                 }
             }
 
@@ -667,12 +667,12 @@ class DescriptorSerializer private constructor(
                     // leftBuilder is already a sequence of Or-operators, so we can't re-use it
                     ProtoBuf.Expression.newBuilder().apply {
                         addAndArguments(leftBuilder)
-                        addAndArguments(contractExpressionProto(logicalAnd.right, contractDescriptor))
+                        addAndArguments(contractExpressionProto(logicalAnd.right, contractDescription))
                     }
                 }
                 else {
                     // we can save some space by re-using left builder instead of nesting new one
-                    leftBuilder.apply { addAndArguments(contractExpressionProto(logicalAnd.right, contractDescriptor)) }
+                    leftBuilder.apply { addAndArguments(contractExpressionProto(logicalAnd.right, contractDescription)) }
                 }
             }
 
@@ -706,11 +706,11 @@ class DescriptorSerializer private constructor(
                 return builder
             }
 
-            override fun visitConstantDescriptor(constantDescriptor: ConstantDescriptor, data: Unit): ProtoBuf.Expression.Builder {
+            override fun visitConstantDescriptor(constantReference: ConstantReference, data: Unit): ProtoBuf.Expression.Builder {
                 val builder = ProtoBuf.Expression.newBuilder()
 
                 // write constant value
-                val constantValueProtobufEnum = constantValueProtobufEnum(constantDescriptor)
+                val constantValueProtobufEnum = constantValueProtobufEnum(constantReference)
                 if (constantValueProtobufEnum != null) {
                     builder.constantValue = constantValueProtobufEnum
                 }
@@ -725,7 +725,7 @@ class DescriptorSerializer private constructor(
                     is ReceiverParameterDescriptor -> 0
 
                     is ValueParameterDescriptor -> {
-                        val indexInParametersList = contractDescriptor.ownerFunction.valueParameters.withIndex()
+                        val indexInParametersList = contractDescription.ownerFunction.valueParameters.withIndex()
                                 .find { it.value == variableReference.descriptor }?.index ?: return builder
                         indexInParametersList + 1
                     }
@@ -747,16 +747,16 @@ class DescriptorSerializer private constructor(
         InvocationKind.UNKNOWN -> null
     }
 
-    private fun constantValueProtobufEnum(constantDescriptor: ConstantDescriptor): ProtoBuf.Expression.ConstantValue? = when (constantDescriptor) {
-        BooleanConstantDescriptor.TRUE -> ProtoBuf.Expression.ConstantValue.TRUE
-        BooleanConstantDescriptor.FALSE -> ProtoBuf.Expression.ConstantValue.FALSE
-        ConstantDescriptor.NULL -> ProtoBuf.Expression.ConstantValue.NULL
-        ConstantDescriptor.NOT_NULL -> throw IllegalStateException(
+    private fun constantValueProtobufEnum(constantReference: ConstantReference): ProtoBuf.Expression.ConstantValue? = when (constantReference) {
+        BooleanConstantReference.TRUE -> ProtoBuf.Expression.ConstantValue.TRUE
+        BooleanConstantReference.FALSE -> ProtoBuf.Expression.ConstantValue.FALSE
+        ConstantReference.NULL -> ProtoBuf.Expression.ConstantValue.NULL
+        ConstantReference.NOT_NULL -> throw IllegalStateException(
                 "Internal error during serialization of function contract: NOT_NULL constant isn't denotable in protobuf format. " +
                 "Its serialization should be handled at higher level"
         )
-        ConstantDescriptor.WILDCARD -> null
-        else -> throw IllegalArgumentException("Unknown constant: $constantDescriptor")
+        ConstantReference.WILDCARD -> null
+        else -> throw IllegalArgumentException("Unknown constant: $constantReference")
     }
 
     companion object {
