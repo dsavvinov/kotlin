@@ -20,7 +20,7 @@ import org.jetbrains.kotlin.config.AnalysisFlag
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescription
 import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.lexer.KtTokens
@@ -63,7 +63,7 @@ class ContractParsingServices(val languageVersionSettings: LanguageVersionSettin
         contractProvider.setContractDescriptor(contractDescriptor)
     }
 
-    private fun parseContract(expression: KtExpression?, trace: BindingTrace, ownerDescriptor: FunctionDescriptor): ContractDescriptor? =
+    private fun parseContract(expression: KtExpression?, trace: BindingTrace, ownerDescriptor: FunctionDescriptor): ContractDescription? =
             PsiContractParserDispatcher(trace, this).parseContract(expression, ownerDescriptor)
 
     internal fun isContractDescriptionCall(expression: KtExpression, context: BindingContext): Boolean =

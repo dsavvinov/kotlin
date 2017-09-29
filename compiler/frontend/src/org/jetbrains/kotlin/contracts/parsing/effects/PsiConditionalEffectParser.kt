@@ -17,7 +17,7 @@
 package org.jetbrains.kotlin.contracts.parsing.effects
 
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
 import org.jetbrains.kotlin.contracts.parsing.*
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace

@@ -18,8 +18,8 @@ package org.jetbrains.kotlin.contracts.parsing.effects
 
 import org.jetbrains.kotlin.contracts.parsing.*
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.ReturnsEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.ReturnsEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
@@ -34,13 +34,13 @@ internal class PsiReturnsEffectParser(
         val descriptor = resolvedCall.resultingDescriptor
 
         if (descriptor.isReturnsNotNullDescriptor())
-            return ReturnsEffectDeclaration(ConstantDescriptor.NOT_NULL)
+            return ReturnsEffectDeclaration(ConstantReference.NOT_NULL)
 
         if (!descriptor.isReturnsEffectDescriptor()) return null
 
         val argumentExpression = resolvedCall.firstArgumentAsExpressionOrNull()
         val constantValue = if (argumentExpression == null)
-            ConstantDescriptor.WILDCARD
+            ConstantReference.WILDCARD
         else {
             // Note that we distinguish absence of an argument and unparsed argument
             val constant = contractParserDispatcher.parseConstant(argumentExpression)

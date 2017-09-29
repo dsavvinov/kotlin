@@ -20,10 +20,10 @@ import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescription
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanVariableReference
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
 import org.jetbrains.kotlin.descriptors.contracts.expressions.ContractDescriptionValue
 import org.jetbrains.kotlin.descriptors.contracts.expressions.VariableReference
 import org.jetbrains.kotlin.diagnostics.Errors
@@ -52,7 +52,7 @@ internal class PsiContractParserDispatcher(val trace: BindingTrace, val contract
             CONDITIONAL_EFFECT to PsiConditionalEffectParser(trace, this)
     )
 
-    fun parseContract(expression: KtExpression?, ownerDescriptor: FunctionDescriptor): ContractDescriptor? {
+    fun parseContract(expression: KtExpression?, ownerDescriptor: FunctionDescriptor): ContractDescription? {
         if (expression == null) return null
         if (!contractParsingServices.isContractDescriptionCall(expression, trace.bindingContext)) return null
 
@@ -64,7 +64,7 @@ internal class PsiContractParserDispatcher(val trace: BindingTrace, val contract
 
         if (effects.isEmpty()) return null
 
-        return ContractDescriptor(effects, ownerDescriptor)
+        return ContractDescription(effects, ownerDescriptor)
     }
 
     fun parseCondition(expression: KtExpression?): BooleanExpression? = expression?.accept(conditionParser, Unit)
@@ -80,7 +80,7 @@ internal class PsiContractParserDispatcher(val trace: BindingTrace, val contract
         return parser.tryParseEffect(expression)
     }
 
-    fun parseConstant(expression: KtExpression?): ConstantDescriptor? {
+    fun parseConstant(expression: KtExpression?): ConstantReference? {
         if (expression == null) return null
         return expression.accept(constantParser, Unit)
     }

@@ -18,8 +18,8 @@ package org.jetbrains.kotlin.contracts.parsing.effects
 
 import org.jetbrains.kotlin.contracts.parsing.*
 import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.CallsEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
+import org.jetbrains.kotlin.descriptors.contracts.CallsEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.InvocationKind
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall

@@ -16,8 +16,8 @@
 
 package org.jetbrains.kotlin.contracts.parsing
 
-import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanConstantDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantDescriptor
+import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanConstantReference
+import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
 import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtVisitor
@@ -26,10 +26,10 @@ import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant
 import org.jetbrains.kotlin.types.KotlinType
 
-internal class PsiConstantParser(val trace: BindingTrace) : KtVisitor<ConstantDescriptor?, Unit>() {
-    override fun visitKtElement(element: KtElement, data: Unit?): ConstantDescriptor? = null
+internal class PsiConstantParser(val trace: BindingTrace) : KtVisitor<ConstantReference?, Unit>() {
+    override fun visitKtElement(element: KtElement, data: Unit?): ConstantReference? = null
 
-    override fun visitConstantExpression(expression: KtConstantExpression, data: Unit?): ConstantDescriptor? {
+    override fun visitConstantExpression(expression: KtConstantExpression, data: Unit?): ConstantReference? {
         val type: KotlinType = trace.getType(expression) ?: return null
 
         val compileTimeConstant: CompileTimeConstant<*>
@@ -37,9 +37,9 @@ internal class PsiConstantParser(val trace: BindingTrace) : KtVisitor<ConstantDe
         val value: Any? = compileTimeConstant.getValue(type)
 
         return when (value) {
-            true -> BooleanConstantDescriptor.TRUE
-            false -> BooleanConstantDescriptor.FALSE
-            null -> ConstantDescriptor.NULL
+            true -> BooleanConstantReference.TRUE
+            false -> BooleanConstantReference.FALSE
+            null -> ConstantReference.NULL
             else -> null
         }
     }

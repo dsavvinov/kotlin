@@ -54,11 +54,11 @@ internal class PsiConditionParser(val trace: BindingTrace, val dispatcher: PsiCo
                 val right = dispatcher.parseValue(resolvedCall.firstArgumentAsExpressionOrNull()) ?: return null
                 val isNegated = (element as? KtBinaryExpression)?.operationToken == KtTokens.EXCLEQ ?: false
 
-                if (left is ConstantDescriptor && left == ConstantDescriptor.NULL && right is VariableReference) {
+                if (left is ConstantReference && left == ConstantReference.NULL && right is VariableReference) {
                     return IsNullPredicate(right, isNegated)
                 }
 
-                if (right is ConstantDescriptor && right == ConstantDescriptor.NULL && left is VariableReference) {
+                if (right is ConstantReference && right == ConstantReference.NULL && left is VariableReference) {
                     return IsNullPredicate(left, isNegated)
                 }
 
@@ -75,7 +75,7 @@ internal class PsiConditionParser(val trace: BindingTrace, val dispatcher: PsiCo
 
     override fun visitConstantExpression(expression: KtConstantExpression, data: Unit?): BooleanExpression? {
         // we don't report type mismatch because it will be reported by the typechecker
-        return dispatcher.parseConstant(expression) as? BooleanConstantDescriptor
+        return dispatcher.parseConstant(expression) as? BooleanConstantReference
     }
 
     override fun visitCallExpression(expression: KtCallExpression, data: Unit?): BooleanExpression? {
