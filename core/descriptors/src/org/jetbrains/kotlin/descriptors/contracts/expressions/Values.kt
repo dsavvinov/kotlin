@@ -20,43 +20,43 @@ import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionElement
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptorVisitor
+import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionVisitor
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.makeNullable
 
 
 interface ContractDescriptionValue : ContractDescriptionElement {
-    override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
-            contractDescriptorVisitor.visitValue(this, data)
+    override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R =
+            contractDescriptionVisitor.visitValue(this, data)
 }
 
-open class ConstantDescriptor(val type: KotlinType, val name: String) : ContractDescriptionValue {
-    override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
-            contractDescriptorVisitor.visitConstantDescriptor(this, data)
+open class ConstantReference(val type: KotlinType, val name: String) : ContractDescriptionValue {
+    override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R =
+            contractDescriptionVisitor.visitConstantDescriptor(this, data)
 
     companion object {
-        val NULL = ConstantDescriptor(DefaultBuiltIns.Instance.nullableAnyType, "NULL")
-        val WILDCARD = ConstantDescriptor(DefaultBuiltIns.Instance.nullableAnyType, "WILDCARD")
-        val NOT_NULL = ConstantDescriptor(DefaultBuiltIns.Instance.nothingType.makeNullable(), "NOT_NULL")
+        val NULL = ConstantReference(DefaultBuiltIns.Instance.nothingType.makeNullable(), "NULL")
+        val WILDCARD = ConstantReference(DefaultBuiltIns.Instance.nullableAnyType, "WILDCARD")
+        val NOT_NULL = ConstantReference(DefaultBuiltIns.Instance.anyType, "NOT_NULL")
     }
 }
 
-class BooleanConstantDescriptor(name: String) : ConstantDescriptor(DefaultBuiltIns.Instance.booleanType, name), BooleanExpression {
-    override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
-            contractDescriptorVisitor.visitBooleanConstantDescriptor(this, data)
+class BooleanConstantReference(name: String) : ConstantReference(DefaultBuiltIns.Instance.booleanType, name), BooleanExpression {
+    override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R =
+            contractDescriptionVisitor.visitBooleanConstantDescriptor(this, data)
 
     companion object {
-        val TRUE = BooleanConstantDescriptor("TRUE")
-        val FALSE = BooleanConstantDescriptor("FALSE")
+        val TRUE = BooleanConstantReference("TRUE")
+        val FALSE = BooleanConstantReference("FALSE")
     }
 }
 
 open class VariableReference(val descriptor: ParameterDescriptor, val type: KotlinType) : ContractDescriptionValue {
-    override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D) =
-            contractDescriptorVisitor.visitVariableReference(this, data)
+    override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D) =
+            contractDescriptionVisitor.visitVariableReference(this, data)
 }
 
 class BooleanVariableReference(descriptor: ParameterDescriptor) : VariableReference(descriptor, DefaultBuiltIns.Instance.booleanType), BooleanExpression {
-    override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
-            contractDescriptorVisitor.visitBooleanVariableReference(this, data)
+    override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R =
+            contractDescriptionVisitor.visitBooleanVariableReference(this, data)
 }

@@ -18,9 +18,9 @@ package org.jetbrains.kotlin.renderer
 
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionElement
 import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptorVisitor
-import org.jetbrains.kotlin.descriptors.contracts.effects.CallsEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.ReturnsEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.CallsEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
+import org.jetbrains.kotlin.descriptors.contracts.ReturnsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 
 class ContractDescriptorRenderer(private val builder: StringBuilder) : ContractDescriptorVisitor<Unit, Unit> {
@@ -70,8 +70,8 @@ class ContractDescriptorRenderer(private val builder: StringBuilder) : ContractD
         builder.append(" ${if (isNullPredicate.isNegated) "!=" else "=="} null")
     }
 
-    override fun visitConstantDescriptor(constantDescriptor: ConstantDescriptor, data: Unit) {
-        builder.append(constantDescriptor.name)
+    override fun visitConstantDescriptor(constantReference: ConstantReference, data: Unit) {
+        builder.append(constantReference.name)
     }
 
     override fun visitVariableReference(variableReference: VariableReference, data: Unit) {
@@ -79,7 +79,7 @@ class ContractDescriptorRenderer(private val builder: StringBuilder) : ContractD
     }
 
     private fun ContractDescriptionElement.isAtom(): Boolean =
-            this is VariableReference || this is ConstantDescriptor || this is IsNullPredicate || this is IsInstancePredicate
+            this is VariableReference || this is ConstantReference || this is IsNullPredicate || this is IsInstancePredicate
 
     private fun needsBrackets(parent: ContractDescriptionElement, child: ContractDescriptionElement): Boolean {
         if (child.isAtom()) return false

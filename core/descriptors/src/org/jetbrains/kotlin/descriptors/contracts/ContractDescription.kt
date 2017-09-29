@@ -30,18 +30,18 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
  * backward compatibility. Ideally, this model should only be extended, but not
  * changed.
  */
-open class ContractDescriptor(val effects: List<EffectDeclaration>, val ownerFunction: FunctionDescriptor)
+open class ContractDescription(val effects: List<EffectDeclaration>, val ownerFunction: FunctionDescriptor)
 
 interface ContractDescriptionElement {
-    fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R
+    fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R
 }
 
 interface EffectDeclaration : ContractDescriptionElement {
-    override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
-            contractDescriptorVisitor.visitEffectDeclaration(this, data)
+    override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R =
+            contractDescriptionVisitor.visitEffectDeclaration(this, data)
 }
 
 interface BooleanExpression : ContractDescriptionElement {
-    override fun <R, D> accept(contractDescriptorVisitor: ContractDescriptorVisitor<R, D>, data: D): R =
-            contractDescriptorVisitor.visitBooleanExpression(this, data)
+    override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R =
+            contractDescriptionVisitor.visitBooleanExpression(this, data)
 }

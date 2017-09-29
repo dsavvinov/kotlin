@@ -16,12 +16,9 @@
 
 package org.jetbrains.kotlin.descriptors.contracts
 
-import org.jetbrains.kotlin.descriptors.contracts.effects.CallsEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.effects.ReturnsEffectDeclaration
 import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 
-interface ContractDescriptorVisitor<out R, in D> {
+interface ContractDescriptionVisitor<out R, in D> {
     fun visitContractDescriptionElement(contractDescriptionElement: ContractDescriptionElement, data: D): R {
         throw IllegalStateException("Top of hierarchy reached, no overloads were found for element: $contractDescriptionElement")
     }
@@ -45,8 +42,8 @@ interface ContractDescriptorVisitor<out R, in D> {
     // Values
     fun visitValue(value: ContractDescriptionValue, data: D): R = visitContractDescriptionElement(value, data)
 
-    fun visitConstantDescriptor(constantDescriptor: ConstantDescriptor, data: D): R = visitValue(constantDescriptor, data)
-    fun visitBooleanConstantDescriptor(booleanConstantDescriptor: BooleanConstantDescriptor, data: D): R = visitConstantDescriptor(booleanConstantDescriptor, data)
+    fun visitConstantDescriptor(constantReference: ConstantReference, data: D): R = visitValue(constantReference, data)
+    fun visitBooleanConstantDescriptor(booleanConstantDescriptor: BooleanConstantReference, data: D): R = visitConstantDescriptor(booleanConstantDescriptor, data)
     fun visitVariableReference(variableReference: VariableReference, data: D): R = visitValue(variableReference, data)
     fun visitBooleanVariableReference(booleanVariableReference: BooleanVariableReference, data: D): R = visitVariableReference(booleanVariableReference, data)
 }

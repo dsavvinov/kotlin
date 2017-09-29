@@ -19,39 +19,39 @@ package org.jetbrains.kotlin.descriptors.contracts
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 
 /**
- * Essentially, this is a composition of two fields: value of type 'ContractDescriptor' and
+ * Essentially, this is a composition of two fields: value of type 'ContractDescription' and
  * 'computation', which guarantees to initialize this field.
  *
  * However, we do some extra bit of work to detect errors and report them properly.
  */
 class LazyContractProvider(private val ownerFunction: FunctionDescriptor, private val computation: () -> Any?) {
     private enum class ComputationState { NOT_PROCESSED, IN_PROCESS, PROCESSED }
-    private var contractDescriptor: ContractDescriptor? = null
+    private var contractDescription: ContractDescription? = null
     private var state: ComputationState = ComputationState.NOT_PROCESSED
 
 
-    fun getContractDescriptor(): ContractDescriptor? = when (state) {
+    fun getContractDescriptor(): ContractDescription? = when (state) {
         LazyContractProvider.ComputationState.NOT_PROCESSED -> {
             state = ComputationState.IN_PROCESS
-            computation.invoke() // should initialize contractDescriptor
+            computation.invoke() // should initialize contractDescription
             assert(state == ComputationState.PROCESSED) { "Computation of contract for function $ownerFunction hasn't initialized contract properly" }
-            contractDescriptor
+            contractDescription
         }
 
         LazyContractProvider.ComputationState.IN_PROCESS -> {
             throw IllegalStateException("Recursive evaluation during resolving of contract for function $ownerFunction")
         }
 
-        LazyContractProvider.ComputationState.PROCESSED -> contractDescriptor
+        LazyContractProvider.ComputationState.PROCESSED -> contractDescription
     }
 
-    fun setContractDescriptor(contractDescriptor: ContractDescriptor?) {
-        this.contractDescriptor = contractDescriptor
+    fun setContractDescriptor(contractDescription: ContractDescription?) {
+        this.contractDescription = contractDescription
         state = ComputationState.PROCESSED
     }
 
     companion object {
-        fun createInitialized(ownerFunction: FunctionDescriptor, contract: ContractDescriptor?): LazyContractProvider =
+        fun createInitialized(ownerFunction: FunctionDescriptor, contract: ContractDescription?): LazyContractProvider =
                 LazyContractProvider(ownerFunction, {}).apply { setContractDescriptor(contract) }
     }
 }
