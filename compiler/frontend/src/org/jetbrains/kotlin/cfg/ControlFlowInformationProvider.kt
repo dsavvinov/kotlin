@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.cfg.pseudocodeTraverser.*
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.descriptors.*
-import org.jetbrains.kotlin.descriptors.contracts.effects.InvocationKind
 import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.diagnostics.DiagnosticFactory
 import org.jetbrains.kotlin.diagnostics.Errors
