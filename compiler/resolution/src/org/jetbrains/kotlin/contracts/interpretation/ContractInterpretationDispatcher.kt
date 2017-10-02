@@ -16,6 +16,9 @@
 
 package org.jetbrains.kotlin.contracts.interpretation
 
+import org.jetbrains.kotlin.contracts.description.*
+import org.jetbrains.kotlin.contracts.description.expressions.ConstantReference
+import org.jetbrains.kotlin.contracts.description.expressions.VariableReference
 import org.jetbrains.kotlin.contracts.functors.SubstitutingFunctor
 import org.jetbrains.kotlin.contracts.impls.ESConstant
 import org.jetbrains.kotlin.contracts.impls.ESVariable
@@ -26,13 +29,6 @@ import org.jetbrains.kotlin.contracts.model.ESEffect
 import org.jetbrains.kotlin.contracts.model.ESExpression
 import org.jetbrains.kotlin.contracts.model.Functor
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescription
-import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey
-import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
-import org.jetbrains.kotlin.descriptors.contracts.expressions.VariableReference
 
 /**
  * This class manages conversion of [ContractDescription] to [Functor]

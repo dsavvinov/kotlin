@@ -16,8 +16,8 @@
 
 package org.jetbrains.kotlin.contracts.interpretation.effects
 
-import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.CallsEffectDeclaration
+import org.jetbrains.kotlin.contracts.description.CallsEffectDeclaration
+import org.jetbrains.kotlin.contracts.description.EffectDeclaration
 import org.jetbrains.kotlin.contracts.effects.ESCalls
 import org.jetbrains.kotlin.contracts.interpretation.ContractInterpretationDispatcher
 import org.jetbrains.kotlin.contracts.interpretation.EffectDeclarationInterpreter

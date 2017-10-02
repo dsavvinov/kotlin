@@ -16,10 +16,10 @@
 
 package org.jetbrains.kotlin.contracts.interpretation.effects
 
+import org.jetbrains.kotlin.contracts.description.ConditionalEffectDeclaration
 import org.jetbrains.kotlin.contracts.interpretation.ContractInterpretationDispatcher
 import org.jetbrains.kotlin.contracts.model.ConditionalEffect
 import org.jetbrains.kotlin.contracts.model.SimpleEffect
-import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
 
 internal class ConditionalEffectInterpreter(private val dispatcher: ContractInterpretationDispatcher) {
     fun interpret(conditionalEffectDeclaration: ConditionalEffectDeclaration): ConditionalEffect? {

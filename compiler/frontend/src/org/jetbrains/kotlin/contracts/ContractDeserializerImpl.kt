@@ -17,9 +17,9 @@
 package org.jetbrains.kotlin.contracts
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
+import org.jetbrains.kotlin.contracts.description.*
+import org.jetbrains.kotlin.contracts.description.expressions.*
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.*
-import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 import org.jetbrains.kotlin.serialization.Flags
 import org.jetbrains.kotlin.serialization.ProtoBuf
 import org.jetbrains.kotlin.serialization.deserialization.ContractDeserializer

@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.renderer
+package org.jetbrains.kotlin.contracts.description
 
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionElement
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionVisitor
-import org.jetbrains.kotlin.descriptors.contracts.CallsEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.ReturnsEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.expressions.*
+import org.jetbrains.kotlin.contracts.description.expressions.*
 
 class ContractDescriptionRenderer(private val builder: StringBuilder) : ContractDescriptionVisitor<Unit, Unit> {
     override fun visitConditionalEffectDeclaration(conditionalEffect: ConditionalEffectDeclaration, data: Unit) {

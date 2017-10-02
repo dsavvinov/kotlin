@@ -16,9 +16,12 @@
 
 package org.jetbrains.kotlin.contracts.parsing.effects
 
-import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.ConditionalEffectDeclaration
-import org.jetbrains.kotlin.contracts.parsing.*
+import org.jetbrains.kotlin.contracts.description.ConditionalEffectDeclaration
+import org.jetbrains.kotlin.contracts.description.EffectDeclaration
+import org.jetbrains.kotlin.contracts.parsing.AbstractPsiEffectParser
+import org.jetbrains.kotlin.contracts.parsing.PsiContractParserDispatcher
+import org.jetbrains.kotlin.contracts.parsing.firstArgumentAsExpressionOrNull
+import org.jetbrains.kotlin.contracts.parsing.isImpliesCallDescriptor
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.calls.callUtil.getResolvedCall

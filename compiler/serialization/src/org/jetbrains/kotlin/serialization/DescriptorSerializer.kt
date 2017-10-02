@@ -44,8 +44,6 @@ class DescriptorSerializer private constructor(
         private val sinceKotlinInfoTable: MutableSinceKotlinInfoTable,
         private val serializeTypeTableToFunction: Boolean
 ) {
-    private val contractSerializer: ContractSerializer = ContractSerializer(this)
-
     fun serialize(message: MessageLite): ByteArray {
         return ByteArrayOutputStream().apply {
             stringTable.serializeTo(this)
@@ -277,8 +275,6 @@ class DescriptorSerializer private constructor(
         if (descriptor.isSuspendOrHasSuspendTypesInSignature()) {
             builder.sinceKotlinInfo = writeSinceKotlinInfo(LanguageFeature.Coroutines)
         }
-
-        contractSerializer.serializeContractOfFunctionIfAny(descriptor, builder)
 
         extension.serializeFunction(descriptor, builder)
 

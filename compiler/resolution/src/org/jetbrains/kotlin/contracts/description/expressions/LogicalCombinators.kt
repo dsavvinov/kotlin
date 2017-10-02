@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.descriptors.contracts.expressions
+package org.jetbrains.kotlin.contracts.description.expressions
 
-import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionVisitor
+import org.jetbrains.kotlin.contracts.description.BooleanExpression
+import org.jetbrains.kotlin.contracts.description.ContractDescriptionVisitor
 
 class LogicalOr(val left: BooleanExpression, val right: BooleanExpression) : BooleanExpression {
     override fun <R, D> accept(contractDescriptionVisitor: ContractDescriptionVisitor<R, D>, data: D): R =

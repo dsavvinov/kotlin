@@ -16,7 +16,7 @@
 
 package org.jetbrains.kotlin.contracts.interpretation
 
-import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
+import org.jetbrains.kotlin.contracts.description.EffectDeclaration
 import org.jetbrains.kotlin.contracts.model.ESEffect
 
 /**

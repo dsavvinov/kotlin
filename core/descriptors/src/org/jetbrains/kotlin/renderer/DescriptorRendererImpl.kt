@@ -21,7 +21,6 @@ import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotated
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescription
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.FqNameUnsafe
 import org.jetbrains.kotlin.name.Name
@@ -655,15 +654,6 @@ internal class DescriptorRendererImpl(
         }
 
         renderWhereSuffix(function.typeParameters, builder)
-    }
-
-    override fun renderContract(contractDescription: ContractDescription): List<String> {
-        return contractDescription.effects.map { effect ->
-            val builder = StringBuilder()
-            val contractRenderer = ContractDescriptionRenderer(builder)
-            effect.accept(contractRenderer, Unit)
-            builder.toString()
-        }
     }
 
     private fun renderReceiverAfterName(callableDescriptor: CallableDescriptor, builder: StringBuilder) {

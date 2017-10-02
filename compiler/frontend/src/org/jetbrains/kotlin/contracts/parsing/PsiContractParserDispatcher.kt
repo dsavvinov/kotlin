@@ -17,16 +17,13 @@
 package org.jetbrains.kotlin.contracts.parsing
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescription
-import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanVariableReference
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ContractDescriptionValue
-import org.jetbrains.kotlin.descriptors.contracts.expressions.VariableReference
-import org.jetbrains.kotlin.diagnostics.Errors
+import org.jetbrains.kotlin.contracts.description.BooleanExpression
+import org.jetbrains.kotlin.contracts.description.ContractDescription
+import org.jetbrains.kotlin.contracts.description.EffectDeclaration
+import org.jetbrains.kotlin.contracts.description.expressions.BooleanVariableReference
+import org.jetbrains.kotlin.contracts.description.expressions.ConstantReference
+import org.jetbrains.kotlin.contracts.description.expressions.ContractDescriptionValue
+import org.jetbrains.kotlin.contracts.description.expressions.VariableReference
 import org.jetbrains.kotlin.contracts.parsing.ContractsDslNames.CALLS_IN_PLACE_EFFECT
 import org.jetbrains.kotlin.contracts.parsing.ContractsDslNames.CONDITIONAL_EFFECT
 import org.jetbrains.kotlin.contracts.parsing.ContractsDslNames.RETURNS_EFFECT
@@ -34,7 +31,10 @@ import org.jetbrains.kotlin.contracts.parsing.ContractsDslNames.RETURNS_NOT_NULL
 import org.jetbrains.kotlin.contracts.parsing.effects.PsiCallsEffectParser
 import org.jetbrains.kotlin.contracts.parsing.effects.PsiConditionalEffectParser
 import org.jetbrains.kotlin.contracts.parsing.effects.PsiReturnsEffectParser
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
+import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtLambdaExpression

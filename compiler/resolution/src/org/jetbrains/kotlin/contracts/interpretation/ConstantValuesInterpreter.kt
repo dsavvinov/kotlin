@@ -16,8 +16,8 @@
 
 package org.jetbrains.kotlin.contracts.interpretation
 
-import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanConstantReference
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
+import org.jetbrains.kotlin.contracts.description.expressions.BooleanConstantReference
+import org.jetbrains.kotlin.contracts.description.expressions.ConstantReference
 import org.jetbrains.kotlin.contracts.impls.ESConstant
 import org.jetbrains.kotlin.contracts.impls.lift
 

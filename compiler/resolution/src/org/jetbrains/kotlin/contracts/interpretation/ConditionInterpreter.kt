@@ -16,11 +16,11 @@
 
 package org.jetbrains.kotlin.contracts.interpretation
 
+import org.jetbrains.kotlin.contracts.description.ContractDescriptionVisitor
+import org.jetbrains.kotlin.contracts.description.expressions.*
 import org.jetbrains.kotlin.contracts.functors.IsFunctor
 import org.jetbrains.kotlin.contracts.impls.*
 import org.jetbrains.kotlin.contracts.model.ESExpression
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionVisitor
-import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 
 internal class ConditionInterpreter(private val dispatcher: ContractInterpretationDispatcher) : ContractDescriptionVisitor<ESExpression?, Unit> {
     override fun visitLogicalOr(logicalOr: LogicalOr, data: Unit): ESExpression? {

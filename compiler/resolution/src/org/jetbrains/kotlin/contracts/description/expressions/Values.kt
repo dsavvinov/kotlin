@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.descriptors.contracts.expressions
+package org.jetbrains.kotlin.contracts.description.expressions
 
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
+import org.jetbrains.kotlin.contracts.description.BooleanExpression
+import org.jetbrains.kotlin.contracts.description.ContractDescriptionElement
+import org.jetbrains.kotlin.contracts.description.ContractDescriptionVisitor
 import org.jetbrains.kotlin.descriptors.ParameterDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionElement
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionVisitor
 import org.jetbrains.kotlin.types.KotlinType
 
 

@@ -19,10 +19,13 @@ package org.jetbrains.kotlin.serialization
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.ReceiverParameterDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.contracts.*
-import org.jetbrains.kotlin.descriptors.contracts.expressions.*
 
-class ContractSerializer(private val descriptorSerializer: DescriptorSerializer) {
+class ContractSerializer(private val descriptorSerializer: DescriptorSerializer) : SerializerExtension() {
+    override val stringTable: StringTable
+        get() = throw IllegalStateException("Contract serializer doesn't have StringTable")
+
+
+
     fun serializeContractOfFunctionIfAny(descriptor: FunctionDescriptor, proto: ProtoBuf.Function.Builder) {
         val contractDescriptor = descriptor.getUserData(ContractProviderKey)?.getContractDescriptor()
         if (contractDescriptor != null) {

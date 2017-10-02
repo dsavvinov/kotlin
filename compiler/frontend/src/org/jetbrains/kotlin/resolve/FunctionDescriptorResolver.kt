@@ -24,23 +24,23 @@ import org.jetbrains.kotlin.builtins.isBuiltinFunctionalType
 import org.jetbrains.kotlin.config.AnalysisFlag
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.config.LanguageVersionSettings
+import org.jetbrains.kotlin.contracts.description.ContractProviderKey
+import org.jetbrains.kotlin.contracts.description.LazyContractProvider
+import org.jetbrains.kotlin.contracts.parsing.ContractParsingServices
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationsImpl
-import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey
-import org.jetbrains.kotlin.descriptors.contracts.LazyContractProvider
 import org.jetbrains.kotlin.descriptors.impl.ClassConstructorDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.FunctionExpressionDescriptor
 import org.jetbrains.kotlin.descriptors.impl.SimpleFunctionDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.diagnostics.DiagnosticUtils
 import org.jetbrains.kotlin.diagnostics.Errors.*
-import org.jetbrains.kotlin.contracts.parsing.ContractParsingServices
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.hasExpectModifier
 import org.jetbrains.kotlin.psi.psiUtil.hasActualModifier
+import org.jetbrains.kotlin.psi.psiUtil.hasExpectModifier
 import org.jetbrains.kotlin.resolve.DescriptorResolver.getDefaultModality
 import org.jetbrains.kotlin.resolve.DescriptorResolver.getDefaultVisibility
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getDispatchReceiverParameterIfNeeded
@@ -208,7 +208,13 @@ class FunctionDescriptorResolver(
         }
     }
 
-    private fun getContractProvider(functionDescriptor: SimpleFunctionDescriptorImpl, trace: BindingTrace, scope: LexicalScope, dataFlowInfo: DataFlowInfo, function: KtFunction): LazyContractProvider {
+    private fun getContractProvider(
+            functionDescriptor: SimpleFunctionDescriptorImpl,
+            trace: BindingTrace,
+            scope: LexicalScope,
+            dataFlowInfo: DataFlowInfo,
+            function: KtFunction
+    ): LazyContractProvider {
         val provideByDeferredForceResolve = LazyContractProvider {
             expressionTypingServices.getBodyExpressionType(trace, scope, dataFlowInfo, function, functionDescriptor)
         }

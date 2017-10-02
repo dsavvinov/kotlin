@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.descriptors.contracts.expressions
+package org.jetbrains.kotlin.contracts.description.expressions
 
-import org.jetbrains.kotlin.descriptors.contracts.BooleanExpression
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescriptionVisitor
+import org.jetbrains.kotlin.contracts.description.BooleanExpression
+import org.jetbrains.kotlin.contracts.description.ContractDescriptionVisitor
 import org.jetbrains.kotlin.types.KotlinType
 
 class IsInstancePredicate(val arg: VariableReference, val type: KotlinType, val isNegated: Boolean) : BooleanExpression {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.descriptors.contracts
+package org.jetbrains.kotlin.contracts.description
 
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 

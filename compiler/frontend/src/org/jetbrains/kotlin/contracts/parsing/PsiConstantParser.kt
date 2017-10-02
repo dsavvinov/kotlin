@@ -16,8 +16,8 @@
 
 package org.jetbrains.kotlin.contracts.parsing
 
-import org.jetbrains.kotlin.descriptors.contracts.expressions.BooleanConstantReference
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
+import org.jetbrains.kotlin.contracts.description.expressions.BooleanConstantReference
+import org.jetbrains.kotlin.contracts.description.expressions.ConstantReference
 import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtVisitor

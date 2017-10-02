@@ -16,10 +16,10 @@
 
 package org.jetbrains.kotlin.contracts.parsing.effects
 
+import org.jetbrains.kotlin.contracts.description.EffectDeclaration
+import org.jetbrains.kotlin.contracts.description.ReturnsEffectDeclaration
+import org.jetbrains.kotlin.contracts.description.expressions.ConstantReference
 import org.jetbrains.kotlin.contracts.parsing.*
-import org.jetbrains.kotlin.descriptors.contracts.EffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.ReturnsEffectDeclaration
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
 import org.jetbrains.kotlin.diagnostics.Errors
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.resolve.BindingTrace

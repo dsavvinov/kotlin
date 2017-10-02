@@ -17,8 +17,11 @@
 package org.jetbrains.kotlin.cfg.pseudocode.instructions.special
 
 import org.jetbrains.kotlin.cfg.pseudocode.Pseudocode
-import org.jetbrains.kotlin.cfg.pseudocode.instructions.*
-import org.jetbrains.kotlin.descriptors.contracts.InvocationKind
+import org.jetbrains.kotlin.cfg.pseudocode.instructions.BlockScope
+import org.jetbrains.kotlin.cfg.pseudocode.instructions.InstructionImpl
+import org.jetbrains.kotlin.cfg.pseudocode.instructions.InstructionVisitor
+import org.jetbrains.kotlin.cfg.pseudocode.instructions.InstructionVisitorWithResult
+import org.jetbrains.kotlin.contracts.description.InvocationKind
 import org.jetbrains.kotlin.psi.KtElement
 
 class InlinedLocalFunctionDeclarationInstruction(

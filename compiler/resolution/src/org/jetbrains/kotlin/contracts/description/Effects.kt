@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.descriptors.contracts
+package org.jetbrains.kotlin.contracts.description
 
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
-import org.jetbrains.kotlin.descriptors.contracts.expressions.VariableReference
+import org.jetbrains.kotlin.contracts.description.expressions.ConstantReference
+import org.jetbrains.kotlin.contracts.description.expressions.VariableReference
 
 /**
  * Effect with condition attached to it.

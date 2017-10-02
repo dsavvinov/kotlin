@@ -22,10 +22,8 @@ import kotlin.Unit;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns;
+import org.jetbrains.kotlin.contracts.description.*;
 import org.jetbrains.kotlin.descriptors.*;
-import org.jetbrains.kotlin.descriptors.contracts.ContractDescription;
-import org.jetbrains.kotlin.descriptors.contracts.ContractProviderKey;
-import org.jetbrains.kotlin.descriptors.contracts.LazyContractProvider;
 import org.jetbrains.kotlin.descriptors.impl.SubpackagesScope;
 import org.jetbrains.kotlin.jvm.compiler.ExpectedLoadErrorsUtil;
 import org.jetbrains.kotlin.name.FqName;
@@ -116,16 +114,7 @@ public class RecursiveDescriptorComparator {
 
         if (descriptor instanceof FunctionDescriptor && conf.checkFunctionContracts) {
             FunctionDescriptor functionDescriptor = (FunctionDescriptor) descriptor;
-            LazyContractProvider contractProvider = functionDescriptor.getUserData(ContractProviderKey.INSTANCE);
-            if (contractProvider != null) {
-                ContractDescription contractDescription = contractProvider.getContractDescriptor();
-                if (contractDescription != null) {
-                    printer.println();
-                    printer.pushIndent();
-                    conf.renderer.renderContract(contractDescription).forEach(printer::println);
-                    printer.popIndent();
-                }
-            }
+            printEffectsIfAny(functionDescriptor, printer);
         }
 
         if (isClassOrPackage) {
@@ -186,6 +175,24 @@ public class RecursiveDescriptorComparator {
         if (isEnumEntry) {
             printer.println();
         }
+    }
+
+    private void printEffectsIfAny(FunctionDescriptor functionDescriptor, Printer printer) {
+        LazyContractProvider contractProvider = functionDescriptor.getUserData(ContractProviderKey.INSTANCE);
+        if (contractProvider == null) return;
+
+        ContractDescription contractDescription = contractProvider.getContractDescriptor();
+        if (contractDescription == null || contractDescription.getEffects().isEmpty()) return;
+
+        printer.println();
+        printer.pushIndent();
+        for (EffectDeclaration effect : contractDescription.getEffects()) {
+            StringBuilder sb = new StringBuilder();
+            ContractDescriptionRenderer renderer = new ContractDescriptionRenderer(sb);
+            effect.accept(renderer, Unit.INSTANCE);
+            printer.println(sb.toString());
+        }
+        printer.popIndent();
     }
 
     @NotNull

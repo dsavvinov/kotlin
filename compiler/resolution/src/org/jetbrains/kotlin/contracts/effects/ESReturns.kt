@@ -16,11 +16,11 @@
 
 package org.jetbrains.kotlin.contracts.effects
 
+import org.jetbrains.kotlin.contracts.description.expressions.ConstantReference
 import org.jetbrains.kotlin.contracts.impls.ESConstant
-import org.jetbrains.kotlin.contracts.model.ESValue
 import org.jetbrains.kotlin.contracts.model.ESEffect
+import org.jetbrains.kotlin.contracts.model.ESValue
 import org.jetbrains.kotlin.contracts.model.SimpleEffect
-import org.jetbrains.kotlin.descriptors.contracts.expressions.ConstantReference
 
 data class ESReturns(val value: ESValue): SimpleEffect() {
     override fun isImplies(other: ESEffect): Boolean? {

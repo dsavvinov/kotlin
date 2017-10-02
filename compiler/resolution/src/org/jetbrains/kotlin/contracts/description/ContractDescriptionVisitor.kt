@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jetbrains.kotlin.descriptors.contracts
+package org.jetbrains.kotlin.contracts.description
 
-import org.jetbrains.kotlin.descriptors.contracts.expressions.*
+import org.jetbrains.kotlin.contracts.description.expressions.*
 
 interface ContractDescriptionVisitor<out R, in D> {
     fun visitContractDescriptionElement(contractDescriptionElement: ContractDescriptionElement, data: D): R {
