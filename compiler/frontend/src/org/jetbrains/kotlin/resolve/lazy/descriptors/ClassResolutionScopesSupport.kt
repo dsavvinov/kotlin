@@ -32,6 +32,10 @@ class ClassResolutionScopesSupport(
         storageManager: StorageManager,
         private val getOuterScope: () -> LexicalScope
 ) {
+    private fun log(s: String) {
+        println("[$classDescriptor] $s")
+    }
+
     private fun scopeWithGenerics(parent: LexicalScope): LexicalScopeImpl {
         return LexicalScopeImpl(parent, classDescriptor, false, null, LexicalScopeKind.CLASS_HEADER) {
             classDescriptor.declaredTypeParameters.forEach { addClassifierDescriptor(it) }
@@ -39,7 +43,13 @@ class ClassResolutionScopesSupport(
     }
 
     val scopeForClassHeaderResolution: () -> LexicalScope = storageManager.createLazyValue {
-        scopeWithGenerics(getOuterScope())
+        log("Creating scope for class header resolution")
+        log ("Getting outer scope")
+        val parent = getOuterScope()
+        log("Got outerScope=$parent, creating scope with generics")
+        val scopeWithGenerics = scopeWithGenerics(parent)
+        log ("Got scope with generics $scopeWithGenerics")
+        scopeWithGenerics
     }
 
     val scopeForConstructorHeaderResolution: () -> LexicalScope = storageManager.createLazyValue {
@@ -47,25 +57,44 @@ class ClassResolutionScopesSupport(
     }
 
     private val inheritanceScopeWithoutMe: () -> LexicalScope = storageManager.createLazyValue(onRecursion = createThrowingLexicalScope) {
-        classDescriptor.getAllSuperclassesWithoutAny().asReversed().fold(getOuterScope()) { scope, currentClass ->
-            createInheritanceScope(parent = scope, ownerDescriptor = classDescriptor, classDescriptor = currentClass)
+        log("Creating inhertiance scope without me")
+        log("Starting resolving superclasses")
+        val superclasses = classDescriptor.getAllSuperclassesWithoutAny().asReversed()
+        log("Finished resolving superclasses")
+        val outerScope = getOuterScope()
+        log("Initial outerscope = $outerScope")
+        log("Starting folding inheritanceScopes")
+        val fold = superclasses.fold(outerScope) { scope, currentClass ->
+            log("parent=$scope, currentClass=$currentClass")
+            val createInheritanceScope = createInheritanceScope(parent = scope, ownerDescriptor = classDescriptor, classDescriptor = currentClass)
+            log("created inheritance scope $createInheritanceScope")
+            createInheritanceScope
         }
+        log("Folded inheritance scopes")
+        fold
     }
 
     private val inheritanceScopeWithMe: () -> LexicalScope = storageManager.createLazyValue(onRecursion = createThrowingLexicalScope) {
-        createInheritanceScope(parent = inheritanceScopeWithoutMe(), ownerDescriptor = classDescriptor, classDescriptor = classDescriptor)
+        log("Creating inheritance scope with me")
+        val createInheritanceScope = createInheritanceScope(parent = inheritanceScopeWithoutMe(), ownerDescriptor = classDescriptor, classDescriptor = classDescriptor)
+        log("Created inheritance scope with me")
+        createInheritanceScope
     }
 
     val scopeForCompanionObjectHeaderResolution: () -> LexicalScope = storageManager.createLazyValue(onRecursion = createThrowingLexicalScope) {
+        log("Creating scope for companion object header resolution")
         createInheritanceScope(inheritanceScopeWithoutMe(), classDescriptor, classDescriptor, withCompanionObject = false)
     }
 
     val scopeForMemberDeclarationResolution: () -> LexicalScope = storageManager.createLazyValue {
+        log("Creating scope for member declaration reoslution")
         val scopeWithGenerics = scopeWithGenerics(inheritanceScopeWithMe())
+        log ("Created scope for member desclaration resolution")
         LexicalScopeImpl(scopeWithGenerics, classDescriptor, true, classDescriptor.thisAsReceiverParameter, LexicalScopeKind.CLASS_MEMBER_SCOPE)
     }
 
     val scopeForStaticMemberDeclarationResolution: () -> LexicalScope = storageManager.createLazyValue(onRecursion = createThrowingLexicalScope) {
+        log("Creating scope for static member declaration resolution")
         if (classDescriptor.kind.isSingleton) {
             scopeForMemberDeclarationResolution()
         }
@@ -80,6 +109,7 @@ class ClassResolutionScopesSupport(
             classDescriptor: ClassDescriptor,
             withCompanionObject: Boolean = true
     ): LexicalScope {
+        log("Creating inheritance scope with parent=$parent, classDescriptor=$classDescriptor, withCompanionObject=$withCompanionObject")
         val staticScopes = ArrayList<MemberScope>(3)
 
         // todo filter fake overrides
@@ -92,11 +122,15 @@ class ClassResolutionScopesSupport(
         val parentForNewScope: LexicalScope
 
         if (withCompanionObject) {
+            log("Doing dark magic because class has companion!")
             staticScopes.addIfNotNull(classDescriptor.companionObjectDescriptor?.unsubstitutedInnerClassesScope)
             implicitReceiver = classDescriptor.companionObjectDescriptor?.thisAsReceiverParameter
 
             parentForNewScope = classDescriptor.companionObjectDescriptor?.let {
-                it.getAllSuperclassesWithoutAny().asReversed().fold(parent) { scope, currentClass ->
+                val scopes = it.getAllSuperclassesWithoutAny().asReversed()
+                log("Got hierarchy of scopes for companion ${classDescriptor.companionObjectDescriptor}: ${scopes.joinToString()}")
+                scopes.fold(parent) { scope, currentClass ->
+                    log("Folding: $scope + $currentClass")
                     createInheritanceScope(parent = scope, ownerDescriptor = ownerDescriptor, classDescriptor = currentClass, withCompanionObject = false)
                 }
             } ?: parent
@@ -105,7 +139,9 @@ class ClassResolutionScopesSupport(
             implicitReceiver = null
             parentForNewScope = parent
         }
+        log("Parent for new scope = $parentForNewScope")
 
+        log("Returning inheritance scope")
         return LexicalChainedScope(parentForNewScope, ownerDescriptor, false,
                                    implicitReceiver,
                                    LexicalScopeKind.CLASS_INHERITANCE,

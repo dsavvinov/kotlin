@@ -74,8 +74,15 @@ fun HierarchicalScope.collectDescriptorsFiltered(
     }
 }
 
-fun HierarchicalScope.findClassifier(name: Name, location: LookupLocation): ClassifierDescriptor?
-        = findFirstFromMeAndParent { it.getContributedClassifier(name, location) }
+fun HierarchicalScope.findClassifier(name: Name, location: LookupLocation): ClassifierDescriptor? {
+//    = findFirstFromMeAndParent { it.getContributedClassifier(name, location) }
+    var currentScope = this
+    while (true) {
+        currentScope.let { it.getContributedClassifier(name, location)?.let { return it } }
+        currentScope = currentScope.parent ?: break
+    }
+    return null
+}
 
 fun HierarchicalScope.findPackage(name: Name): PackageViewDescriptor?
         = findFirstFromImportingScopes { it.getContributedPackage(name) }

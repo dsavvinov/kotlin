@@ -133,7 +133,10 @@ val DeclarationDescriptor.isInsidePrivateClass: Boolean
 
 
 fun ClassDescriptor.getSuperClassNotAny(): ClassDescriptor? {
-    for (supertype in defaultType.constructor.supertypes) {
+    println("[$this] Getting direct superclass")
+    val constructor = defaultType.constructor
+    println("[$this] Got default type ctor=$constructor, starting to evaluating supertypes")
+    for (supertype in constructor.supertypes) {
         if (!KotlinBuiltIns.isAnyOrNullableAny(supertype)) {
             val superClassifier = supertype.constructor.declarationDescriptor
             if (DescriptorUtils.isClassOrEnumClass(superClassifier)) {
@@ -346,8 +349,21 @@ fun FunctionDescriptor.isEnumValueOfMethod(): Boolean {
 val DeclarationDescriptor.isExtensionProperty: Boolean
     get() = this is PropertyDescriptor && extensionReceiverParameter != null
 
-fun ClassDescriptor.getAllSuperclassesWithoutAny() =
-        generateSequence(getSuperClassNotAny(), ClassDescriptor::getSuperClassNotAny).toCollection(SmartList<ClassDescriptor>())
+fun ClassDescriptor.getAllSuperclassesWithoutAny(): SmartList<ClassDescriptor> {
+//    val generateSequence = generateSequence(getSuperClassNotAny(), ClassDescriptor::getSuperClassNotAny)
+    println("[$this] Resolving all superclasses")
+    val list = SmartList<ClassDescriptor>()
+    println("[$this] Getting next superclass")
+    var cur = getSuperClassNotAny()
+    while (cur != null) {
+        println("[$this] Cur superclass=$cur")
+        list.add(cur)
+        println("[$this] Getting next superclass")
+        cur = cur.getSuperClassNotAny()
+    }
+    println("[$this] Reached top of hierarchy, all superclasses found, returning")
+    return list
+}
 
 fun ClassifierDescriptor.getAllSuperClassifiers(): Sequence<ClassifierDescriptor> {
     val set = hashSetOf<ClassifierDescriptor>()

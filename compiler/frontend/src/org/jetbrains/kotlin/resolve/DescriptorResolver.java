@@ -128,6 +128,7 @@ public class DescriptorResolver {
             @Nullable KtPureClassOrObject correspondingClassOrObject,
             BindingTrace trace
     ) {
+        System.out.println("[DescriptorResolver " + this + "]: resolvingSupertypes");
         List<KotlinType> supertypes = Lists.newArrayList();
         List<KtSuperTypeListEntry> delegationSpecifiers =
                 correspondingClassOrObject == null ? Collections.emptyList() : correspondingClassOrObject.getSuperTypeListEntries();

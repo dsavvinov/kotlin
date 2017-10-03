@@ -60,6 +60,8 @@ interface LexicalScope : HierarchicalScope {
         override fun printStructure(p: Printer) {
             p.println("Base lexical scope with owner = $ownerDescriptor and parent = $parent")
         }
+
+        override fun toString(): String = "Base lexical scope with owner = $ownerDescriptor and parent = $parent"
     }
 }
 

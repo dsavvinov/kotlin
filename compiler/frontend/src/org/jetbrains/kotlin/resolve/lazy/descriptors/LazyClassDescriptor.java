@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static kotlin.collections.CollectionsKt.firstOrNull;
 import static org.jetbrains.kotlin.descriptors.Visibilities.PRIVATE;
@@ -321,7 +322,13 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
 
     @NotNull
     protected LexicalScope getOuterScope() {
-        return c.getDeclarationScopeProvider().getResolutionScopeForDeclaration(declarationProvider.getOwnerInfo().getScopeAnchor());
+        System.out.println("[" + this + "] Enter 'getOuterScope'");
+        PsiElement anchor = declarationProvider.getOwnerInfo().getScopeAnchor();
+        System.out.println("[" + this + "] scopeAnchor=" + anchor.getText());
+        System.out.println("[" + this + "] Getting resolution scope for anchor");
+        LexicalScope declaration = c.getDeclarationScopeProvider().getResolutionScopeForDeclaration(anchor);
+        System.out.println("[" + this + "] Got scope for anchor=" + declaration);
+        return declaration;
     }
 
     @Override
@@ -674,6 +681,7 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
 
     @NotNull
     protected Collection<KotlinType> computeSupertypes() {
+        log("LazyClassDescriptor.computeSupertypes");
         if (KotlinBuiltIns.isSpecialClassWithNoSupertypes(this)) {
             return Collections.emptyList();
         }
@@ -683,9 +691,19 @@ public class LazyClassDescriptor extends ClassDescriptorBase implements ClassDes
             return Collections.singleton(c.getModuleDescriptor().getBuiltIns().getAnyType());
         }
 
+        log("Preparing to computeAllSuperTypes");
+        log("Getting scope for class header resolution");
+        LexicalScope resolution = getScopeForClassHeaderResolution();
+        log("Got scope for class header resolution " + resolution);
+        log("Asking DescriptorResolver to resolveSupertypes");
         List<KotlinType> allSupertypes =
-                c.getDescriptorResolver().resolveSupertypes(getScopeForClassHeaderResolution(), this, classOrObject, c.getTrace());
+                c.getDescriptorResolver().resolveSupertypes(resolution, this, classOrObject, c.getTrace());
+        log("Got supertypes: " + allSupertypes.stream().map(Object::toString).collect(Collectors.joining(", ")));
 
         return new ArrayList<>(CollectionsKt.filter(allSupertypes, VALID_SUPERTYPE));
+    }
+
+    private void log(String s) {
+        System.out.println("[" + this + "] " + s);
     }
 }

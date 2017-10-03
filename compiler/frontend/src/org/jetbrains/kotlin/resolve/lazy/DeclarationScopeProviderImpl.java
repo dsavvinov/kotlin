@@ -41,9 +41,14 @@ public class DeclarationScopeProviderImpl implements DeclarationScopeProvider {
         this.fileScopeProvider = fileScopeProvider;
     }
 
+    private final void log(String s) {
+        System.out.println("[DeclarationScopeProvider] " + s);
+    }
+
     @Override
     @NotNull
     public LexicalScope getResolutionScopeForDeclaration(@NotNull PsiElement elementOfDeclaration) {
+        log("Enter getResolutionScopeForDeclaration");
         KtDeclaration ktDeclaration = KtStubbedPsiUtil.getPsiOrStubParent(elementOfDeclaration, KtDeclaration.class, false);
 
         assert !(elementOfDeclaration instanceof KtDeclaration) || ktDeclaration == elementOfDeclaration :
@@ -57,26 +62,32 @@ public class DeclarationScopeProviderImpl implements DeclarationScopeProvider {
         }
 
         if (parentDeclaration == null) {
+            log("Top-level declaration, returning fileScope");
             return fileScopeProvider.getFileResolutionScope((KtFile) elementOfDeclaration.getContainingFile());
         }
 
         if (parentDeclaration instanceof KtClassOrObject) {
             KtClassOrObject parentClassOrObject = (KtClassOrObject) parentDeclaration;
+            log("Parent is class, getting its descriptor");
             LazyClassDescriptor parentClassDescriptor = (LazyClassDescriptor) lazyDeclarationResolver.getClassDescriptor(parentClassOrObject, NoLookupLocation.WHEN_GET_DECLARATION_SCOPE);
-
+            log("Got parent descriptor" + parentClassDescriptor);
             if (ktDeclaration instanceof KtAnonymousInitializer || ktDeclaration instanceof KtProperty) {
+                log("This-declaration is property, returning scope for initializer resolution");
                 return parentClassDescriptor.getScopeForInitializerResolution();
             }
 
             if (ktDeclaration instanceof KtObjectDeclaration && ((KtObjectDeclaration) ktDeclaration).isCompanion()) {
+                log("This-declaration is CO, returning scope for companion object header resolution");
                 return parentClassDescriptor.getScopeForCompanionObjectHeaderResolution();
             }
 
             if (ktDeclaration instanceof KtObjectDeclaration ||
                 ktDeclaration instanceof KtClass && !((KtClass) ktDeclaration).isInner()) {
+                log("This-declaration is either object or static class, returning scope for static member declaration resolution");
                 return parentClassDescriptor.getScopeForStaticMemberDeclarationResolution();
             }
 
+            log("This-declaration is member, returning scope for member declaration resolution");
             return parentClassDescriptor.getScopeForMemberDeclarationResolution();
         }
         //TODO: this is not how it works for classes and for exact parity we can try to use the code above

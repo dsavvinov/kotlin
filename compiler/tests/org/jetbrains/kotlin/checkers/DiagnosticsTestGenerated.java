@@ -17986,6 +17986,69 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                 doTest(fileName);
             }
 
+            @TestMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP")
+            @TestDataPath("$PROJECT_ROOT")
+            @RunWith(JUnit3RunnerWithInners.class)
+            public static class DONT_COMMIT_TMP extends AbstractDiagnosticsTest {
+                public void testAllFilesPresentInDONT_COMMIT_TMP() throws Exception {
+                    KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
+                }
+
+                @TestMetadata("ErrorType.kt")
+                public void testErrorType() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/ErrorType.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("ISE.kt")
+                public void testISE() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/ISE.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("InterfacesDontSaveUs.kt")
+                public void testInterfacesDontSaveUs() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/InterfacesDontSaveUs.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("NoErrorBecauseMemberScopeResolvedBeforeNesteds.kt")
+                public void testNoErrorBecauseMemberScopeResolvedBeforeNesteds() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/NoErrorBecauseMemberScopeResolvedBeforeNesteds.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("NoErrorBecauseNoMemberScopes.kt")
+                public void testNoErrorBecauseNoMemberScopes() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/NoErrorBecauseNoMemberScopes.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("NoErrorTypeBecauseNeededTypeIsLowEnough.kt")
+                public void testNoErrorTypeBecauseNeededTypeIsLowEnough() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/NoErrorTypeBecauseNeededTypeIsLowEnough.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("NoErrorTypeCauseNoTypeRef.kt")
+                public void testNoErrorTypeCauseNoTypeRef() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/NoErrorTypeCauseNoTypeRef.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("Test.kt")
+                public void testTest() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/Test.kt");
+                    doTest(fileName);
+                }
+
+                @TestMetadata("ValidCase.kt")
+                public void testValidCase() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/ValidCase.kt");
+                    doTest(fileName);
+                }
+            }
+
             @TestMetadata("compiler/testData/diagnostics/tests/resolve/dslMarker")
             @TestDataPath("$PROJECT_ROOT")
             @RunWith(JUnit3RunnerWithInners.class)
