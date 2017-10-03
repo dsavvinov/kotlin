@@ -33,7 +33,10 @@ abstract class AbstractTypeConstructor(storageManager: StorageManager) : TypeCon
 
     private val supertypes = storageManager.createLazyValueWithPostCompute(
             { Supertypes(computeSupertypes()) },
-            { Supertypes(listOf(ErrorUtils.ERROR_TYPE_FOR_LOOP_IN_SUPERTYPES)) },
+            {
+//                Supertypes(listOf(ErrorUtils.ERROR_TYPE_FOR_LOOP_IN_SUPERTYPES))
+                throw IllegalStateException("Found loop in supertypes")
+            },
             { supertypes ->
                 // It's important that loops disconnection begins in post-compute phase, because it guarantees that
                 // when we start calculation supertypes of supertypes (for computing neighbours), they start their disconnection loop process

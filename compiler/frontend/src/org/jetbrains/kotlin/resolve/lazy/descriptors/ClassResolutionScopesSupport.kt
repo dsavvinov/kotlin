@@ -116,7 +116,10 @@ class ClassResolutionScopesSupport(
             createLazyValueWithPostCompute(compute, onRecursion, {})
 
     companion object {
-        private val createThrowingLexicalScope: (Boolean) -> LexicalScope =  { ThrowingLexicalScope() }
+        private val createThrowingLexicalScope: (Boolean) -> LexicalScope =  {
+//            ThrowingLexicalScope()
+            throw IllegalStateException("Found recursion in scopes")
+        }
     }
 }
 
