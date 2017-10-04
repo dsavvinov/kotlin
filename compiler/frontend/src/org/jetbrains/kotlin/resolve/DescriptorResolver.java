@@ -191,10 +191,13 @@ public class DescriptorResolver {
         if (delegationSpecifiers.isEmpty()) {
             return Collections.emptyList();
         }
+        System.out.println("resolving non-empty supertypes list");
         Collection<KotlinType> result = Lists.newArrayList();
         for (KtSuperTypeListEntry delegationSpecifier : delegationSpecifiers) {
+            System.out.println("resolving next delegationSpecifier: " + delegationSpecifier.getText());
             KtTypeReference typeReference = delegationSpecifier.getTypeReference();
             if (typeReference != null) {
+                System.out.println("resolving typeReference: " + typeReference.getText());
                 KotlinType supertype = resolver.resolveType(extensibleScope, typeReference, trace, checkBounds);
                 if (DynamicTypesKt.isDynamic(supertype)) {
                     trace.report(DYNAMIC_SUPERTYPE.on(typeReference));
@@ -1322,6 +1325,17 @@ public class DescriptorResolver {
             classDescriptor = getParentOfType(classDescriptor, ClassDescriptor.class, true);
         }
         return true;
+    }
+
+    // Note that this method works on raw PSI and do not rely on resolving
+    public static void checkHasInaccessibleOuterClass(@NotNull LexicalScope scope, @NotNull BindingTrace trace, @NotNull PsiElement reportOn) {
+        ClassDescriptor classDescriptor = getContainingClass(scope);
+        while (classDescriptor != null) {
+            if (isStaticNestedClass(classDescriptor)) {
+                trace.report(INACCESSIBLE_OUTER_CLASS_EXPRESSION.on(reportOn, classDescriptor));
+                return;
+            }
+        }
     }
 
     private static boolean isInsideOuterClassOrItsSubclass(@Nullable DeclarationDescriptor nested, @NotNull ClassDescriptor outer) {

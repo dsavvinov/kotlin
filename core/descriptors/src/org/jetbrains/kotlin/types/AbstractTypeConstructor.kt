@@ -46,11 +46,12 @@ abstract class AbstractTypeConstructor(storageManager: StorageManager) : TypeCon
                 log("First invoke of supertypes(), eagerly evaluate")
                 val supertypes1 = Supertypes(computeSupertypes())
                 log("Finished computing supertypes")
-                throw IllegalStateException("Found loop in supertypes")
+                supertypes1
             },
             {
                 log("Found recursion in supertypes")
                 Supertypes(listOf(ErrorUtils.ERROR_TYPE_FOR_LOOP_IN_SUPERTYPES))
+//                throw IllegalStateException("Found loop in supertypes")
             },
             { supertypes ->
                 log("Post computing supertypes")

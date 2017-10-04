@@ -193,6 +193,7 @@ class TypeResolver(
 
         typeElement?.accept(object : KtVisitorVoid() {
             override fun visitUserType(type: KtUserType) {
+                println("[$this]: resolving userType: ${type.text}")
                 val qualifierResolutionResult = resolveDescriptorForType(c.scope, type, c.trace, c.isDebuggerContext)
                 val classifier = qualifierResolutionResult.classifierDescriptor
 
@@ -361,10 +362,10 @@ class TypeResolver(
             c.trace.report(TYPE_ARGUMENTS_NOT_ALLOWED.on(typeArgumentList, "for type parameters"))
         }
 
-        val containing = typeParameter.containingDeclaration
-        if (containing is ClassDescriptor) {
-            DescriptorResolver.checkHasOuterClassInstance(c.scope, c.trace, referenceExpression, containing)
-        }
+//        val containing = typeParameter.containingDeclaration
+//        if (containing is ClassDescriptor) {
+//            DescriptorResolver.checkHasOuterClassInstance(c.scope, c.trace, referenceExpression, containing)
+//        }
 
         return if (scopeForTypeParameter is ErrorUtils.ErrorScope)
             ErrorUtils.createErrorType("?")

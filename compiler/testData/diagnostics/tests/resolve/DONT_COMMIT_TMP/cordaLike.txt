@@ -1,0 +1,17 @@
+package
+
+public final class Bar {
+    public constructor Bar()
+    public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+    public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+    public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+}
+
+public final class Foo</*0*/ T> {
+    public constructor Foo</*0*/ T>(/*0*/ set: kotlin.collections.Set<T>)
+    public final val set: kotlin.collections.Set<T>
+    public open override /*1*/ /*fake_override*/ fun equals(/*0*/ other: kotlin.Any?): kotlin.Boolean
+    public final fun foo(): Bar
+    public open override /*1*/ /*fake_override*/ fun hashCode(): kotlin.Int
+    public open override /*1*/ /*fake_override*/ fun toString(): kotlin.String
+}

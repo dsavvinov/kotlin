@@ -17994,6 +17994,12 @@ public class DiagnosticsTestGenerated extends AbstractDiagnosticsTest {
                     KotlinTestUtils.assertAllTestsPresentByMetadata(this.getClass(), new File("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP"), Pattern.compile("^(.+)\\.kt$"), TargetBackend.ANY, true);
                 }
 
+                @TestMetadata("cordaLike.kt")
+                public void testCordaLike() throws Exception {
+                    String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/cordaLike.kt");
+                    doTest(fileName);
+                }
+
                 @TestMetadata("ErrorType.kt")
                 public void testErrorType() throws Exception {
                     String fileName = KotlinTestUtils.navigationMetadata("compiler/testData/diagnostics/tests/resolve/DONT_COMMIT_TMP/ErrorType.kt");
