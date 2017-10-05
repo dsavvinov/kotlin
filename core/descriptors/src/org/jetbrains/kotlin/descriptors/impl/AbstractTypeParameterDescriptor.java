@@ -139,7 +139,7 @@ public abstract class AbstractTypeParameterDescriptor extends DeclarationDescrip
         return visitor.visitTypeParameterDescriptor(this, data);
     }
 
-    private class TypeParameterTypeConstructor extends AbstractTypeConstructor {
+    public class TypeParameterTypeConstructor extends AbstractTypeConstructor {
 
         private final SupertypeLoopChecker supertypeLoopChecker;
 

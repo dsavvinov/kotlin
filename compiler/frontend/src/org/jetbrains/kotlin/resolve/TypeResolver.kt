@@ -120,6 +120,7 @@ class TypeResolver(
 
         if (!type.isBare) {
             for (argument in type.actualType.arguments) {
+                println("[$this]: force resolving ${argument.type}")
                 forceResolveTypeContents(argument.type)
             }
             c.trace.record(resolvedTypeSlice, typeReference, type.actualType)

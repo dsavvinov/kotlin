@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.types
 
 import org.jetbrains.kotlin.descriptors.SupertypeLoopChecker
+import org.jetbrains.kotlin.descriptors.impl.AbstractTypeParameterDescriptor
 import org.jetbrains.kotlin.storage.StorageManager
 
 abstract class AbstractTypeConstructor(storageManager: StorageManager) : TypeConstructor {
@@ -50,8 +51,10 @@ abstract class AbstractTypeConstructor(storageManager: StorageManager) : TypeCon
             },
             {
                 log("Found recursion in supertypes")
-                Supertypes(listOf(ErrorUtils.ERROR_TYPE_FOR_LOOP_IN_SUPERTYPES))
-//                throw IllegalStateException("Found loop in supertypes")
+                if (this is AbstractTypeParameterDescriptor.TypeParameterTypeConstructor)
+                    Supertypes(listOf(ErrorUtils.ERROR_TYPE_FOR_LOOP_IN_SUPERTYPES))
+                else
+                    throw IllegalStateException("Found loop in supertypes")
             },
             { supertypes ->
                 log("Post computing supertypes")
