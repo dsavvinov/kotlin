@@ -1,1 +1,5 @@
-class Foo<T : Foo<T>>
+class Foo {
+    protected open class RunTestToken {
+        object Token : RunTestToken()
+    }
+}

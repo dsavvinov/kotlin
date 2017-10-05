@@ -144,28 +144,28 @@ public class Visibilities {
                 @NotNull DeclarationDescriptorWithVisibility what,
                 @NotNull DeclarationDescriptor from
         ) {
-            ClassDescriptor givenDescriptorContainingClass = DescriptorUtils.getParentOfType(what, ClassDescriptor.class);
+            ClassDescriptor whatContainingClass = DescriptorUtils.getParentOfType(what, ClassDescriptor.class);
             ClassDescriptor fromClass = DescriptorUtils.getParentOfType(from, ClassDescriptor.class, false);
             if (fromClass == null) return false;
 
-            if (givenDescriptorContainingClass != null && DescriptorUtils.isCompanionObject(givenDescriptorContainingClass)) {
+            if (whatContainingClass != null && DescriptorUtils.isCompanionObject(whatContainingClass)) {
                 // Access to protected members inside companion is allowed to all subclasses
                 // Receiver type does not matter because objects are final
                 // NB: protected fake overrides in companion from super class should also be allowed
-                ClassDescriptor companionOwner = DescriptorUtils.getParentOfType(givenDescriptorContainingClass, ClassDescriptor.class);
+                ClassDescriptor companionOwner = DescriptorUtils.getParentOfType(whatContainingClass, ClassDescriptor.class);
                 if (companionOwner != null && DescriptorUtils.isSubclass(fromClass, companionOwner)) return true;
             }
 
             // The rest part of method checks visibility similarly to Java does for protected (see JLS p.6.6.2)
 
             // Protected fake overrides can have only one protected overridden (as protected is not allowed for interface members)
-            DeclarationDescriptorWithVisibility whatDeclaration = DescriptorUtils.unwrapFakeOverrideToAnyDeclaration(what);
+            DeclarationDescriptorWithVisibility unwrappedWhat = DescriptorUtils.unwrapFakeOverrideToAnyDeclaration(what);
 
-            ClassDescriptor classDescriptor = DescriptorUtils.getParentOfType(whatDeclaration, ClassDescriptor.class);
-            if (classDescriptor == null) return false;
+            ClassDescriptor unwrappedWhatContainingClass = DescriptorUtils.getParentOfType(unwrappedWhat, ClassDescriptor.class);
+            if (unwrappedWhatContainingClass == null) return false;
 
-            if (DescriptorUtils.isSubclass(fromClass, classDescriptor)
-                    && doesReceiverFitForProtectedVisibility(receiver, whatDeclaration, fromClass)) {
+            if (DescriptorUtils.isSubclass(fromClass, unwrappedWhatContainingClass)
+                    && doesReceiverFitForProtectedVisibility(receiver, unwrappedWhat, fromClass)) {
                 return true;
             }
 
